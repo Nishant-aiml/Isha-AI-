@@ -201,8 +201,10 @@ StorageValidation DownloadManager::validateStorageHeadroom(const DownloadConfig&
     StorageValidation result;
     result.required_bytes = config.expected_size_bytes + (config.expected_size_bytes / 2); // 1.5x temp
     result.safety_margin_bytes = config.safety_margin_bytes;
-    
     uint64_t total_needed = result.required_bytes + result.safety_margin_bytes;
+    if (config.min_disk_space_bytes > total_needed) {
+        total_needed = config.min_disk_space_bytes;
+    }
     
     try {
         std::filesystem::path parent = std::filesystem::path(config.output_path).parent_path();

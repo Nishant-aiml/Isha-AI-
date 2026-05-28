@@ -68,6 +68,7 @@ set(CORE_SOURCES
     core/inference/latency_tracker.cpp
     core/inference/llama_cpp_engine.cpp
     core/inference/acceleration_probe.cpp
+    core/inference/nnapi_backend.cpp
 
     # Phase 6 Download Manager
     core/model/download_manager.cpp
@@ -185,6 +186,31 @@ target_link_libraries(telemetry_normalization_benchmark PRIVATE isha_core)
 add_executable(thermal_cycling_soak_benchmark benchmarks/thermal_cycling_soak_benchmark.cpp)
 target_link_libraries(thermal_cycling_soak_benchmark PRIVATE isha_core)
 
+# Phase 8A NNAPI Benchmarks
+add_executable(nnapi_partitioning_benchmark benchmarks/nnapi_partitioning_benchmark.cpp)
+target_link_libraries(nnapi_partitioning_benchmark PRIVATE isha_core)
+
+add_executable(nnapi_capability_score_benchmark benchmarks/nnapi_capability_score_benchmark.cpp)
+target_link_libraries(nnapi_capability_score_benchmark PRIVATE isha_core)
+
+add_executable(nnapi_rejection_benchmark benchmarks/nnapi_rejection_benchmark.cpp)
+target_link_libraries(nnapi_rejection_benchmark PRIVATE isha_core)
+
+add_executable(nnapi_transfer_overhead_benchmark benchmarks/nnapi_transfer_overhead_benchmark.cpp)
+target_link_libraries(nnapi_transfer_overhead_benchmark PRIVATE isha_core)
+
+add_executable(nnapi_prefill_decode_split_benchmark benchmarks/nnapi_prefill_decode_split_benchmark.cpp)
+target_link_libraries(nnapi_prefill_decode_split_benchmark PRIVATE isha_core)
+
+add_executable(nnapi_residency_benchmark benchmarks/nnapi_residency_benchmark.cpp)
+target_link_libraries(nnapi_residency_benchmark PRIVATE isha_core)
+
+add_executable(nnapi_probe_timeout_benchmark benchmarks/nnapi_probe_timeout_benchmark.cpp)
+target_link_libraries(nnapi_probe_timeout_benchmark PRIVATE isha_core)
+
+add_executable(nnapi_startup_latency_benchmark benchmarks/nnapi_startup_latency_benchmark.cpp)
+target_link_libraries(nnapi_startup_latency_benchmark PRIVATE isha_core)
+
 # Enable CTest
 enable_testing()
 add_test(NAME TestLoad COMMAND load_benchmark)
@@ -215,4 +241,12 @@ add_test(NAME TestQuarantineAdaptive COMMAND quarantine_adaptive_benchmark)
 add_test(NAME TestWatchdogCooperative COMMAND watchdog_cooperative_benchmark)
 add_test(NAME TestTelemetryNormalization COMMAND telemetry_normalization_benchmark)
 add_test(NAME TestThermalCyclingSoak COMMAND thermal_cycling_soak_benchmark)
+add_test(NAME TestNnapiPartitioning COMMAND nnapi_partitioning_benchmark)
+add_test(NAME TestNnapiCapabilityScore COMMAND nnapi_capability_score_benchmark)
+add_test(NAME TestNnapiRejection COMMAND nnapi_rejection_benchmark)
+add_test(NAME TestNnapiTransferOverhead COMMAND nnapi_transfer_overhead_benchmark)
+add_test(NAME TestNnapiPrefillDecodeSplit COMMAND nnapi_prefill_decode_split_benchmark)
+add_test(NAME TestNnapiResidency COMMAND nnapi_residency_benchmark)
+add_test(NAME TestNnapiProbeTimeout COMMAND nnapi_probe_timeout_benchmark)
+add_test(NAME TestNnapiStartupLatency COMMAND nnapi_startup_latency_benchmark)
 

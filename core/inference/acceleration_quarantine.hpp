@@ -14,7 +14,20 @@ enum class FailureSeverity {
     THERMAL_TRIGGER,
     QUEUE_DEADLOCK,
     SHADER_CRASH,
-    INIT_CORRUPTION
+    INIT_CORRUPTION,
+    
+    // NNAPI Structured Taxonomy
+    UNSUPPORTED_OPERATOR,
+    GRAPH_COMPILATION_FAILURE,
+    TENSOR_SHAPE_MISMATCH,
+    BACKEND_TIMEOUT,
+    DRIVER_CRASH,
+    ALLOCATION_FAILURE,
+    THERMAL_TRIGGER_FALLBACK,
+    WATCHDOG_TRIGGER_FALLBACK,
+    SYNCHRONIZATION_FAILURE,
+    STAGING_ALLOCATION_FAILURE,
+    BACKEND_RESET_FAILURE
 };
 
 struct QuarantineRecord {
@@ -44,22 +57,33 @@ public:
         float penalty = 0.0f;
         switch (severity) {
             case FailureSeverity::MINOR_TIMEOUT:
+            case FailureSeverity::BACKEND_TIMEOUT:
                 duration = std::chrono::seconds(60);
                 penalty = 0.1f;
                 break;
             case FailureSeverity::THERMAL_TRIGGER:
+            case FailureSeverity::THERMAL_TRIGGER_FALLBACK:
                 duration = std::chrono::seconds(300);
                 penalty = 0.2f;
                 break;
             case FailureSeverity::QUEUE_DEADLOCK:
+            case FailureSeverity::SYNCHRONIZATION_FAILURE:
                 duration = std::chrono::seconds(3600);
                 penalty = 0.4f;
                 break;
             case FailureSeverity::SHADER_CRASH:
+            case FailureSeverity::GRAPH_COMPILATION_FAILURE:
+            case FailureSeverity::UNSUPPORTED_OPERATOR:
+            case FailureSeverity::TENSOR_SHAPE_MISMATCH:
                 duration = std::chrono::seconds(43200);
                 penalty = 0.6f;
                 break;
             case FailureSeverity::INIT_CORRUPTION:
+            case FailureSeverity::DRIVER_CRASH:
+            case FailureSeverity::ALLOCATION_FAILURE:
+            case FailureSeverity::WATCHDOG_TRIGGER_FALLBACK:
+            case FailureSeverity::STAGING_ALLOCATION_FAILURE:
+            case FailureSeverity::BACKEND_RESET_FAILURE:
                 duration = std::chrono::seconds(86400);
                 penalty = 0.9f;
                 break;

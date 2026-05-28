@@ -2,7 +2,7 @@
 $vcvars = "C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
 
 # Core sources - NO llama.cpp dependencies
-$sources = "core/logging/logger.cpp core/runtime/event_bus.cpp core/runtime/runtime.cpp core/model/memory_guard.cpp core/model/model_manager.cpp core/session/session_manager.cpp core/retrieval/retrieval_stub.cpp core/monitoring/windows_monitor.cpp core/inference/gguf_loader.cpp core/inference/gguf_inference_engine.cpp core/inference/mmap_manager.cpp core/inference/token_streamer.cpp core/inference/kv_cache_manager.cpp core/scheduler/inference_scheduler.cpp core/embeddings/embedding_stub.cpp core/ingestion/chunker.cpp core/ingestion/ingestion_pipeline.cpp core/embeddings/embedding_engine.cpp core/retrieval/local_index.cpp core/retrieval/retrieval_engine.cpp core/cognition/context_governor.cpp core/cognition/grounded_pipeline.cpp core/watchdog/runtime_watchdog.cpp core/observability/telemetry.cpp core/voice/audio_buffer_manager.cpp core/voice/audio_session_manager.cpp core/voice/stt_engine.cpp core/voice/tts_engine.cpp core/voice/voice_orchestrator.cpp core/multimodal/image_context.cpp core/multimodal/image_decoder.cpp core/multimodal/image_pipeline.cpp core/multimodal/multimodal_context_governor.cpp core/ocr/ocr_engine.cpp core/vision/vision_engine.cpp core/vision/frame_governor.cpp core/vision/camera_session_manager.cpp core/model/model_registry.cpp core/model/tokenizer_manager.cpp core/model/model_lifecycle_controller.cpp core/inference/decode_governor.cpp core/inference/output_sanitizer.cpp core/inference/latency_tracker.cpp core/model/download_manager.cpp core/inference/acceleration_probe.cpp"
+$sources = "core/logging/logger.cpp core/runtime/event_bus.cpp core/runtime/runtime.cpp core/model/memory_guard.cpp core/model/model_manager.cpp core/session/session_manager.cpp core/retrieval/retrieval_stub.cpp core/monitoring/windows_monitor.cpp core/inference/gguf_loader.cpp core/inference/gguf_inference_engine.cpp core/inference/mmap_manager.cpp core/inference/token_streamer.cpp core/inference/kv_cache_manager.cpp core/scheduler/inference_scheduler.cpp core/embeddings/embedding_stub.cpp core/ingestion/chunker.cpp core/ingestion/ingestion_pipeline.cpp core/embeddings/embedding_engine.cpp core/retrieval/local_index.cpp core/retrieval/retrieval_engine.cpp core/cognition/context_governor.cpp core/cognition/grounded_pipeline.cpp core/watchdog/runtime_watchdog.cpp core/observability/telemetry.cpp core/voice/audio_buffer_manager.cpp core/voice/audio_session_manager.cpp core/voice/stt_engine.cpp core/voice/tts_engine.cpp core/voice/voice_orchestrator.cpp core/multimodal/image_context.cpp core/multimodal/image_decoder.cpp core/multimodal/image_pipeline.cpp core/multimodal/multimodal_context_governor.cpp core/ocr/ocr_engine.cpp core/vision/vision_engine.cpp core/vision/frame_governor.cpp core/vision/camera_session_manager.cpp core/model/model_registry.cpp core/model/tokenizer_manager.cpp core/model/model_lifecycle_controller.cpp core/inference/decode_governor.cpp core/inference/output_sanitizer.cpp core/inference/latency_tracker.cpp core/model/download_manager.cpp core/inference/acceleration_probe.cpp core/inference/nnapi_backend.cpp"
 $include = "/Icore"
 
 # Llama-dependent sources (compiled separately)
@@ -44,7 +44,6 @@ if ($LASTEXITCODE -ne 0) {
 $llama_objs = Get-ChildItem -Path obj/llama_objs -Filter *.obj | ForEach-Object { 'obj\llama_objs\' + $_.Name }
 $llama_obj_string = $llama_objs -join " "
 
-# Core benchmarks (no llama.lib required)
 $core_benchmarks = @(
     "download_1_5b_model",
     "load_benchmark", "memory_benchmark", "session_benchmark", "retrieval_stub_benchmark",
@@ -55,7 +54,10 @@ $core_benchmarks = @(
     "image_ingestion_benchmark", "ocr_latency_benchmark", "multimodal_scheduler_benchmark",
     "frame_pressure_benchmark", "thermal_vision_stress_benchmark", "camera_lifecycle_benchmark",
     "llm_lifecycle_benchmark", "storage_chaos_benchmark", "quarantine_adaptive_benchmark",
-    "watchdog_cooperative_benchmark", "telemetry_normalization_benchmark", "thermal_cycling_soak_benchmark"
+    "watchdog_cooperative_benchmark", "telemetry_normalization_benchmark", "thermal_cycling_soak_benchmark",
+    "nnapi_partitioning_benchmark", "nnapi_capability_score_benchmark", "nnapi_rejection_benchmark",
+    "nnapi_transfer_overhead_benchmark", "nnapi_prefill_decode_split_benchmark", "nnapi_residency_benchmark",
+    "nnapi_probe_timeout_benchmark", "nnapi_startup_latency_benchmark"
 )
 
 # Llama.cpp benchmarks (require llama.lib + llama_cpp_engine.obj)

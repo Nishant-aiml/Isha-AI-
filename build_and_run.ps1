@@ -1,0 +1,90 @@
+# Setup build variables using MSVC cl.exe
+$vcvars = "C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
+
+# Core sources - NO llama.cpp dependencies
+$sources = "core/logging/logger.cpp core/runtime/event_bus.cpp core/runtime/runtime.cpp core/model/memory_guard.cpp core/model/model_manager.cpp core/session/session_manager.cpp core/retrieval/retrieval_stub.cpp core/monitoring/windows_monitor.cpp core/inference/gguf_loader.cpp core/inference/gguf_inference_engine.cpp core/inference/mmap_manager.cpp core/inference/token_streamer.cpp core/inference/kv_cache_manager.cpp core/scheduler/inference_scheduler.cpp core/embeddings/embedding_stub.cpp core/ingestion/chunker.cpp core/ingestion/ingestion_pipeline.cpp core/embeddings/embedding_engine.cpp core/retrieval/local_index.cpp core/retrieval/retrieval_engine.cpp core/cognition/context_governor.cpp core/cognition/grounded_pipeline.cpp core/watchdog/runtime_watchdog.cpp core/observability/telemetry.cpp core/voice/audio_buffer_manager.cpp core/voice/audio_session_manager.cpp core/voice/stt_engine.cpp core/voice/tts_engine.cpp core/voice/voice_orchestrator.cpp core/multimodal/image_context.cpp core/multimodal/image_decoder.cpp core/multimodal/image_pipeline.cpp core/multimodal/multimodal_context_governor.cpp core/ocr/ocr_engine.cpp core/vision/vision_engine.cpp core/vision/frame_governor.cpp core/vision/camera_session_manager.cpp core/model/model_registry.cpp core/model/tokenizer_manager.cpp core/model/model_lifecycle_controller.cpp core/inference/decode_governor.cpp core/inference/output_sanitizer.cpp core/inference/latency_tracker.cpp core/model/download_manager.cpp"
+$include = "/Icore"
+
+# Llama-dependent sources (compiled separately)
+$llama_sources = "core/inference/llama_cpp_engine.cpp"
+$llama_include = "/Icore /Ithird_party/llama.cpp/include /Ithird_party/llama.cpp/common /Ithird_party/llama.cpp/ggml/include"
+$llama_defines = "/DGGML_USE_CPU /D_CRT_SECURE_NO_WARNINGS /DNOMINMAX"
+$llama_lib = "lib/llama.lib"
+
+# Ensure output and temp directories exist
+if (-not (Test-Path bin)) { New-Item -ItemType Directory -Path bin }
+if (-not (Test-Path obj)) { New-Item -ItemType Directory -Path obj }
+if (-not (Test-Path obj/llama_objs)) { New-Item -ItemType Directory -Path obj/llama_objs -Force }
+
+# Clean old root-level and obj-level benchmark object files to prevent linker collisions
+Get-ChildItem -Filter *.obj | Remove-Item -Force -ErrorAction SilentlyContinue
+Get-ChildItem -Path obj -Filter *.obj | Remove-Item -Force -ErrorAction SilentlyContinue
+Get-ChildItem -Path obj/llama_objs -Filter *.obj -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
+
+# Step 1: Compile core library (no llama.cpp deps)
+Write-Host "Compiling core library components into obj/..." -ForegroundColor Magenta
+cmd.exe /c "call `"$vcvars`" && cl.exe /EHsc /std:c++17 $include /c $sources /Foobj/"
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Core compilation FAILED" -ForegroundColor Red
+    exit 1
+}
+
+# List of core object files
+$objs = Get-ChildItem -Path obj -Filter *.obj | ForEach-Object { 'obj\' + $_.Name }
+$obj_string = $objs -join " "
+
+# Step 2: Compile llama-dependent sources (needs llama headers)
+Write-Host "Compiling llama-dependent sources..." -ForegroundColor Magenta
+cmd.exe /c "call `"$vcvars`" && cl.exe /EHsc /std:c++17 $llama_defines $llama_include /c $llama_sources /Foobj/llama_objs/"
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Llama source compilation FAILED" -ForegroundColor Red
+    exit 1
+}
+
+$llama_objs = Get-ChildItem -Path obj/llama_objs -Filter *.obj | ForEach-Object { 'obj\llama_objs\' + $_.Name }
+$llama_obj_string = $llama_objs -join " "
+
+# Core benchmarks (no llama.lib required)
+$core_benchmarks = @(
+    "download_1_5b_model",
+    "load_benchmark", "memory_benchmark", "session_benchmark", "retrieval_stub_benchmark",
+    "mmap_benchmark", "inference_benchmark", "kv_cache_benchmark", "streaming_benchmark",
+    "android_profile_benchmark", "inference_stress_benchmark", "context_budget_benchmark",
+    "retrieval_latency_benchmark", "thermal_stress_benchmark", "watchdog_recovery_benchmark",
+    "voice_latency_benchmark", "voice_lifecycle_benchmark", "realtime_hardening_benchmark",
+    "image_ingestion_benchmark", "ocr_latency_benchmark", "multimodal_scheduler_benchmark",
+    "frame_pressure_benchmark", "thermal_vision_stress_benchmark", "camera_lifecycle_benchmark",
+    "llm_lifecycle_benchmark", "storage_chaos_benchmark"
+)
+
+# Llama.cpp benchmarks (require llama.lib + llama_cpp_engine.obj)
+$llama_benchmarks = @(
+    "llm_integration_benchmark", "advanced_llm_stress_benchmark",
+    "compute_buffer_profiling_benchmark", "peak_memory_benchmark",
+    "llm_1_5b_integration_benchmark", "overlap_spike_benchmark",
+    "android_lmk_chaos_benchmark", "dual_model_tokenizer_benchmark",
+    "prompt_scale_benchmark"
+)
+
+foreach ($b in $core_benchmarks) {
+    Write-Host "Compiling and linking $b..." -ForegroundColor Cyan
+    cmd.exe /c "call `"$vcvars`" && cl.exe /EHsc /std:c++17 $include benchmarks/$b.cpp $obj_string /Febin/$b.exe /Foobj/"
+}
+
+foreach ($b in $llama_benchmarks) {
+    Write-Host "Compiling and linking $b (with llama.lib)..." -ForegroundColor Magenta
+    cmd.exe /c "call `"$vcvars`" && cl.exe /EHsc /std:c++17 $llama_defines $llama_include benchmarks/$b.cpp $obj_string $llama_obj_string $llama_lib advapi32.lib /Febin/$b.exe /Foobj/"
+}
+
+# Run them
+Write-Host "`n=== RUNNING BENCHMARKS ===`n" -ForegroundColor Green
+
+$all_benchmarks = $core_benchmarks + $llama_benchmarks
+foreach ($b in $all_benchmarks) {
+    if (Test-Path "bin/$b.exe") {
+        Write-Host "Running $b..." -ForegroundColor Yellow
+        & "bin/$b.exe"
+    } else {
+        Write-Host "Failed to build $b" -ForegroundColor Red
+    }
+}

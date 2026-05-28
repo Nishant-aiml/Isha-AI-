@@ -1,0 +1,17 @@
+# Added by code-review-graph
+.code-review-graph/
+
+# Build artifacts
+build/
+bin/
+obj/
+lib/
+
+# Models and binaries
+models/
+*.gguf
+*.exe
+*.lib
+*.obj
+*.pdb
+*.tmp

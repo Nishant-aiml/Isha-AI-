@@ -45,7 +45,8 @@ bool LlamaCppEngine::loadModel(const std::string& path) {
 
     // Step 1: Configure model parameters
     auto model_params = llama_model_default_params();
-    model_params.n_gpu_layers = engine_config_.n_gpu_layers; // 0 = CPU only
+    model_params.n_gpu_layers = (acceleration_config_.requested_backend != AccelerationBackend::CPU_ONLY)
+                                ? acceleration_config_.n_gpu_layers : 0;
     model_params.use_mmap = engine_config_.use_mmap;
 
     // Step 2: Load model
@@ -463,9 +464,11 @@ void LlamaCppEngine::setConfig(const LlamaEngineConfig& config) {
     engine_config_ = config;
     // Enforce hard limits
     engine_config_.n_ctx = std::min(engine_config_.n_ctx, 512);
-    engine_config_.n_gpu_layers = 0;
+    engine_config_.n_gpu_layers = (acceleration_config_.requested_backend != AccelerationBackend::CPU_ONLY)
+                                  ? acceleration_config_.n_gpu_layers : 0;
     ISHA_LOG_INFO("LlamaCppEngine", "Config set: n_ctx=" + std::to_string(engine_config_.n_ctx) +
-                  " gpu_layers=0 mmap=" + std::to_string(engine_config_.use_mmap));
+                  " gpu_layers=" + std::to_string(engine_config_.n_gpu_layers) +
+                  " mmap=" + std::to_string(engine_config_.use_mmap));
 }
 
 void LlamaCppEngine::setSamplingConfig(const SamplingConfig& sampling) {
@@ -620,6 +623,69 @@ bool LlamaCppEngine::canLoadOnTier() const {
     if (size == ModelSize::MEDIUM && profile_.tier == DeviceTier::LOW) return false;
     if (size == ModelSize::LARGE &&
         (profile_.tier == DeviceTier::LOW || profile_.tier == DeviceTier::MID)) return false;
+    return true;
+}
+
+void LlamaCppEngine::setAccelerationConfig(const AccelerationConfig& config) {
+    std::lock_guard<std::mutex> lock(engine_mutex_);
+    acceleration_config_ = config;
+    engine_config_.n_gpu_layers = (acceleration_config_.requested_backend != AccelerationBackend::CPU_ONLY)
+                                  ? acceleration_config_.n_gpu_layers : 0;
+}
+
+AccelerationBackend LlamaCppEngine::activeBackend() const {
+    std::lock_guard<std::mutex> lock(engine_mutex_);
+    return acceleration_config_.requested_backend;
+}
+
+bool LlamaCppEngine::fallbackToCPU() {
+    std::lock_guard<std::mutex> lock(engine_mutex_);
+    ISHA_LOG_WARN("LlamaCppEngine", "Forcing fallback to CPU_ONLY backend");
+    
+    kv_telemetry_.fallback_success_count.fetch_add(1, std::memory_order_relaxed);
+    
+    acceleration_config_.requested_backend = AccelerationBackend::CPU_ONLY;
+    acceleration_config_.n_gpu_layers = 0;
+    engine_config_.n_gpu_layers = 0;
+    
+    if (model_loaded_) {
+        std::string current_path = model_path_;
+        
+        cleanupContext();
+        if (model_) {
+            llama_model_free(model_);
+            model_ = nullptr;
+        }
+        vocab_ = nullptr;
+        model_loaded_.store(false, std::memory_order_relaxed);
+        
+        kv_telemetry_.teardown_success_count.fetch_add(1, std::memory_order_relaxed);
+        
+        auto params = llama_model_default_params();
+        params.n_gpu_layers = 0;
+        params.use_mmap = true;
+        
+        model_ = llama_model_load_from_file(current_path.c_str(), params);
+        if (!model_) {
+            kv_telemetry_.unrecoverable_deadlock_count.fetch_add(1, std::memory_order_relaxed);
+            return false;
+        }
+        vocab_ = llama_model_get_vocab(model_);
+        auto ctx_params = llama_context_default_params();
+        ctx_params.n_ctx = static_cast<uint32_t>(engine_config_.n_ctx);
+        ctx_params.n_batch = static_cast<uint32_t>(active_n_batch_);
+        ctx_params.n_threads = static_cast<uint32_t>(computeThreadCount());
+        ctx_params.n_threads_batch = ctx_params.n_threads;
+        
+        ctx_ = llama_init_from_model(model_, ctx_params);
+        if (!ctx_) {
+            kv_telemetry_.unrecoverable_deadlock_count.fetch_add(1, std::memory_order_relaxed);
+            return false;
+        }
+        model_loaded_.store(true, std::memory_order_relaxed);
+        
+        kv_telemetry_.recovery_success_count.fetch_add(1, std::memory_order_relaxed);
+    }
     return true;
 }
 

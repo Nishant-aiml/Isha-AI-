@@ -67,6 +67,7 @@ set(CORE_SOURCES
     core/inference/output_sanitizer.cpp
     core/inference/latency_tracker.cpp
     core/inference/llama_cpp_engine.cpp
+    core/inference/acceleration_probe.cpp
 
     # Phase 6 Download Manager
     core/model/download_manager.cpp
@@ -171,6 +172,19 @@ target_link_libraries(llm_lifecycle_benchmark PRIVATE isha_core)
 add_executable(llm_integration_benchmark benchmarks/llm_integration_benchmark.cpp)
 target_link_libraries(llm_integration_benchmark PRIVATE isha_core)
 
+# Phase 8 Benchmarks
+add_executable(quarantine_adaptive_benchmark benchmarks/quarantine_adaptive_benchmark.cpp)
+target_link_libraries(quarantine_adaptive_benchmark PRIVATE isha_core)
+
+add_executable(watchdog_cooperative_benchmark benchmarks/watchdog_cooperative_benchmark.cpp)
+target_link_libraries(watchdog_cooperative_benchmark PRIVATE isha_core)
+
+add_executable(telemetry_normalization_benchmark benchmarks/telemetry_normalization_benchmark.cpp)
+target_link_libraries(telemetry_normalization_benchmark PRIVATE isha_core)
+
+add_executable(thermal_cycling_soak_benchmark benchmarks/thermal_cycling_soak_benchmark.cpp)
+target_link_libraries(thermal_cycling_soak_benchmark PRIVATE isha_core)
+
 # Enable CTest
 enable_testing()
 add_test(NAME TestLoad COMMAND load_benchmark)
@@ -197,4 +211,8 @@ add_test(NAME TestFramePressure COMMAND frame_pressure_benchmark)
 add_test(NAME TestThermalVisionStress COMMAND thermal_vision_stress_benchmark)
 add_test(NAME TestCameraLifecycle COMMAND camera_lifecycle_benchmark)
 add_test(NAME TestLLMLifecycle COMMAND llm_lifecycle_benchmark)
+add_test(NAME TestQuarantineAdaptive COMMAND quarantine_adaptive_benchmark)
+add_test(NAME TestWatchdogCooperative COMMAND watchdog_cooperative_benchmark)
+add_test(NAME TestTelemetryNormalization COMMAND telemetry_normalization_benchmark)
+add_test(NAME TestThermalCyclingSoak COMMAND thermal_cycling_soak_benchmark)
 

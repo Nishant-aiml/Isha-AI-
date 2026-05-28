@@ -9,6 +9,7 @@
 #include "output_sanitizer.hpp"
 #include "kv_telemetry.hpp"
 #include "latency_tracker.hpp"
+#include "acceleration_backend.hpp"
 #include "../config/device_profile.hpp"
 #include <string>
 #include <mutex>
@@ -85,6 +86,11 @@ public:
     const DecodeGovernor& decodeGovernor() const { return decode_governor_; }
     const LatencyTracker& latencyTracker() const { return latency_tracker_; }
 
+    // Acceleration Support
+    void setAccelerationConfig(const AccelerationConfig& config);
+    AccelerationBackend activeBackend() const;
+    bool fallbackToCPU();
+
     // Model info
     int vocabSize() const;
     int contextSize() const;
@@ -121,6 +127,10 @@ private:
 
     // Thread safety
     mutable std::mutex engine_mutex_;
+
+    // Acceleration Members
+    AccelerationConfig acceleration_config_;
+    AccelerationCapability cached_capability_;
 
     // Telemetry
     std::atomic<uint32_t> total_generations_{0};

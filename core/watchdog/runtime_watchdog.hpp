@@ -8,6 +8,7 @@
 #include <atomic>
 #include <chrono>
 #include <memory>
+#include <functional>
 #include "../inference/cancellation_token.hpp"
 
 namespace isha {
@@ -53,6 +54,11 @@ public:
     
     bool isRunning() const { return is_running_.load(); }
 
+    void registerRecoveryCallback(std::function<void()> callback) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        recovery_callback_ = callback;
+    }
+
 private:
     void watchLoop();
     
@@ -63,6 +69,7 @@ private:
     std::thread watch_thread_;
     std::atomic<bool> is_running_;
     std::atomic<unsigned int> timeout_count_;
+    std::function<void()> recovery_callback_;
 };
 
 } // namespace isha

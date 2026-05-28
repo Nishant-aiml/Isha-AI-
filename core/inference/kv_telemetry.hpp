@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <atomic>
 #include <cstdint>
+#include <vector>
+#include <mutex>
 
 namespace isha {
 
@@ -25,7 +27,7 @@ struct KVTelemetry {
     std::atomic<uint32_t> mmap_reuse_count{0};
     std::atomic<uint32_t> mmap_remap_count{0};
 
-    // Peak transient memory tracking (FIXATION 1)
+    // Peak transient memory tracking
     std::atomic<uint64_t> peak_rss_bytes{0};
     std::atomic<uint64_t> peak_commit_bytes{0};
     std::atomic<uint64_t> peak_mmap_residency_bytes{0};
@@ -33,7 +35,7 @@ struct KVTelemetry {
     std::atomic<uint64_t> peak_cancellation_cleanup_bytes{0};
     std::atomic<uint64_t> peak_scheduler_staging_bytes{0};
 
-    // Phase-separated peak RSS (FIXATION 2)
+    // Phase-separated peak RSS
     std::atomic<uint64_t> peak_cold_load_bytes{0};
     std::atomic<uint64_t> peak_mmap_activation_bytes{0};
     std::atomic<uint64_t> peak_tokenizer_init_bytes{0};
@@ -44,7 +46,7 @@ struct KVTelemetry {
     std::atomic<uint64_t> peak_unload_phase_bytes{0};
     std::atomic<uint64_t> peak_reload_overlap_bytes{0};
 
-    // Phase timing breakdown (FIXATION 9)
+    // Phase timing breakdown
     std::atomic<float> phase_mmap_init_ms{0.0f};
     std::atomic<float> phase_tokenizer_init_ms{0.0f};
     std::atomic<float> phase_context_init_ms{0.0f};
@@ -53,11 +55,11 @@ struct KVTelemetry {
     std::atomic<float> phase_unload_ms{0.0f};
     std::atomic<float> phase_cleanup_ms{0.0f};
 
-    // Page-fault telemetry (FIXATION 6)
+    // Page-fault telemetry
     std::atomic<uint64_t> hard_page_faults{0};
     std::atomic<uint64_t> soft_page_faults{0};
 
-    // Prefill vs Decode split (FIXATION 4)
+    // Prefill vs Decode split
     std::atomic<float> prefill_latency_ms{0.0f};
     std::atomic<float> prefill_thermal_c{0.0f};
     std::atomic<uint64_t> prefill_page_faults{0};
@@ -66,10 +68,47 @@ struct KVTelemetry {
     std::atomic<float> decode_thermal_c{0.0f};
     std::atomic<uint64_t> decode_page_faults{0};
 
-    // Prefill telemetry (FIXATION 6)
+    // Prefill telemetry
     std::atomic<uint32_t> prefill_chunk_count{0};
     std::atomic<float> prefill_total_ms{0.0f};
     std::atomic<float> decode_total_ms{0.0f};
+
+    // Recovery Success Telemetry
+    std::atomic<uint32_t> watchdog_trigger_count{0};
+    std::atomic<uint32_t> backend_timeout_count{0};
+    std::atomic<float> queue_drain_latency_ms{0.0f};
+    std::atomic<uint32_t> teardown_success_count{0};
+    std::atomic<uint32_t> backend_reset_success_count{0};
+    std::atomic<uint32_t> fallback_success_count{0};
+    std::atomic<uint32_t> recovery_success_count{0};
+    std::atomic<uint32_t> unrecoverable_deadlock_count{0};
+    std::atomic<uint32_t> process_restart_count{0};
+
+    // Normalized efficiency
+    std::atomic<float> normalized_tokens_per_watt{0.0f};
+
+    // Memory Bandwidth Telemetry
+    std::atomic<float> tensor_transfer_overhead_ms{0.0f};
+    std::atomic<float> copy_latency_ms{0.0f};
+    std::atomic<uint64_t> residency_migration_cost_bytes{0};
+    std::atomic<uint32_t> queue_congestion_count{0};
+
+    // Rolling window jitter
+    float rolling_jitter_window[10] = {0.0f};
+    int rolling_jitter_index = 0;
+    mutable std::mutex jitter_mutex;
+
+    void addJitterSample(float sample_ms) {
+        std::lock_guard<std::mutex> lock(jitter_mutex);
+        rolling_jitter_window[rolling_jitter_index] = sample_ms;
+        rolling_jitter_index = (rolling_jitter_index + 1) % 10;
+        
+        float sum = 0.0f;
+        for (float val : rolling_jitter_window) {
+            sum += val;
+        }
+        decode_jitter_ms.store(sum / 10.0f, std::memory_order_relaxed);
+    }
 
     enum class Phase {
         ColdLoad,
@@ -215,31 +254,42 @@ struct KVTelemetry {
         prefill_total_ms.store(0.0f, std::memory_order_relaxed);
         decode_total_ms.store(0.0f, std::memory_order_relaxed);
 
+        watchdog_trigger_count.store(0, std::memory_order_relaxed);
+        backend_timeout_count.store(0, std::memory_order_relaxed);
+        queue_drain_latency_ms.store(0.0f, std::memory_order_relaxed);
+        teardown_success_count.store(0, std::memory_order_relaxed);
+        backend_reset_success_count.store(0, std::memory_order_relaxed);
+        fallback_success_count.store(0, std::memory_order_relaxed);
+        recovery_success_count.store(0, std::memory_order_relaxed);
+        unrecoverable_deadlock_count.store(0, std::memory_order_relaxed);
+        process_restart_count.store(0, std::memory_order_relaxed);
+
+        normalized_tokens_per_watt.store(0.0f, std::memory_order_relaxed);
+
+        tensor_transfer_overhead_ms.store(0.0f, std::memory_order_relaxed);
+        copy_latency_ms.store(0.0f, std::memory_order_relaxed);
+        residency_migration_cost_bytes.store(0, std::memory_order_relaxed);
+        queue_congestion_count.store(0, std::memory_order_relaxed);
+
         cleanup_latency_ms = 0.0f;
         fragmentation_ratio = 0.0f;
         reuse_ratio = 0.0f;
         cleanup_efficiency = 0.0f;
     }
 
-    // Snapshot for telemetry export
     struct Snapshot {
         uint32_t current, peak, reserved, allocations, cleanups, stale;
         uint64_t ggml_graph, scratch, compute, batch;
         uint32_t tokenizer_loads, tokenizer_active, mmap_reuse, mmap_remap;
         uint64_t peak_rss, peak_commit, peak_mmap_residency, peak_prefill, peak_cancellation_cleanup, peak_scheduler_staging;
-        
-        // Expanded Phase-separated fields
         uint64_t peak_cold_load, peak_mmap_activation, peak_tokenizer_init, peak_context_init;
         uint64_t peak_prefill_phase, peak_decode_phase, peak_cancellation_phase, peak_unload_phase, peak_reload_overlap;
-        
         float phase_mmap_init, phase_tokenizer_init, phase_context_init, phase_prefill, phase_decode, phase_unload, phase_cleanup;
         uint64_t hard_faults, soft_faults;
-        
         float prefill_lat, prefill_therm;
         uint64_t prefill_faults;
         float decode_tps, decode_jitter, decode_therm;
         uint64_t decode_faults;
-
         float cleanup_latency, fragmentation, reuse, efficiency;
     };
 
@@ -265,7 +315,6 @@ struct KVTelemetry {
             peak_prefill_bytes.load(std::memory_order_relaxed),
             peak_cancellation_cleanup_bytes.load(std::memory_order_relaxed),
             peak_scheduler_staging_bytes.load(std::memory_order_relaxed),
-            
             peak_cold_load_bytes.load(std::memory_order_relaxed),
             peak_mmap_activation_bytes.load(std::memory_order_relaxed),
             peak_tokenizer_init_bytes.load(std::memory_order_relaxed),
@@ -275,7 +324,6 @@ struct KVTelemetry {
             peak_cancellation_phase_bytes.load(std::memory_order_relaxed),
             peak_unload_phase_bytes.load(std::memory_order_relaxed),
             peak_reload_overlap_bytes.load(std::memory_order_relaxed),
-            
             phase_mmap_init_ms.load(std::memory_order_relaxed),
             phase_tokenizer_init_ms.load(std::memory_order_relaxed),
             phase_context_init_ms.load(std::memory_order_relaxed),
@@ -283,10 +331,8 @@ struct KVTelemetry {
             phase_decode_ms.load(std::memory_order_relaxed),
             phase_unload_ms.load(std::memory_order_relaxed),
             phase_cleanup_ms.load(std::memory_order_relaxed),
-            
             hard_page_faults.load(std::memory_order_relaxed),
             soft_page_faults.load(std::memory_order_relaxed),
-            
             prefill_latency_ms.load(std::memory_order_relaxed),
             prefill_thermal_c.load(std::memory_order_relaxed),
             prefill_page_faults.load(std::memory_order_relaxed),
@@ -294,7 +340,6 @@ struct KVTelemetry {
             decode_jitter_ms.load(std::memory_order_relaxed),
             decode_thermal_c.load(std::memory_order_relaxed),
             decode_page_faults.load(std::memory_order_relaxed),
-
             cleanup_latency_ms,
             fragmentation_ratio,
             reuse_ratio,

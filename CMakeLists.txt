@@ -72,6 +72,52 @@ set(CORE_SOURCES
 
     # Phase 6 Download Manager
     core/model/download_manager.cpp
+
+    # Phase 10 Survival Subsystem
+    core/survival/runtime_state_versioning.cpp
+    core/survival/cache_quarantine_manager.cpp
+    core/survival/atomic_model_extraction.cpp
+    core/survival/install_recovery_manager.cpp
+    core/survival/storage_speed_classifier.cpp
+    core/survival/startup_strategy_manager.cpp
+    core/survival/background_survival_manager.cpp
+    core/survival/survival_priority_mode.cpp
+    core/survival/local_data_integrity_manager.cpp
+
+    # Phase 10A Survival Subsystem
+    core/survival/battery_floor_policy.cpp
+    core/survival/storage_floor_policy.cpp
+    core/survival/write_budget_manager.cpp
+    core/survival/field_failure_escalation.cpp
+    core/survival/device_certification_matrix.cpp
+    core/survival/update_safety_window.cpp
+    core/survival/foreground_service_policy.cpp
+    core/survival/dynamic_degradation_ladder.cpp
+    core/survival/runtime_health_snapshot.cpp
+    core/survival/model_integrity_fastscan.cpp
+    core/survival/recovery_ux_manager.cpp
+
+    # Phase 10B Survival Subsystem
+    core/survival/thermal_recovery_window.cpp
+    core/survival/background_checkpoint_priority.cpp
+    core/survival/hard_recovery_mode.cpp
+    core/survival/storage_recovery_assistant.cpp
+    core/survival/device_thermal_ceiling_policy.cpp
+    core/survival/deployment_health_summary.cpp
+
+    # Phase 10C Survival Subsystem
+    core/survival/first_token_consistency_policy.cpp
+    core/survival/ui_starvation_guard.cpp
+    core/survival/model_recommendation_policy.cpp
+    core/survival/recovery_notification_policy.cpp
+    core/survival/memory_drift_trend_guard.cpp
+
+    # Phase 10C Patch Survival Subsystem
+    core/survival/install_time_device_profiler.cpp
+    core/survival/background_resume_latency_policy.cpp
+    core/survival/interruption_resilience_policy.cpp
+    core/survival/total_storage_governance.cpp
+    core/survival/telemetry_export_manager.cpp
 )
 
 # Platform specific resource monitor selection
@@ -211,6 +257,124 @@ target_link_libraries(nnapi_probe_timeout_benchmark PRIVATE isha_core)
 add_executable(nnapi_startup_latency_benchmark benchmarks/nnapi_startup_latency_benchmark.cpp)
 target_link_libraries(nnapi_startup_latency_benchmark PRIVATE isha_core)
 
+# Phase 8B Benchmarks
+add_executable(thermal_hysteresis_benchmark benchmarks/thermal_hysteresis_benchmark.cpp)
+target_link_libraries(thermal_hysteresis_benchmark PRIVATE isha_core)
+
+add_executable(lmk_integrity_benchmark benchmarks/lmk_integrity_benchmark.cpp)
+target_link_libraries(lmk_integrity_benchmark PRIVATE isha_core)
+
+add_executable(recovery_quality_drift_benchmark benchmarks/recovery_quality_drift_benchmark.cpp)
+target_link_libraries(recovery_quality_drift_benchmark PRIVATE isha_core)
+
+add_executable(page_fault_burst_benchmark benchmarks/page_fault_burst_benchmark.cpp)
+target_link_libraries(page_fault_burst_benchmark PRIVATE isha_core)
+
+add_executable(throughput_half_life_benchmark benchmarks/throughput_half_life_benchmark.cpp)
+target_link_libraries(throughput_half_life_benchmark PRIVATE isha_core)
+
+add_executable(startup_variance_benchmark benchmarks/startup_variance_benchmark.cpp)
+target_link_libraries(startup_variance_benchmark PRIVATE isha_core)
+
+add_executable(randomized_fallback_storm_benchmark benchmarks/randomized_fallback_storm_benchmark.cpp)
+target_link_libraries(randomized_fallback_storm_benchmark PRIVATE isha_core)
+
+add_executable(device_memory_collapse_benchmark benchmarks/device_memory_collapse_benchmark.cpp)
+target_link_libraries(device_memory_collapse_benchmark PRIVATE isha_core)
+
+add_executable(efficiency_decay_curve_benchmark benchmarks/efficiency_decay_curve_benchmark.cpp)
+target_link_libraries(efficiency_decay_curve_benchmark PRIVATE isha_core)
+
+# Phase 9 Benchmarks
+add_executable(apk_size_governance_benchmark benchmarks/apk_size_governance_benchmark.cpp)
+target_link_libraries(apk_size_governance_benchmark PRIVATE isha_core)
+
+add_executable(download_interruption_chaos_benchmark benchmarks/download_interruption_chaos_benchmark.cpp)
+target_link_libraries(download_interruption_chaos_benchmark PRIVATE isha_core)
+
+add_executable(rapid_model_switch_benchmark benchmarks/rapid_model_switch_benchmark.cpp)
+target_link_libraries(rapid_model_switch_benchmark PRIVATE isha_core)
+
+add_executable(install_update_recovery_benchmark benchmarks/install_update_recovery_benchmark.cpp)
+target_link_libraries(install_update_recovery_benchmark PRIVATE isha_core)
+
+add_executable(session_recovery_benchmark benchmarks/session_recovery_benchmark.cpp)
+target_link_libraries(session_recovery_benchmark PRIVATE isha_core)
+
+add_executable(permission_chaos_benchmark benchmarks/permission_chaos_benchmark.cpp)
+target_link_libraries(permission_chaos_benchmark PRIVATE isha_core)
+
+# Phase 10 Benchmarks
+add_executable(survival_benchmark benchmarks/survival_benchmark.cpp)
+target_link_libraries(survival_benchmark PRIVATE isha_core)
+
+add_executable(survival_a_benchmark benchmarks/survival_a_benchmark.cpp)
+target_link_libraries(survival_a_benchmark PRIVATE isha_core)
+
+# Phase 10B Benchmarks
+add_executable(thermal_recovery_window_benchmark benchmarks/thermal_recovery_window_benchmark.cpp)
+target_link_libraries(thermal_recovery_window_benchmark PRIVATE isha_core)
+
+add_executable(background_checkpoint_priority_benchmark benchmarks/background_checkpoint_priority_benchmark.cpp)
+target_link_libraries(background_checkpoint_priority_benchmark PRIVATE isha_core)
+
+add_executable(hard_recovery_mode_benchmark benchmarks/hard_recovery_mode_benchmark.cpp)
+target_link_libraries(hard_recovery_mode_benchmark PRIVATE isha_core)
+
+add_executable(storage_recovery_assistant_benchmark benchmarks/storage_recovery_assistant_benchmark.cpp)
+target_link_libraries(storage_recovery_assistant_benchmark PRIVATE isha_core)
+
+add_executable(device_thermal_ceiling_benchmark benchmarks/device_thermal_ceiling_benchmark.cpp)
+target_link_libraries(device_thermal_ceiling_benchmark PRIVATE isha_core)
+
+add_executable(deployment_health_summary_benchmark benchmarks/deployment_health_summary_benchmark.cpp)
+target_link_libraries(deployment_health_summary_benchmark PRIVATE isha_core)
+
+add_executable(uninstall_risk_policy_benchmark benchmarks/uninstall_risk_policy_benchmark.cpp)
+target_link_libraries(uninstall_risk_policy_benchmark PRIVATE isha_core)
+
+# Phase 10C Benchmarks
+add_executable(first_token_consistency_benchmark benchmarks/first_token_consistency_benchmark.cpp)
+target_link_libraries(first_token_consistency_benchmark PRIVATE isha_core)
+
+add_executable(ui_starvation_guard_benchmark benchmarks/ui_starvation_guard_benchmark.cpp)
+target_link_libraries(ui_starvation_guard_benchmark PRIVATE isha_core)
+
+add_executable(model_recommendation_policy_benchmark benchmarks/model_recommendation_policy_benchmark.cpp)
+target_link_libraries(model_recommendation_policy_benchmark PRIVATE isha_core)
+
+add_executable(recovery_notification_policy_benchmark benchmarks/recovery_notification_policy_benchmark.cpp)
+target_link_libraries(recovery_notification_policy_benchmark PRIVATE isha_core)
+
+add_executable(memory_drift_trend_guard_benchmark benchmarks/memory_drift_trend_guard_benchmark.cpp)
+target_link_libraries(memory_drift_trend_guard_benchmark PRIVATE isha_core)
+
+add_executable(apk_size_budget_policy_benchmark benchmarks/apk_size_budget_policy_benchmark.cpp)
+target_link_libraries(apk_size_budget_policy_benchmark PRIVATE isha_core)
+
+# Phase 10C Patch Benchmarks
+add_executable(install_time_device_profiler_benchmark benchmarks/install_time_device_profiler_benchmark.cpp)
+target_link_libraries(install_time_device_profiler_benchmark PRIVATE isha_core)
+
+add_executable(first_run_experience_policy_benchmark benchmarks/first_run_experience_policy_benchmark.cpp)
+target_link_libraries(first_run_experience_policy_benchmark PRIVATE isha_core)
+
+add_executable(background_resume_latency_benchmark benchmarks/background_resume_latency_benchmark.cpp)
+target_link_libraries(background_resume_latency_benchmark PRIVATE isha_core)
+
+add_executable(interruption_resilience_policy_benchmark benchmarks/interruption_resilience_policy_benchmark.cpp)
+target_link_libraries(interruption_resilience_policy_benchmark PRIVATE isha_core)
+
+add_executable(total_storage_governance_benchmark benchmarks/total_storage_governance_benchmark.cpp)
+target_link_libraries(total_storage_governance_benchmark PRIVATE isha_core)
+
+add_executable(playstore_readiness_policy_benchmark benchmarks/playstore_readiness_policy_benchmark.cpp)
+target_link_libraries(playstore_readiness_policy_benchmark PRIVATE isha_core)
+
+add_executable(telemetry_export_benchmark benchmarks/telemetry_export_benchmark.cpp)
+target_link_libraries(telemetry_export_benchmark PRIVATE isha_core)
+
+
 # Enable CTest
 enable_testing()
 add_test(NAME TestLoad COMMAND load_benchmark)
@@ -249,4 +413,51 @@ add_test(NAME TestNnapiPrefillDecodeSplit COMMAND nnapi_prefill_decode_split_ben
 add_test(NAME TestNnapiResidency COMMAND nnapi_residency_benchmark)
 add_test(NAME TestNnapiProbeTimeout COMMAND nnapi_probe_timeout_benchmark)
 add_test(NAME TestNnapiStartupLatency COMMAND nnapi_startup_latency_benchmark)
+add_test(NAME TestThermalHysteresis COMMAND thermal_hysteresis_benchmark)
+add_test(NAME TestLmkIntegrity COMMAND lmk_integrity_benchmark)
+add_test(NAME TestRecoveryQualityDrift COMMAND recovery_quality_drift_benchmark)
+add_test(NAME TestPageFaultBurst COMMAND page_fault_burst_benchmark)
+add_test(NAME TestThroughputHalfLife COMMAND throughput_half_life_benchmark)
+add_test(NAME TestStartupVariance COMMAND startup_variance_benchmark)
+add_test(NAME TestRandomizedFallbackStorm COMMAND randomized_fallback_storm_benchmark)
+add_test(NAME TestDeviceMemoryCollapse COMMAND device_memory_collapse_benchmark)
+add_test(NAME TestEfficiencyDecayCurve COMMAND efficiency_decay_curve_benchmark)
+
+# Phase 9 Tests
+add_test(NAME TestApkSize COMMAND apk_size_governance_benchmark)
+add_test(NAME TestDownloadInterruption COMMAND download_interruption_chaos_benchmark)
+add_test(NAME TestRapidModelSwitch COMMAND rapid_model_switch_benchmark)
+add_test(NAME TestInstallUpdateRecovery COMMAND install_update_recovery_benchmark)
+add_test(NAME TestSessionRecovery COMMAND session_recovery_benchmark)
+add_test(NAME TestPermissionChaos COMMAND permission_chaos_benchmark)
+
+# Phase 10 Tests
+add_test(NAME TestSurvival COMMAND survival_benchmark)
+add_test(NAME TestSurvivalA COMMAND survival_a_benchmark)
+
+# Phase 10B Tests
+add_test(NAME TestThermalRecoveryWindow COMMAND thermal_recovery_window_benchmark)
+add_test(NAME TestBackgroundCheckpointPriority COMMAND background_checkpoint_priority_benchmark)
+add_test(NAME TestHardRecoveryMode COMMAND hard_recovery_mode_benchmark)
+add_test(NAME TestStorageRecoveryAssistant COMMAND storage_recovery_assistant_benchmark)
+add_test(NAME TestDeviceThermalCeiling COMMAND device_thermal_ceiling_benchmark)
+add_test(NAME TestDeploymentHealthSummary COMMAND deployment_health_summary_benchmark)
+add_test(NAME TestUninstallRiskPolicy COMMAND uninstall_risk_policy_benchmark)
+
+# Phase 10C Tests
+add_test(NAME TestFirstTokenConsistency COMMAND first_token_consistency_benchmark)
+add_test(NAME TestUIStarvationGuard COMMAND ui_starvation_guard_benchmark)
+add_test(NAME TestModelRecommendationPolicy COMMAND model_recommendation_policy_benchmark)
+add_test(NAME TestRecoveryNotificationPolicy COMMAND recovery_notification_policy_benchmark)
+add_test(NAME TestMemoryDriftTrendGuard COMMAND memory_drift_trend_guard_benchmark)
+add_test(NAME TestApkSizeBudgetPolicy COMMAND apk_size_budget_policy_benchmark)
+
+# Phase 10C Patch Tests
+add_test(NAME TestInstallTimeDeviceProfiler COMMAND install_time_device_profiler_benchmark)
+add_test(NAME TestFirstRunExperiencePolicy COMMAND first_run_experience_policy_benchmark)
+add_test(NAME TestBackgroundResumeLatency COMMAND background_resume_latency_benchmark)
+add_test(NAME TestInterruptionResiliencePolicy COMMAND interruption_resilience_policy_benchmark)
+add_test(NAME TestTotalStorageGovernance COMMAND total_storage_governance_benchmark)
+add_test(NAME TestPlayStoreReadinessPolicy COMMAND playstore_readiness_policy_benchmark)
+add_test(NAME TestTelemetryExport COMMAND telemetry_export_benchmark)
 

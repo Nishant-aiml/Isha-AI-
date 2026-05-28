@@ -16,7 +16,7 @@ enum class FailureSeverity {
     SHADER_CRASH,
     INIT_CORRUPTION,
     
-    // NNAPI Structured Taxonomy
+    // NNAPI Structured Taxonomy (Phase 8A)
     UNSUPPORTED_OPERATOR,
     GRAPH_COMPILATION_FAILURE,
     TENSOR_SHAPE_MISMATCH,
@@ -27,7 +27,16 @@ enum class FailureSeverity {
     WATCHDOG_TRIGGER_FALLBACK,
     SYNCHRONIZATION_FAILURE,
     STAGING_ALLOCATION_FAILURE,
-    BACKEND_RESET_FAILURE
+    BACKEND_RESET_FAILURE,
+
+    // Phase 8B: Android Device Chaos Taxonomy
+    LIFECYCLE_INTERRUPT_CRASH,   // Backend crash on app background/foreground
+    LMK_EVICTION_CORRUPTION,     // OOM eviction corrupted backend state
+    VENDOR_DRIVER_INSTABILITY,   // OEM-specific repeated driver failures
+    TOK_PER_WATT_DEGRADATION,    // Efficiency below CPU baseline
+    PARTITION_OVERHEAD_EXCESS,   // Partition overhead exceeds adaptive threshold
+    SOAK_THERMAL_COLLAPSE,       // Thermal collapse detected during long soak
+    STARTUP_LATENCY_EXCESS       // Cold-start exceeds 500ms ceiling
 };
 
 struct QuarantineRecord {
@@ -84,8 +93,31 @@ public:
             case FailureSeverity::WATCHDOG_TRIGGER_FALLBACK:
             case FailureSeverity::STAGING_ALLOCATION_FAILURE:
             case FailureSeverity::BACKEND_RESET_FAILURE:
+            case FailureSeverity::LMK_EVICTION_CORRUPTION:
+            case FailureSeverity::VENDOR_DRIVER_INSTABILITY:
                 duration = std::chrono::seconds(86400);
                 penalty = 0.9f;
+                break;
+            // Phase 8B specific cases
+            case FailureSeverity::LIFECYCLE_INTERRUPT_CRASH:
+                duration = std::chrono::seconds(3600);
+                penalty = 0.4f;
+                break;
+            case FailureSeverity::TOK_PER_WATT_DEGRADATION:
+                duration = std::chrono::seconds(1800);
+                penalty = 0.3f;
+                break;
+            case FailureSeverity::PARTITION_OVERHEAD_EXCESS:
+                duration = std::chrono::seconds(300);
+                penalty = 0.2f;
+                break;
+            case FailureSeverity::SOAK_THERMAL_COLLAPSE:
+                duration = std::chrono::seconds(7200);
+                penalty = 0.5f;
+                break;
+            case FailureSeverity::STARTUP_LATENCY_EXCESS:
+                duration = std::chrono::seconds(600);
+                penalty = 0.25f;
                 break;
         }
 

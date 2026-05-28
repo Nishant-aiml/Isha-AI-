@@ -93,10 +93,118 @@ struct KVTelemetry {
     std::atomic<uint64_t> residency_migration_cost_bytes{0};
     std::atomic<uint32_t> queue_congestion_count{0};
 
+    // ===== Phase 8B: Android Device Chaos Telemetry =====
+
+    // Fixation 1: Adaptive partition overhead
+    std::atomic<float> adaptive_partition_threshold{0.30f};   // dynamically tuned
+    std::atomic<float> partition_overhead_pct{0.0f};          // measured overhead %
+    std::atomic<uint32_t> adaptive_threshold_updates{0};      // threshold recalc count
+
+    // Fixation 2: Thermal hysteresis
+    std::atomic<float> thermal_decay_rate_c_per_min{0.0f};    // rate of thermal rise
+    std::atomic<float> tok_per_s_at_thermal_throttle{0.0f};   // throughput at throttle
+    std::atomic<float> thermal_stable_window_s{0.0f};         // stable temp duration before re-enable
+    std::atomic<uint32_t> thermal_oscillation_events{0};      // oscillate suppress count
+    std::atomic<bool> thermal_hysteresis_gate{false};         // NNAPI blocked until cleared
+
+    // Fixation 3: LMK integrity checksums
+    std::atomic<uint32_t> lmk_eviction_events{0};             // Android LMK eviction counter
+    std::atomic<uint32_t> lmk_integrity_pass_count{0};        // post-LMK checks passed
+    std::atomic<uint32_t> lmk_integrity_fail_count{0};        // post-LMK partial corruption detected
+
+    // Fixation 4: Recovery quality drift
+    std::atomic<float> fallback_latency_drift_ms{0.0f};       // drift from baseline fallback latency
+    std::atomic<float> teardown_latency_drift_ms{0.0f};       // drift from baseline teardown latency
+    std::atomic<float> reset_latency_drift_ms{0.0f};          // drift from baseline reset latency
+    std::atomic<float> scheduler_recovery_latency_ms{0.0f};   // scheduler queue recovery latency
+    std::atomic<float> cancellation_propagation_latency_ms{0.0f}; // cancel-to-acknowledge latency
+    std::atomic<uint32_t> watchdog_escalation_frequency{0};   // escalations per soak window
+    std::atomic<float> recovery_success_degradation{0.0f};    // success rate drop vs baseline
+
+    // Fixation 5: Page-fault burst detection
+    std::atomic<uint32_t> hard_fault_burst_count{0};          // burst events (clustered spikes)
+    std::atomic<uint32_t> soft_fault_burst_count{0};          // burst events (clustered spikes)
+    std::atomic<float> fault_burst_duration_ms{0.0f};         // duration of last burst
+    std::atomic<float> burst_decode_jitter_ms{0.0f};          // decode jitter caused by burst
+    std::atomic<float> burst_scheduler_jitter_ms{0.0f};       // scheduler jitter caused by burst
+    std::atomic<uint64_t> burst_migration_spike_bytes{0};     // migration bytes during burst
+
+    // Fixation 6: Thermal throughput half-life
+    std::atomic<float> throughput_half_life_s{0.0f};          // seconds until tok/s halves
+    std::atomic<float> initial_tok_per_s{0.0f};               // baseline at soak start
+    std::atomic<float> current_tok_per_s{0.0f};               // live throughput reading
+
+    // Fixation 7: First-token latency consistency
+    std::atomic<float> first_token_p50_ms{0.0f};              // P50 first-token latency
+    std::atomic<float> first_token_p95_ms{0.0f};              // P95 first-token latency
+    std::atomic<float> cold_start_variance_ms{0.0f};          // variance across cold starts
+    std::atomic<float> warm_start_variance_ms{0.0f};          // variance across warm starts
+    std::atomic<float> graph_compile_variance_ms{0.0f};       // variance in graph compile times
+    std::atomic<uint32_t> startup_latency_samples{0};         // samples collected
+
+    // Fixation 8: Fallback storm tracking
+    std::atomic<uint32_t> fallback_storm_count{0};            // storm cycles triggered
+    std::atomic<float> fallback_storm_recovery_latency_ms{0.0f}; // avg recovery after storm
+    std::atomic<uint32_t> acceleration_rejected_auto_count{0}; // auto-rejection triggers
+
+    // Fixation 9: Device-tier memory collapse
+    std::atomic<uint64_t> peak_staging_pressure_bytes{0};     // peak staging alloc under collapse
+    std::atomic<uint32_t> tokenizer_reload_count{0};          // forced reloads under pressure
+    std::atomic<float> allocator_churn_rate{0.0f};            // allocs/sec during collapse
+    std::atomic<uint32_t> session_integrity_failures{0};      // session corrupted after collapse
+
+    // Fixation 10: Efficiency decay curves
+    std::atomic<float> battery_drain_pct_per_hour{0.0f};      // sustained drain rate
+    std::atomic<float> scheduler_jitter_p99_ms{0.0f};         // P99 scheduler jitter
+    std::atomic<float> lifecycle_interruption_latency_ms{0.0f}; // latency per lifecycle event
+    std::atomic<uint32_t> lifecycle_interruption_count{0};    // background/foreground events
+    std::atomic<float> thermal_adjusted_tok_per_watt{0.0f};   // tok/watt after thermal correction
+    std::atomic<float> fallback_adjusted_tok_per_watt{0.0f};  // tok/watt after fallback overhead
+    std::atomic<float> efficiency_collapse_rate{0.0f};        // tok/watt drop rate over soak
+    std::atomic<float> efficiency_after_cooldown{0.0f};       // tok/watt recovery post-cooldown
+    std::atomic<float> startup_cold_latency_ms{0.0f};         // full cold-start to first-token
+
     // Rolling window jitter
     float rolling_jitter_window[10] = {0.0f};
     int rolling_jitter_index = 0;
     mutable std::mutex jitter_mutex;
+
+    // Rolling window for P99 scheduler jitter (16-sample)
+    float scheduler_jitter_window[16] = {0.0f};
+    int scheduler_jitter_index = 0;
+
+    void addSchedulerJitterSample(float sample_ms) {
+        std::lock_guard<std::mutex> lock(jitter_mutex);
+        scheduler_jitter_window[scheduler_jitter_index] = sample_ms;
+        scheduler_jitter_index = (scheduler_jitter_index + 1) % 16;
+        // Approximate P99: max of window (conservative for 16 samples)
+        float p99 = 0.0f;
+        for (float v : scheduler_jitter_window) p99 = std::max(p99, v);
+        scheduler_jitter_p99_ms.store(p99, std::memory_order_relaxed);
+    }
+
+    // First-token latency reservoir for P50/P95
+    float first_token_samples[64] = {0.0f};
+    int first_token_sample_idx = 0;
+    int first_token_sample_count = 0;
+
+    void addFirstTokenSample(float latency_ms) {
+        std::lock_guard<std::mutex> lock(jitter_mutex);
+        first_token_samples[first_token_sample_idx] = latency_ms;
+        first_token_sample_idx = (first_token_sample_idx + 1) % 64;
+        if (first_token_sample_count < 64) first_token_sample_count++;
+        startup_latency_samples.fetch_add(1, std::memory_order_relaxed);
+
+        // Compute P50 and P95 from filled portion
+        int n = first_token_sample_count;
+        float sorted[64];
+        std::copy(first_token_samples, first_token_samples + n, sorted);
+        std::sort(sorted, sorted + n);
+        first_token_p50_ms.store(sorted[n / 2], std::memory_order_relaxed);
+        int p95_idx = static_cast<int>(n * 0.95f);
+        if (p95_idx >= n) p95_idx = n - 1;
+        first_token_p95_ms.store(sorted[p95_idx], std::memory_order_relaxed);
+    }
 
     void addJitterSample(float sample_ms) {
         std::lock_guard<std::mutex> lock(jitter_mutex);
@@ -270,6 +378,62 @@ struct KVTelemetry {
         copy_latency_ms.store(0.0f, std::memory_order_relaxed);
         residency_migration_cost_bytes.store(0, std::memory_order_relaxed);
         queue_congestion_count.store(0, std::memory_order_relaxed);
+
+        // Phase 8B resets
+        adaptive_partition_threshold.store(0.30f, std::memory_order_relaxed);
+        partition_overhead_pct.store(0.0f, std::memory_order_relaxed);
+        adaptive_threshold_updates.store(0, std::memory_order_relaxed);
+        thermal_decay_rate_c_per_min.store(0.0f, std::memory_order_relaxed);
+        tok_per_s_at_thermal_throttle.store(0.0f, std::memory_order_relaxed);
+        thermal_stable_window_s.store(0.0f, std::memory_order_relaxed);
+        thermal_oscillation_events.store(0, std::memory_order_relaxed);
+        thermal_hysteresis_gate.store(false, std::memory_order_relaxed);
+        lmk_eviction_events.store(0, std::memory_order_relaxed);
+        lmk_integrity_pass_count.store(0, std::memory_order_relaxed);
+        lmk_integrity_fail_count.store(0, std::memory_order_relaxed);
+        fallback_latency_drift_ms.store(0.0f, std::memory_order_relaxed);
+        teardown_latency_drift_ms.store(0.0f, std::memory_order_relaxed);
+        reset_latency_drift_ms.store(0.0f, std::memory_order_relaxed);
+        scheduler_recovery_latency_ms.store(0.0f, std::memory_order_relaxed);
+        cancellation_propagation_latency_ms.store(0.0f, std::memory_order_relaxed);
+        watchdog_escalation_frequency.store(0, std::memory_order_relaxed);
+        recovery_success_degradation.store(0.0f, std::memory_order_relaxed);
+        hard_fault_burst_count.store(0, std::memory_order_relaxed);
+        soft_fault_burst_count.store(0, std::memory_order_relaxed);
+        fault_burst_duration_ms.store(0.0f, std::memory_order_relaxed);
+        burst_decode_jitter_ms.store(0.0f, std::memory_order_relaxed);
+        burst_scheduler_jitter_ms.store(0.0f, std::memory_order_relaxed);
+        burst_migration_spike_bytes.store(0, std::memory_order_relaxed);
+        throughput_half_life_s.store(0.0f, std::memory_order_relaxed);
+        initial_tok_per_s.store(0.0f, std::memory_order_relaxed);
+        current_tok_per_s.store(0.0f, std::memory_order_relaxed);
+        first_token_p50_ms.store(0.0f, std::memory_order_relaxed);
+        first_token_p95_ms.store(0.0f, std::memory_order_relaxed);
+        cold_start_variance_ms.store(0.0f, std::memory_order_relaxed);
+        warm_start_variance_ms.store(0.0f, std::memory_order_relaxed);
+        graph_compile_variance_ms.store(0.0f, std::memory_order_relaxed);
+        startup_latency_samples.store(0, std::memory_order_relaxed);
+        fallback_storm_count.store(0, std::memory_order_relaxed);
+        fallback_storm_recovery_latency_ms.store(0.0f, std::memory_order_relaxed);
+        acceleration_rejected_auto_count.store(0, std::memory_order_relaxed);
+        peak_staging_pressure_bytes.store(0, std::memory_order_relaxed);
+        tokenizer_reload_count.store(0, std::memory_order_relaxed);
+        allocator_churn_rate.store(0.0f, std::memory_order_relaxed);
+        session_integrity_failures.store(0, std::memory_order_relaxed);
+        battery_drain_pct_per_hour.store(0.0f, std::memory_order_relaxed);
+        scheduler_jitter_p99_ms.store(0.0f, std::memory_order_relaxed);
+        lifecycle_interruption_latency_ms.store(0.0f, std::memory_order_relaxed);
+        lifecycle_interruption_count.store(0, std::memory_order_relaxed);
+        thermal_adjusted_tok_per_watt.store(0.0f, std::memory_order_relaxed);
+        fallback_adjusted_tok_per_watt.store(0.0f, std::memory_order_relaxed);
+        efficiency_collapse_rate.store(0.0f, std::memory_order_relaxed);
+        efficiency_after_cooldown.store(0.0f, std::memory_order_relaxed);
+        startup_cold_latency_ms.store(0.0f, std::memory_order_relaxed);
+        first_token_sample_idx = 0;
+        first_token_sample_count = 0;
+        scheduler_jitter_index = 0;
+        for (float& v : first_token_samples) v = 0.0f;
+        for (float& v : scheduler_jitter_window) v = 0.0f;
 
         cleanup_latency_ms = 0.0f;
         fragmentation_ratio = 0.0f;

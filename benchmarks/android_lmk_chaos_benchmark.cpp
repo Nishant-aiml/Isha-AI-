@@ -72,7 +72,7 @@ void testLmkChaos() {
         // 2. Aggressive OEM trim simulation
         {
             bool event_received = false;
-            EventBus::getInstance().subscribe(EventType::MODEL_UNLOADING, [&](const Event& ev) {
+            EventBus::getInstance().subscribe(EventType::MEMORY_PRESSURE_CRITICAL, "LmkChaosBenchmark", [&](const Event& ev) {
                 event_received = true;
                 engine->unloadModel();
             });

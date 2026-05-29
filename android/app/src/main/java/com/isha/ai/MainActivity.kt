@@ -337,13 +337,12 @@ class MainActivity : Activity() {
                         val text = parts[1]
                         val score = parts[2].toDoubleOrNull() ?: 0.0
 
-                        // Strict threshold evaluation (Issue 10)
-                        if (score >= 0.35) {
-                            citationsList.add("Source: $chunkId (score: %.2f)".format(score))
-                            contextBuilder.append(text).append("\n\n")
-                            contextLength += text.length
-                            if (contextLength >= 6000 || citationsList.size >= 4) break
-                        }
+                        // JNI retrieval already filters semantic matches at 0.35
+                        // and applies BM25-lite fallback; accept all JNI outputs here.
+                        citationsList.add("Source: $chunkId (score: %.2f)".format(score))
+                        contextBuilder.append(text).append("\n\n")
+                        contextLength += text.length
+                        if (contextLength >= 6000 || citationsList.size >= 4) break
                     }
                 }
             }

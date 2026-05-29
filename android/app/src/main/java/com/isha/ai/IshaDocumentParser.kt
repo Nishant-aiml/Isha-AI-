@@ -2,13 +2,18 @@ package com.isha.ai
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import java.io.BufferedReader
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.io.InputStreamReader
+import java.util.zip.Inflater
 import java.util.zip.ZipInputStream
 import java.util.regex.Pattern
 
 object IshaDocumentParser {
+    private const val TAG = "IshaDocumentParser"
 
     interface ParserListener {
         fun onPageParsed(pageNum: Int, text: String)
@@ -30,7 +35,6 @@ object IshaDocumentParser {
                     parsePdfStreamed(inputStream, listener)
                 }
                 else -> {
-                    // Fallback to text
                     parseTxtStreamed(inputStream, listener)
                 }
             }
@@ -46,7 +50,6 @@ object IshaDocumentParser {
         var charCount = 0
         val pageBuffer = StringBuilder()
 
-        // Page size boundary proxy for plain text: every ~1500 chars is treated as a "page"
         while (reader.readLine().also { line = it } != null) {
             pageBuffer.append(line).append("\n")
             charCount += line!!.length + 1
@@ -79,7 +82,6 @@ object IshaDocumentParser {
         }
         zipInputStream.close()
 
-        // Parse paragraphs using regex from word/document.xml
         val docXml = xmlContent.toString()
         val matcher = Pattern.compile("<w:t.*?>(.*?)</w:t>").matcher(docXml)
         val textBuffer = StringBuilder()
@@ -102,49 +104,135 @@ object IshaDocumentParser {
     }
 
     private fun parsePdfStreamed(inputStream: InputStream, listener: ParserListener) {
-        val reader = BufferedReader(InputStreamReader(inputStream, "ISO-8859-1"))
-        val pdfContent = StringBuilder()
-        var line: String?
-        
-        // Read in blocks to scan for text streams
-        while (reader.readLine().also { line = it } != null) {
-            pdfContent.append(line).append("\n")
-        }
-        
-        val pdfText = pdfContent.toString()
-        // Extract text streams between BT and ET
-        val matcher = Pattern.compile("(?s)BT(.*?)ET").matcher(pdfText)
-        var pageNum = 1
-        val pageBuffer = StringBuilder()
-        var charCount = 0
+        try {
+            // Read PDF bytes entirely to scan for objects/streams
+            val pdfBytes = inputStream.readBytes()
+            var pageNum = 1
+            val pageBuffer = StringBuilder()
+            var charCount = 0
 
-        while (matcher.find()) {
-            val stream = matcher.group(1) ?: continue
-            // Extract content inside Tj or TJ operators: (text)Tj or [(text1)...(text2)]TJ
-            val textMatcher = Pattern.compile("\\((.*?)\\)\\s*T[jJ]").matcher(stream)
-            while (textMatcher.find()) {
-                val matchText = textMatcher.group(1) ?: continue
-                // Filter out PDF control chars
-                val cleanText = matchText.replace("\\\\", "").replace("\\(", "(").replace("\\)", ")")
-                pageBuffer.append(cleanText).append(" ")
-                charCount += cleanText.length
-                
-                // Stream Page when buffer size reached
-                if (charCount >= 1200) {
-                    listener.onPageParsed(pageNum++, pageBuffer.toString().trim())
-                    pageBuffer.setLength(0)
-                    charCount = 0
+            var index = 0
+            while (index < pdfBytes.size) {
+                // Search for "stream" block start
+                val streamStart = findSequence(pdfBytes, "stream".toByteArray(), index)
+                if (streamStart == -1) break
+
+                // Find endstream
+                val streamEnd = findSequence(pdfBytes, "endstream".toByteArray(), streamStart + 6)
+                if (streamEnd == -1) break
+
+                // Extract stream header properties to check if FlateDecode is active
+                val headerStart = maxOf(0, streamStart - 128)
+                val headerText = String(pdfBytes, headerStart, streamStart - headerStart, Charsets.US_ASCII)
+
+                val isFlate = headerText.contains("/FlateDecode")
+
+                // Extract raw stream bytes (skip leading \r\n or \n)
+                var dataOffset = streamStart + 6
+                if (pdfBytes[dataOffset] == '\r'.toByte()) dataOffset++
+                if (pdfBytes[dataOffset] == '\n'.toByte()) dataOffset++
+
+                val dataLength = streamEnd - dataOffset
+                if (dataLength > 0) {
+                    val streamData = ByteArray(dataLength)
+                    System.arraycopy(pdfBytes, dataOffset, streamData, 0, dataLength)
+
+                    val textBytes = if (isFlate) {
+                        decompressFlate(streamData)
+                    } else {
+                        streamData
+                    }
+
+                    if (textBytes != null) {
+                        val textStr = String(textBytes, Charsets.UTF_8)
+                        // Scan for PDF text strings inside Tj/TJ/etc.
+                        val cleanText = extractPdfTextFromStream(textStr)
+                        if (cleanText.isNotEmpty()) {
+                            pageBuffer.append(cleanText).append(" ")
+                            charCount += cleanText.length
+
+                            if (charCount >= 1500) {
+                                listener.onPageParsed(pageNum++, pageBuffer.toString().trim())
+                                pageBuffer.setLength(0)
+                                charCount = 0
+                            }
+                        }
+                    }
+                }
+
+                index = streamEnd + 9
+            }
+
+            if (pageBuffer.isNotEmpty()) {
+                listener.onPageParsed(pageNum, pageBuffer.toString().trim())
+            }
+
+            if (pageNum == 1 && pageBuffer.isEmpty()) {
+                Log.w(TAG, "Zero text parsed from PDF objects. Falling back to raw sequence scanning.")
+                // Simple raw fallback
+                val rawText = String(pdfBytes, Charsets.ISO_8859_1)
+                val cleanText = extractPdfTextFromStream(rawText)
+                if (cleanText.isNotEmpty()) {
+                    listener.onPageParsed(1, cleanText)
+                } else {
+                    listener.onPageParsed(1, "[Scanned or Non-text PDF document content]")
                 }
             }
+        } catch (e: Exception) {
+            Log.e(TAG, "PDF parsing error: ${e.message}", e)
+            listener.onPageParsed(1, "[Error parsing PDF document content]")
         }
-        
-        if (pageBuffer.isNotEmpty()) {
-            listener.onPageParsed(pageNum, pageBuffer.toString().trim())
+    }
+
+    private fun findSequence(data: ByteArray, seq: ByteArray, startIndex: Int): Int {
+        if (seq.isEmpty()) return -1
+        for (i in startIndex..data.size - seq.size) {
+            var match = true
+            for (j in seq.indices) {
+                if (data[i + j] != seq[j]) {
+                    match = false
+                    break
+                }
+            }
+            if (match) return i
         }
-        
-        // Fallback for scanned/binary PDFs
-        if (pageNum == 1 && pageBuffer.isEmpty()) {
-            listener.onPageParsed(1, "[Scanned or Non-text PDF document content]")
+        return -1
+    }
+
+    private fun decompressFlate(data: ByteArray): ByteArray? {
+        val decompressor = Inflater()
+        decompressor.setInput(data)
+        val bos = ByteArrayOutputStream(data.size * 2)
+        val buf = ByteArray(4096)
+        try {
+            while (!decompressor.finished()) {
+                val count = decompressor.inflate(buf)
+                if (count == 0 && decompressor.needsInput()) {
+                    break
+                }
+                bos.write(buf, 0, count)
+            }
+            bos.close()
+            return bos.toByteArray()
+        } catch (e: Exception) {
+            // Return null if decompression fails (corrupted or uncompressed)
+            return null
+        } finally {
+            decompressor.end()
         }
+    }
+
+    private fun extractPdfTextFromStream(streamText: String): String {
+        val sb = StringBuilder()
+        // Extract content inside parentheses: e.g. (text) Tj or [(text1)-123(text2)] TJ
+        val matcher = Pattern.compile("\\((.*?)\\)\\s*T[jJ]").matcher(streamText)
+        while (matcher.find()) {
+            val text = matcher.group(1) ?: continue
+            val clean = text.replace("\\\\", "").replace("\\(", "(").replace("\\)", ")")
+            if (clean.length > 2 && !clean.all { it.isDigit() || it.isWhitespace() || it == '-' || it == '/' }) {
+                sb.append(clean).append(" ")
+            }
+        }
+        return sb.toString().trim()
     }
 }

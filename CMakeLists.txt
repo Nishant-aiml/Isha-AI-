@@ -69,6 +69,7 @@ set(CORE_SOURCES
     core/inference/llama_cpp_engine.cpp
     core/inference/acceleration_probe.cpp
     core/inference/nnapi_backend.cpp
+    core/inference/ios_coreml_manager.cpp
 
     # Phase 6 Download Manager
     core/model/download_manager.cpp
@@ -118,6 +119,16 @@ set(CORE_SOURCES
     core/survival/interruption_resilience_policy.cpp
     core/survival/total_storage_governance.cpp
     core/survival/telemetry_export_manager.cpp
+
+    # Phase 11A Survival Subsystem
+    core/survival/apk_update_migration_validation.cpp
+    core/survival/battery_lifetime_observer.cpp
+    core/survival/install_failure_recovery.cpp
+    core/survival/session_durability_validation.cpp
+    core/survival/first_week_retention_validation.cpp
+    core/survival/storage_fragmentation_guard.cpp
+    core/survival/oem_update_regression_policy.cpp
+    core/survival/reinstall_recovery_policy.cpp
 )
 
 # Platform specific resource monitor selection
@@ -215,6 +226,9 @@ target_link_libraries(camera_lifecycle_benchmark PRIVATE isha_core)
 # Phase 6 Benchmarks
 add_executable(llm_lifecycle_benchmark benchmarks/llm_lifecycle_benchmark.cpp)
 target_link_libraries(llm_lifecycle_benchmark PRIVATE isha_core)
+
+add_executable(ios_coreml_manager_benchmark benchmarks/ios_coreml_manager_benchmark.cpp)
+target_link_libraries(ios_coreml_manager_benchmark PRIVATE isha_core)
 
 add_executable(llm_integration_benchmark benchmarks/llm_integration_benchmark.cpp)
 target_link_libraries(llm_integration_benchmark PRIVATE isha_core)
@@ -374,6 +388,37 @@ target_link_libraries(playstore_readiness_policy_benchmark PRIVATE isha_core)
 add_executable(telemetry_export_benchmark benchmarks/telemetry_export_benchmark.cpp)
 target_link_libraries(telemetry_export_benchmark PRIVATE isha_core)
 
+add_executable(apk_update_migration_validation_benchmark benchmarks/apk_update_migration_validation_benchmark.cpp)
+target_link_libraries(apk_update_migration_validation_benchmark PRIVATE isha_core)
+
+add_executable(battery_lifetime_observer_benchmark benchmarks/battery_lifetime_observer_benchmark.cpp)
+target_link_libraries(battery_lifetime_observer_benchmark PRIVATE isha_core)
+
+add_executable(install_failure_recovery_benchmark benchmarks/install_failure_recovery_benchmark.cpp)
+target_link_libraries(install_failure_recovery_benchmark PRIVATE isha_core)
+
+add_executable(consumer_expectation_policy_benchmark benchmarks/consumer_expectation_policy_benchmark.cpp)
+target_link_libraries(consumer_expectation_policy_benchmark PRIVATE isha_core)
+
+add_executable(session_durability_validation_benchmark benchmarks/session_durability_validation_benchmark.cpp)
+target_link_libraries(session_durability_validation_benchmark PRIVATE isha_core)
+
+add_executable(ship_blocker_matrix_benchmark benchmarks/ship_blocker_matrix_benchmark.cpp)
+target_link_libraries(ship_blocker_matrix_benchmark PRIVATE isha_core)
+
+add_executable(first_week_retention_validation_benchmark benchmarks/first_week_retention_validation_benchmark.cpp)
+target_link_libraries(first_week_retention_validation_benchmark PRIVATE isha_core)
+
+add_executable(storage_fragmentation_guard_benchmark benchmarks/storage_fragmentation_guard_benchmark.cpp)
+target_link_libraries(storage_fragmentation_guard_benchmark PRIVATE isha_core)
+
+add_executable(oem_update_regression_policy_benchmark benchmarks/oem_update_regression_policy_benchmark.cpp)
+target_link_libraries(oem_update_regression_policy_benchmark PRIVATE isha_core)
+
+add_executable(reinstall_recovery_policy_benchmark benchmarks/reinstall_recovery_policy_benchmark.cpp)
+target_link_libraries(reinstall_recovery_policy_benchmark PRIVATE isha_core)
+
+
 
 # Enable CTest
 enable_testing()
@@ -401,6 +446,7 @@ add_test(NAME TestFramePressure COMMAND frame_pressure_benchmark)
 add_test(NAME TestThermalVisionStress COMMAND thermal_vision_stress_benchmark)
 add_test(NAME TestCameraLifecycle COMMAND camera_lifecycle_benchmark)
 add_test(NAME TestLLMLifecycle COMMAND llm_lifecycle_benchmark)
+add_test(NAME TestIosCoremlManager COMMAND ios_coreml_manager_benchmark)
 add_test(NAME TestQuarantineAdaptive COMMAND quarantine_adaptive_benchmark)
 add_test(NAME TestWatchdogCooperative COMMAND watchdog_cooperative_benchmark)
 add_test(NAME TestTelemetryNormalization COMMAND telemetry_normalization_benchmark)
@@ -460,4 +506,17 @@ add_test(NAME TestInterruptionResiliencePolicy COMMAND interruption_resilience_p
 add_test(NAME TestTotalStorageGovernance COMMAND total_storage_governance_benchmark)
 add_test(NAME TestPlayStoreReadinessPolicy COMMAND playstore_readiness_policy_benchmark)
 add_test(NAME TestTelemetryExport COMMAND telemetry_export_benchmark)
+
+# Phase 11A Tests
+add_test(NAME TestApkUpdateMigration COMMAND apk_update_migration_validation_benchmark)
+add_test(NAME TestBatteryLifetimeObserver COMMAND battery_lifetime_observer_benchmark)
+add_test(NAME TestInstallFailureRecovery COMMAND install_failure_recovery_benchmark)
+add_test(NAME TestConsumerExpectationPolicy COMMAND consumer_expectation_policy_benchmark)
+add_test(NAME TestSessionDurabilityValidation COMMAND session_durability_validation_benchmark)
+add_test(NAME TestShipBlockerMatrix COMMAND ship_blocker_matrix_benchmark)
+add_test(NAME TestFirstWeekRetention COMMAND first_week_retention_validation_benchmark)
+add_test(NAME TestStorageFragmentationGuard COMMAND storage_fragmentation_guard_benchmark)
+add_test(NAME TestOemUpdateRegression COMMAND oem_update_regression_policy_benchmark)
+add_test(NAME TestReinstallRecovery COMMAND reinstall_recovery_policy_benchmark)
+
 

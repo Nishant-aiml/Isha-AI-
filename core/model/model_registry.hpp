@@ -7,6 +7,7 @@
 #include <mutex>
 #include <cstdint>
 #include "../config/device_profile.hpp"
+#include "../config/resource_limits.hpp"
 
 namespace isha {
 
@@ -88,10 +89,17 @@ struct ModelEntry {
     uint64_t file_size_bytes = 0;
     unsigned int context_length = 512;
 
+    // Survivability — Residency Class governs how this model may reside in memory
+    ResidencyClass residency_class = ResidencyClass::CLASS_B_WARM_HIBERNATED;
+
+    // Load gate floors (checked at runtime before any load attempt)
+    unsigned int physical_ram_floor_gb = 0;  // 0 = no floor; >0 = minimum physical RAM
+    unsigned int free_ram_floor_mb     = 0;  // 0 = no floor; >0 = minimum free RAM at load time
+
     // Compatibility
     DeviceTier minimum_tier = DeviceTier::LOW;
     double max_thermal_c = 41.0;     // Disabled above this temperature
-    unsigned int max_active_seconds = 0; // 0 = unlimited (T0)
+    unsigned int max_active_seconds = 0; // 0 = unlimited (CLASS_A); >0 = forced unload/hibernate
 
     // Validation
     std::string sha256_checksum;

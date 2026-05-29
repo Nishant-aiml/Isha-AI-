@@ -186,7 +186,10 @@ void testModelManagerEmergencyUnload() {
     ModelManager manager(profile);
     manager.setMinCooldown(std::chrono::milliseconds(50));
 
-    manager.loadModel("qwen-0.5b", 200);
+    // Use T1 model (700MB, CLASS_B) — NOT the T0 router (CLASS_A protected).
+    // CLASS_A T0 routers are intentionally immune to emergency unload
+    // per the mobile survivability residency architecture.
+    manager.loadModel("qwen-1.5b", 700);
     ASSERT_EQ(modelStateToString(manager.getState()), std::string("ACTIVE"), "Model loaded");
 
     manager.emergencyUnload();
@@ -197,39 +200,48 @@ void testModelManagerEmergencyUnload() {
 void testModelManagerThermalUnload() {
     std::cout << "\n=== Test: ModelManager Thermal Unload ===\n";
 
-    DeviceProfile profile{DeviceTier::HIGH, 8192, 8, "Android"};
+    DeviceProfile profile{DeviceTier::FLAGSHIP, 12288, 8, "Android"};
     ModelManager manager(profile);
     manager.setMinCooldown(std::chrono::milliseconds(50));
 
-    // Load a large model (T2 tier, >1000MB)
-    manager.loadModel("gemma-3-2b", 1200);
-    ASSERT_EQ(modelStateToString(manager.getState()), std::string("ACTIVE"), "Large model loaded");
+    // 1. T3 model (4200MB) loaded
+    manager.loadModel("mistral-7b", 4200);
+    ASSERT_EQ(modelStateToString(manager.getState()), std::string("ACTIVE"), "T3 model loaded");
 
-    // HOT threshold (>38C) should unload T2/T3 (>1000MB)
-    manager.thermalUnload(39.0);
-    ASSERT_EQ(modelStateToString(manager.getState()), std::string("UNLOADED"), "Thermal HOT unloaded large model");
+    // T3 disabled above 35°C
+    manager.thermalUnload(36.0);
+    ASSERT_EQ(modelStateToString(manager.getState()), std::string("UNLOADED"), "T3 model unloaded at >35C");
     ASSERT_TRUE(manager.isThermalUnloaded(), "Thermal flag set");
 
-    // Wait cooldown, load small model
+    // Wait cooldown, load T2 model (1200MB)
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    manager.loadModel("qwen-0.5b", 200);
+    manager.loadModel("gemma-3-2b", 1200);
 
-    // HOT threshold should NOT unload small model (<1000MB)
-    manager.thermalUnload(39.0);
-    ASSERT_EQ(modelStateToString(manager.getState()), std::string("ACTIVE"), "Small model survives HOT");
+    // T2 should survive at 34.0°C (only disabled at >35°C)
+    manager.thermalUnload(34.0);
+    ASSERT_EQ(modelStateToString(manager.getState()), std::string("ACTIVE"), "T2 survives at 34C");
 
-    // CRITICAL threshold (>41C) SHOULD unload even medium models (>=250MB)
-    manager.unloadModel();
+    // T2 disabled above 35°C
+    manager.thermalUnload(36.0);
+    ASSERT_EQ(modelStateToString(manager.getState()), std::string("UNLOADED"), "T2 unloaded at >35C");
+
+    // Wait cooldown, load T1 model (700MB)
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     manager.loadModel("qwen-1.5b", 700);
-    manager.thermalUnload(42.0);
-    ASSERT_EQ(modelStateToString(manager.getState()), std::string("UNLOADED"), "CRITICAL unloaded medium model");
 
-    // T0-sized models (<250MB) should survive even CRITICAL
+    // T1 should survive at 37.0°C (only disabled at >38°C)
+    manager.thermalUnload(37.0);
+    ASSERT_EQ(modelStateToString(manager.getState()), std::string("ACTIVE"), "T1 survives at 37C");
+
+    // T1 disabled above 38°C (T0 only resident)
+    manager.thermalUnload(39.0);
+    ASSERT_EQ(modelStateToString(manager.getState()), std::string("UNLOADED"), "T1 unloaded at >38C");
+
+    // T0-sized models (<250MB) should survive even >41°C as they are always resident stubs
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    manager.loadModel("phi3-mini", 180);
-    manager.thermalUnload(42.0);
-    ASSERT_EQ(modelStateToString(manager.getState()), std::string("ACTIVE"), "T0 survives CRITICAL");
+    manager.loadModel("qwen-0.5b", 180);
+    manager.thermalUnload(43.0);
+    ASSERT_EQ(modelStateToString(manager.getState()), std::string("ACTIVE"), "T0 survives above 41C");
 
     manager.unloadModel();
 }
@@ -241,8 +253,11 @@ void testModelManagerTryReload() {
     ModelManager manager(profile);
     manager.setMinCooldown(std::chrono::milliseconds(100));
 
-    manager.loadModel("qwen-0.5b", 300);
-    manager.thermalUnload(42.0);
+    // Use T1 model (700MB, CLASS_B).
+    // Thermal Zone 3 (38-41C) disables T1, so use 39C
+    // to trigger the thermal unload that tryReload needs to recover from.
+    manager.loadModel("qwen-1.5b", 700);
+    manager.thermalUnload(39.0);
 
     // Immediate tryReload should fail (cooldown)
     bool reload1 = manager.tryReload();

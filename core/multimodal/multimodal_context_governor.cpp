@@ -15,10 +15,15 @@ MultimodalContextGovernor::MultimodalContextGovernor(const MultimodalBudget& bud
         budget.reserved_generation_tokens
     })
 {
+    // CLASS_E: VLM disabled for V1. Force vision token budget to 0.
+    if (isVlmDisabledV1()) {
+        budget_.max_vision_tokens = 0;
+    }
     ISHA_LOG_INFO("MultimodalContextGovernor", "Initialized with max budget: "
                   + std::to_string(budget_.max_total_tokens) + " tokens (ocr="
                   + std::to_string(budget_.max_ocr_tokens) + ", vision="
-                  + std::to_string(budget_.max_vision_tokens) + ")");
+                  + std::to_string(budget_.max_vision_tokens)
+                  + (isVlmDisabledV1() ? " [VLM DISABLED V1]" : "") + ")");
 }
 
 unsigned int MultimodalContextGovernor::estimateTokens(const std::string& text) const {
@@ -55,11 +60,27 @@ MultimodalAssembledContext MultimodalContextGovernor::assembleMultimodalContext(
         ctx.was_truncated = true;
     }
 
-    // Truncate vision description to budget
-    ctx.vision_description = truncateToTokenBudget(vision_description, budget_.max_vision_tokens);
-    if (estimateTokens(vision_description) > budget_.max_vision_tokens) {
-        ctx.was_truncated = true;
+    // -------------------------------------------------------
+    // CLASS_E: VLM routing is DISABLED for V1 ship.
+    // MobileVLM and LLaVA are excluded from V1.
+    // Any vision_description input is cleared and replaced with
+    // a DISABLED_V1 marker. VLM routing does not happen.
+    // -------------------------------------------------------
+    std::string effective_vision;
+    if (isVlmDisabledV1()) {
+        if (!vision_description.empty()) {
+            ISHA_LOG_WARN("MultimodalContextGovernor",
+                "VLM routing suppressed (CLASS_E DISABLED_V1): vision input cleared.");
+        }
+        effective_vision = ""; // Zero vision tokens — no VLM path
+    } else {
+        // Truncate vision description to budget
+        effective_vision = truncateToTokenBudget(vision_description, budget_.max_vision_tokens);
+        if (estimateTokens(vision_description) > budget_.max_vision_tokens) {
+            ctx.was_truncated = true;
+        }
     }
+    ctx.vision_description = effective_vision;
 
     // Calculate total token count including multimodal slots
     ctx.estimated_tokens = base.estimated_tokens

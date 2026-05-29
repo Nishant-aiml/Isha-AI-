@@ -1,4 +1,5 @@
 #include "download_manager.hpp"
+#include "../config/resource_limits.hpp"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -32,7 +33,51 @@ DownloadResult DownloadManager::download(const DownloadConfig& config, ProgressC
     ISHA_LOG_INFO("DownloadMgr", "Starting download: " + config.url);
     ISHA_LOG_INFO("DownloadMgr", "Output: " + config.output_path);
 
-    // Step 1: Disk space validation
+    // -------------------------------------------------------
+    // STEP 0A: Reject CLASS_E VLM model downloads (V1 policy)
+    // MobileVLM and LLaVA are disabled for V1 ship.
+    // -------------------------------------------------------
+    {
+        std::string lower_url = config.url;
+        std::transform(lower_url.begin(), lower_url.end(), lower_url.begin(), ::tolower);
+        std::string lower_path = config.output_path;
+        std::transform(lower_path.begin(), lower_path.end(), lower_path.begin(), ::tolower);
+
+        if (lower_url.find("mobilevlm") != std::string::npos ||
+            lower_url.find("llava") != std::string::npos ||
+            lower_path.find("mobilevlm") != std::string::npos ||
+            lower_path.find("llava") != std::string::npos) {
+            result.error = "CLASS_E VLM model download rejected: Vision systems are disabled for V1 ship.";
+            failed_downloads_.fetch_add(1, std::memory_order_relaxed);
+            ISHA_LOG_ERROR("DownloadMgr",
+                "REJECTED: " + result.error + " URL=" + config.url);
+            return result;
+        }
+    }
+
+    // -------------------------------------------------------
+    // STEP 0B: Storage floor enforcement
+    // Heavy models (>= 200MB download) require MIN_FREE_STORAGE_BYTES (1GB) free.
+    // This prevents cheap NAND devices from soft-bricking their storage.
+    // Small models (embeddings, T0, etc.) are exempt.
+    // -------------------------------------------------------
+    if (config.expected_size_bytes >= StorageFloorPolicy::EXEMPT_BELOW_SIZE_BYTES) {
+        uint64_t required = config.expected_size_bytes +
+                            StorageFloorPolicy::SAFETY_MARGIN_BYTES +
+                            StorageFloorPolicy::MIN_FREE_STORAGE_BYTES;
+        if (!hasSufficientDiskSpace(config.output_path, required)) {
+            result.error = "Storage floor enforcement: less than 1GB free storage available. "
+                           "Cannot download heavy model safely — risk of NAND soft-brick.";
+            failed_downloads_.fetch_add(1, std::memory_order_relaxed);
+            ISHA_LOG_ERROR("DownloadMgr", result.error + " URL=" + config.url);
+            return result;
+        }
+        ISHA_LOG_INFO("DownloadMgr", "Storage floor check passed for heavy model download.");
+    }
+
+    // -------------------------------------------------------
+    // STEP 1: Caller-specified disk space validation
+    // -------------------------------------------------------
     if (config.min_disk_space_bytes > 0) {
         if (!hasSufficientDiskSpace(config.output_path, config.min_disk_space_bytes)) {
             result.error = "Insufficient disk space";
@@ -344,6 +389,69 @@ bool DownloadManager::executeCurl(const std::string& url, const std::string& out
     }
 
     return std::filesystem::exists(output_path) && getFileSize(output_path) > 0;
+}
+
+void DownloadManager::enforceStorageGovernance(const std::vector<ModelStorageStats>& stats) {
+    for (const auto& model : stats) {
+        std::string model_id_lower = model.model_id;
+        std::transform(model_id_lower.begin(), model_id_lower.end(), model_id_lower.begin(), ::tolower);
+        
+        bool is_t0 = (model_id_lower.find("qwen2.5-0.5b") != std::string::npos || model_id_lower.find("qwen-0.5b") != std::string::npos);
+        bool is_t1 = (model_id_lower.find("qwen2.5-1.5b") != std::string::npos || model_id_lower.find("qwen-1.5b") != std::string::npos);
+        bool is_t2 = (model_id_lower.find("gemma-3-2b") != std::string::npos);
+        bool is_t3 = (model_id_lower.find("mistral-7b") != std::string::npos);
+
+        if (is_t0 || is_t1) {
+            // Never evict T0 or T1
+            continue;
+        }
+
+        bool should_evict = false;
+        if (is_t2 && model.days_inactive >= StorageFloorPolicy::T2_IDLE_EVICT_DAYS) {
+            should_evict = true;
+        } else if (is_t3 && model.days_inactive >= StorageFloorPolicy::T3_IDLE_EVICT_DAYS) {
+            should_evict = true;
+        }
+
+        if (should_evict && !model.filepath.empty() && std::filesystem::exists(model.filepath)) {
+            ISHA_LOG_WARN("DownloadMgr", "Evicting model " + model.model_id + " due to storage governance: inactive for " + std::to_string(model.days_inactive) + " days.");
+            std::filesystem::remove(model.filepath);
+        }
+    }
+}
+
+void DownloadManager::handleStoragePressureEviction(const std::vector<ModelStorageStats>& stats) {
+    std::vector<ModelStorageStats> t3_models;
+    std::vector<ModelStorageStats> t2_models;
+
+    for (const auto& model : stats) {
+        std::string model_id_lower = model.model_id;
+        std::transform(model_id_lower.begin(), model_id_lower.end(), model_id_lower.begin(), ::tolower);
+        
+        if (model_id_lower.find("mistral-7b") != std::string::npos) {
+            t3_models.push_back(model);
+        } else if (model_id_lower.find("gemma-3-2b") != std::string::npos) {
+            t2_models.push_back(model);
+        }
+    }
+
+    // Delete T3 first
+    for (const auto& model : t3_models) {
+        if (!model.filepath.empty() && std::filesystem::exists(model.filepath)) {
+            ISHA_LOG_WARN("DownloadMgr", "Storage pressure: Evicting T3 model " + model.model_id);
+            std::filesystem::remove(model.filepath);
+            return; // Evict one at a time, check if pressure cleared
+        }
+    }
+
+    // Then T2
+    for (const auto& model : t2_models) {
+        if (!model.filepath.empty() && std::filesystem::exists(model.filepath)) {
+            ISHA_LOG_WARN("DownloadMgr", "Storage pressure: Evicting T2 model " + model.model_id);
+            std::filesystem::remove(model.filepath);
+            return;
+        }
+    }
 }
 
 } // namespace isha

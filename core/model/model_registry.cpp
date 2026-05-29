@@ -1,4 +1,5 @@
 #include "model_registry.hpp"
+#include "../config/resource_limits.hpp"
 #include "../logging/logger.hpp"
 #include <fstream>
 #include <filesystem>
@@ -121,48 +122,187 @@ size_t ModelRegistry::discoverModels() {
         // Generate model_id from filename without extension
         entry.model_id = dir_entry.path().stem().string();
 
-        // Estimate RAM based on subsystem
-        switch (entry.subsystem) {
-            case ModelSubsystem::LLM:
+        // Assign residency class and resource constraints
+        std::string model_id_lower = toLower(entry.model_id);
+
+        // -------------------------------------------------------
+        // CLASS E: Reject VLM / LLaVA models — disabled for V1
+        // -------------------------------------------------------
+        if (model_id_lower.find("mobilevlm") != std::string::npos ||
+            model_id_lower.find("llava") != std::string::npos ||
+            model_id_lower.find("llava-1.6") != std::string::npos) {
+            ISHA_LOG_WARN("ModelRegistry",
+                "Rejecting CLASS_E VLM model (disabled V1): " + entry.model_id);
+            continue;
+        }
+
+        // Reject other known obsolete models
+        if (model_id_lower.find("phi-3-mini") != std::string::npos ||
+            model_id_lower.find("phi3-mini") != std::string::npos ||
+            model_id_lower.find("gemma-2-2b") != std::string::npos) {
+            ISHA_LOG_WARN("ModelRegistry", "Rejecting obsolete model: " + entry.model_id);
+            continue;
+        }
+
+        if (entry.subsystem == ModelSubsystem::LLM) {
+            if (model_id_lower.find("qwen2.5-0.5b") != std::string::npos ||
+                model_id_lower.find("qwen-0.5b") != std::string::npos) {
+                // -----------------------------------------------
+                // CLASS A — T0 Router/Classifier ONLY
+                // Always resident. Never unloaded under any memory pressure.
+                // At >46°C: switches to retrieval-only + max 32 token budget.
+                // -----------------------------------------------
+                entry.residency_class   = ResidencyClass::CLASS_A_ALWAYS_RESIDENT;
+                entry.estimated_ram_mb  = 84;
+                entry.minimum_tier      = DeviceTier::LOW;
+                entry.max_thermal_c     = 99.0; // T0 never thermally unloaded — emergency mode instead
+                entry.max_active_seconds = 0;   // Always resident
+                entry.context_length    = 512;
+                entry.physical_ram_floor_gb = 0;
+                entry.free_ram_floor_mb = 0;
+
+            } else if (model_id_lower.find("qwen2.5-1.5b") != std::string::npos ||
+                       model_id_lower.find("qwen-1.5b") != std::string::npos) {
+                // -----------------------------------------------
+                // CLASS B — T1 Warm Hibernated
+                // Load on request. Hibernate after 300s idle.
+                // Gate: free_ram>=1200 && thermal<44 && battery>15
+                // 4GB devices: conditionally supported — not guaranteed.
+                // -----------------------------------------------
+                entry.residency_class   = ResidencyClass::CLASS_B_WARM_HIBERNATED;
+                entry.estimated_ram_mb  = 720;
+                entry.minimum_tier      = DeviceTier::LOW;
+                entry.max_thermal_c     = ModelLoadGate::forT1().max_thermal_c; // 44°C
+                entry.max_active_seconds = T1HibernationPolicy::IDLE_TIMEOUT_SECONDS; // 300s
+                entry.context_length    = 1024;
+                entry.physical_ram_floor_gb = 0;
+                entry.free_ram_floor_mb = ModelLoadGate::forT1().min_free_ram_mb; // 1200MB
+
+            } else if (model_id_lower.find("gemma-3-2b") != std::string::npos) {
+                // -----------------------------------------------
+                // CLASS D — T2 Heavy Compute
+                // Minimum: 6GB physical RAM. Recommended: 8GB.
+                // Never auto-loads. Evict after 7 idle days.
+                // Gate: physical>=6GB && free>=2200 && thermal<42 && battery>20
+                // -----------------------------------------------
+                entry.residency_class   = ResidencyClass::CLASS_D_HEAVY_COMPUTE;
+                entry.estimated_ram_mb  = 1150;
+                entry.minimum_tier      = DeviceTier::MID;  // 6GB minimum
+                entry.max_thermal_c     = ModelLoadGate::forT2().max_thermal_c; // 42°C
+                entry.max_active_seconds = ModelLoadGate::forT2().max_active_seconds; // 90s
+                entry.context_length    = 2048;
+                entry.physical_ram_floor_gb = ModelLoadGate::forT2().min_physical_ram_gb; // 6GB
+                entry.free_ram_floor_mb = ModelLoadGate::forT2().min_free_ram_mb; // 2200MB
+
+            } else if (model_id_lower.find("mistral-7b") != std::string::npos) {
+                // -----------------------------------------------
+                // CLASS D — T3 Heavy Compute (Flagship-only)
+                // Minimum: 8GB (experimental). Recommended: 12GB+.
+                // 8GB requires charging=true + battery_saver=false.
+                // Never auto-loads. Max runtime: 180s forced unload.
+                // Evict after 14 idle days.
+                // Gate: physical>=8GB && free>=6000 && thermal<35 && battery>40 && charging
+                // -----------------------------------------------
+                entry.residency_class   = ResidencyClass::CLASS_D_HEAVY_COMPUTE;
+                entry.estimated_ram_mb  = 4200;
+                entry.minimum_tier      = DeviceTier::HIGH; // 8GB experimental minimum
+                entry.max_thermal_c     = ModelLoadGate::forT3().max_thermal_c; // 35°C
+                entry.max_active_seconds = ModelLoadGate::forT3().max_active_seconds; // 180s
+                entry.context_length    = 2048;
+                entry.physical_ram_floor_gb = ModelLoadGate::forT3().min_physical_ram_gb; // 8GB
+                entry.free_ram_floor_mb = ModelLoadGate::forT3().min_free_ram_mb; // 6000MB
+
+            } else {
+                // Fallback LLM
+                entry.residency_class = ResidencyClass::CLASS_B_WARM_HIBERNATED;
                 entry.estimated_ram_mb = static_cast<unsigned int>(
                     static_cast<double>(file_size) * 1.1 / (1024.0 * 1024.0));
                 entry.context_length = 512;
-                break;
-            case ModelSubsystem::EMBEDDING:
-                entry.estimated_ram_mb = 28;
-                break;
-            case ModelSubsystem::STT:
-                entry.estimated_ram_mb = static_cast<unsigned int>(
-                    file_size / (1024.0 * 1024.0));
-                break;
-            case ModelSubsystem::OCR:
-                entry.estimated_ram_mb = 50;
-                break;
-            case ModelSubsystem::VISION:
-                entry.estimated_ram_mb = static_cast<unsigned int>(
-                    static_cast<double>(file_size) * 1.2 / (1024.0 * 1024.0));
-                break;
-            case ModelSubsystem::RERANKER:
-                entry.estimated_ram_mb = 52;
-                break;
-        }
+                if (entry.estimated_ram_mb <= 250)       entry.minimum_tier = DeviceTier::LOW;
+                else if (entry.estimated_ram_mb <= 750)  entry.minimum_tier = DeviceTier::MID;
+                else if (entry.estimated_ram_mb <= 1500) entry.minimum_tier = DeviceTier::HIGH;
+                else                                     entry.minimum_tier = DeviceTier::FLAGSHIP;
 
-        // Set tier requirements based on RAM estimate
-        if (entry.estimated_ram_mb <= 250)       entry.minimum_tier = DeviceTier::LOW;
-        else if (entry.estimated_ram_mb <= 750)  entry.minimum_tier = DeviceTier::MID;
-        else if (entry.estimated_ram_mb <= 1500) entry.minimum_tier = DeviceTier::HIGH;
-        else                                     entry.minimum_tier = DeviceTier::FLAGSHIP;
-
-        // Set thermal limits per doc thresholds
-        if (entry.estimated_ram_mb > 1000) {
-            entry.max_thermal_c = 38.0;  // Large models disabled at HOT
-            entry.max_active_seconds = 90;
-        } else if (entry.estimated_ram_mb > 500) {
-            entry.max_thermal_c = 41.0;  // Medium models disabled at CRITICAL
-            entry.max_active_seconds = 300;
+                if (entry.estimated_ram_mb > 1000) {
+                    entry.max_thermal_c = ModelLoadGate::forT2().max_thermal_c;
+                    entry.max_active_seconds = 90;
+                    entry.residency_class = ResidencyClass::CLASS_D_HEAVY_COMPUTE;
+                } else if (entry.estimated_ram_mb > 500) {
+                    entry.max_thermal_c = ModelLoadGate::forT1().max_thermal_c;
+                    entry.max_active_seconds = T1HibernationPolicy::IDLE_TIMEOUT_SECONDS;
+                } else {
+                    entry.max_thermal_c = 99.0;
+                    entry.max_active_seconds = 0;
+                    entry.residency_class = ResidencyClass::CLASS_A_ALWAYS_RESIDENT;
+                }
+                entry.physical_ram_floor_gb = 0;
+                entry.free_ram_floor_mb     = 0;
+            }
         } else {
-            entry.max_thermal_c = 45.0;  // Small models tolerant
-            entry.max_active_seconds = 0; // unlimited
+            // Non-LLM subsystems
+            switch (entry.subsystem) {
+                case ModelSubsystem::EMBEDDING:
+                    // CLASS A — always resident (MiniLM-L6-v2, ~28MB)
+                    entry.residency_class    = ResidencyClass::CLASS_A_ALWAYS_RESIDENT;
+                    entry.estimated_ram_mb   = 28;
+                    entry.minimum_tier       = DeviceTier::LOW;
+                    entry.max_thermal_c      = 99.0; // Never thermally unloaded
+                    entry.max_active_seconds = 0;
+                    entry.physical_ram_floor_gb = 0;
+                    entry.free_ram_floor_mb  = 0;
+                    break;
+                case ModelSubsystem::RERANKER:
+                    // CLASS A — always resident (MS-MARCO reranker, ~52MB)
+                    entry.residency_class    = ResidencyClass::CLASS_A_ALWAYS_RESIDENT;
+                    entry.estimated_ram_mb   = 52;
+                    entry.minimum_tier       = DeviceTier::LOW;
+                    entry.max_thermal_c      = 99.0;
+                    entry.max_active_seconds = 0;
+                    entry.physical_ram_floor_gb = 0;
+                    entry.free_ram_floor_mb  = 0;
+                    break;
+                case ModelSubsystem::STT:
+                    // CLASS C — burst load only (Whisper.cpp)
+                    // NEVER resident. Load → execute → unload immediately.
+                    // Background residency triggers forceUnload() + CRITICAL log.
+                    entry.residency_class    = ResidencyClass::CLASS_C_BURST_LOAD_ONLY;
+                    entry.estimated_ram_mb   = static_cast<unsigned int>(file_size / (1024.0 * 1024.0));
+                    entry.minimum_tier       = DeviceTier::LOW;
+                    entry.max_thermal_c      = 46.0;
+                    entry.max_active_seconds = 30; // max 30s per transcription burst
+                    entry.physical_ram_floor_gb = 0;
+                    entry.free_ram_floor_mb  = 0;
+                    break;
+                case ModelSubsystem::OCR:
+                    entry.residency_class    = ResidencyClass::CLASS_C_BURST_LOAD_ONLY;
+                    entry.estimated_ram_mb   = 50;
+                    entry.minimum_tier       = DeviceTier::LOW;
+                    entry.max_thermal_c      = 46.0;
+                    entry.max_active_seconds = 20;
+                    entry.physical_ram_floor_gb = 0;
+                    entry.free_ram_floor_mb  = 0;
+                    break;
+                case ModelSubsystem::VISION:
+                    // CLASS E — disabled for V1. Register but mark disabled.
+                    entry.residency_class    = ResidencyClass::CLASS_E_DISABLED_V1;
+                    entry.estimated_ram_mb   = static_cast<unsigned int>(
+                        static_cast<double>(file_size) * 1.2 / (1024.0 * 1024.0));
+                    entry.minimum_tier       = DeviceTier::FLAGSHIP; // effectively blocked
+                    entry.max_thermal_c      = 0.0; // always fails thermal check
+                    entry.max_active_seconds = 0;
+                    entry.physical_ram_floor_gb = 255; // effectively blocked
+                    entry.free_ram_floor_mb  = 999999;
+                    ISHA_LOG_WARN("ModelRegistry",
+                        "Vision model registered as CLASS_E (V1 disabled): " + entry.model_id);
+                    break;
+                default:
+                    entry.residency_class    = ResidencyClass::CLASS_B_WARM_HIBERNATED;
+                    entry.estimated_ram_mb   = 100;
+                    entry.minimum_tier       = DeviceTier::LOW;
+                    entry.physical_ram_floor_gb = 0;
+                    entry.free_ram_floor_mb  = 0;
+                    break;
+            }
         }
 
         // Validate GGUF format

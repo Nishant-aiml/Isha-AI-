@@ -137,6 +137,7 @@ private:
     std::atomic<uint32_t> failed_generations_{0};
     std::atomic<uint32_t> cancelled_generations_{0};
     std::atomic<bool> model_loaded_{false};
+    std::atomic<bool> abort_request_{false};
     int active_n_batch_ = 512;
     int embd_override_ = 0;
 

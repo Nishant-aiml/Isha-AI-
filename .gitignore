@@ -15,3 +15,21 @@ models/
 *.obj
 *.pdb
 *.tmp
+
+# IDE / Editor folders
+.idea/
+*.iml
+.DS_Store
+
+# Gradle / Android caches & builds
+.gradle/
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
+build/
+bin/
+obj/
+lib/
+*build_run_latest.log
+*build_phase8b.log

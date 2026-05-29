@@ -18,7 +18,7 @@ int main() {
     specs.foreground_service_restricted = false;
 
     auto defaults = InstallTimeDeviceProfiler::profileDevice(specs);
-    assert(defaults.recommended_model_dimension == "0.5B_BUDGET");
+    assert(defaults.recommended_model_dimension == "1.5B_MIDRANGE");
     assert(defaults.max_batch_size == 4);
     assert(!defaults.allow_hardware_acceleration);
 

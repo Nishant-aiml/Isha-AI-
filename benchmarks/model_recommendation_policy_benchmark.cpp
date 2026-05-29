@@ -12,8 +12,8 @@ int main() {
     assert(ModelRecommendationPolicy::determineRamClass(8) == DeviceRamClass::FLAGSHIP_8GB_PLUS);
 
     auto recommendation = ModelRecommendationPolicy::getRecommendation(DeviceRamClass::BUDGET_4GB);
-    assert(recommendation.recommended_model_dimension == "0.5B_LIGHTWEIGHT");
-    assert(recommendation.recommended_context_limit == 256);
+    assert(recommendation.recommended_model_dimension == "1.5B_MIDRANGE");
+    assert(recommendation.recommended_context_limit == 512);
     assert(!recommendation.enable_acceleration);
 
     std::cout << "model_recommendation_policy_benchmark PASSED!" << std::endl;

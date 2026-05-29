@@ -50,11 +50,11 @@ struct InferenceThreadPolicy {
         }
     }
 
-    // Tier-based base threads: LOW=2, MID=4, HIGH=5, FLAGSHIP=6
+    // Tier-based base threads: LOW=2, MID=2, HIGH=5, FLAGSHIP=6
     static int baseThreadsForTier(DeviceTier tier) {
         switch (tier) {
             case DeviceTier::LOW:      return 2;
-            case DeviceTier::MID:      return 4;
+            case DeviceTier::MID:      return 2;
             case DeviceTier::HIGH:     return 5;
             case DeviceTier::FLAGSHIP: return 6;
             default:                   return 2;

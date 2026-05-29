@@ -50,6 +50,11 @@ public:
 
     const MultimodalBudget& getBudget() const { return budget_; }
 
+    // CLASS_E: MobileVLM and LLaVA are DISABLED for V1 ship.
+    // VLM routing, image encoders, camera pipelines all return DISABLED_V1.
+    // Re-enable in V2+ only after survivability validation.
+    static bool isVlmDisabledV1() { return true; }
+
 private:
     MultimodalBudget budget_;
     ContextGovernor base_governor_;

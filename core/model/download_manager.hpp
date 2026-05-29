@@ -66,6 +66,20 @@ public:
     void cleanupCorruptedDownload(const std::string& filepath);
     void cleanupRollback(const std::string& filepath, const std::string& backup_path);
 
+    // Storage governance policy structures and methods
+    struct ModelStorageStats {
+        std::string model_id;
+        int days_inactive = 0;
+        uint64_t size_bytes = 0;
+        std::string filepath;
+    };
+
+    // Evicts models based on inactivity time and model tiers (T0/T1 keep resident, T2 after 7 days, T3 after 14 days)
+    void enforceStorageGovernance(const std::vector<ModelStorageStats>& stats);
+
+    // Evicts models under storage pressure, deleting T3 first, then T2, never T0
+    void handleStoragePressureEviction(const std::vector<ModelStorageStats>& stats);
+
     // Stats
     uint32_t totalDownloads() const { return total_downloads_.load(std::memory_order_relaxed); }
     uint32_t failedDownloads() const { return failed_downloads_.load(std::memory_order_relaxed); }

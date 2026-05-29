@@ -2,16 +2,20 @@ package com.isha.ai
 
 import android.app.Activity
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.os.SystemClock
 import android.text.method.ScrollingMovementMethod
 import android.util.Log
+import android.view.LayoutInflater
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
+import android.widget.ScrollView
+import android.widget.Toast
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -19,7 +23,6 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
-import java.io.FileOutputStream
 
 class MainActivity : Activity() {
     private val TAG = "MainActivity"
@@ -27,16 +30,21 @@ class MainActivity : Activity() {
     private val mainScope = CoroutineScope(Dispatchers.Main + Job())
     private var streamJob: Job? = null
 
-
     private lateinit var thermalService: IshaThermalService
     private val memoryListener = IshaMemoryPressureListener()
 
     private var coldStartStart: Long = 0
 
+    // RAG components
+    private lateinit var ragManager: IshaRAGManager
+    private val PICK_DOCUMENT_REQUEST = 1001
+
     override fun onCreate(savedInstanceState: Bundle?) {
         coldStartStart = SystemClock.elapsedRealtime()
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        ragManager = IshaRAGManager(this)
 
         // Register memory pressure callbacks
         registerComponentCallbacks(memoryListener)
@@ -51,11 +59,48 @@ class MainActivity : Activity() {
         val txtColdStart = findViewById<TextView>(R.id.txtColdStart)
         val txtTokensPerSec = findViewById<TextView>(R.id.txtTokensPerSec)
         val txtActiveModel = findViewById<TextView>(R.id.txtActiveModel)
-        val txtActiveModelRss = findViewById<TextView>(R.id.txtActiveModelRss)
-        val txtTotalRuntimePressure = findViewById<TextView>(R.id.txtTotalRuntimePressure)
         val txtThermalZone = findViewById<TextView>(R.id.txtThermalZone)
 
-        // JNI Crash containment lockfile detection (GAP 5 compliance)
+        // Tab views
+        val tabChat = findViewById<Button>(R.id.tabChat)
+        val tabLibrary = findViewById<Button>(R.id.tabLibrary)
+        val viewChatConsole = findViewById<ScrollView>(R.id.viewChatConsole)
+        val viewDocLibrary = findViewById<LinearLayout>(R.id.viewDocLibrary)
+
+        // RAG/Library views
+        val btnPickDoc = findViewById<Button>(R.id.btnPickDoc)
+        val layoutIngestProgress = findViewById<LinearLayout>(R.id.layoutIngestProgress)
+        val progressIngest = findViewById<ProgressBar>(R.id.progressIngest)
+        val txtIngestStatus = findViewById<TextView>(R.id.txtIngestStatus)
+        val layoutDocList = findViewById<LinearLayout>(R.id.layoutDocList)
+        val txtIndexChunks = findViewById<TextView>(R.id.txtIndexChunks)
+        val txtIndexSize = findViewById<TextView>(R.id.txtIndexSize)
+
+        // Grounded Citations
+        val layoutCitations = findViewById<LinearLayout>(R.id.layoutCitations)
+        val txtCitations = findViewById<TextView>(R.id.txtCitations)
+
+        // Tab Switching Logic
+        tabChat.setOnClickListener {
+            tabChat.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#2563EB"))
+            tabChat.setTextColor(android.graphics.Color.WHITE)
+            tabLibrary.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#E5E7EB"))
+            tabLibrary.setTextColor(android.graphics.Color.parseColor("#374151"))
+            viewChatConsole.visibility = View.VISIBLE
+            viewDocLibrary.visibility = View.GONE
+        }
+
+        tabLibrary.setOnClickListener {
+            tabLibrary.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#2563EB"))
+            tabLibrary.setTextColor(android.graphics.Color.WHITE)
+            tabChat.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#E5E7EB"))
+            tabChat.setTextColor(android.graphics.Color.parseColor("#374151"))
+            viewDocLibrary.visibility = View.VISIBLE
+            viewChatConsole.visibility = View.GONE
+            refreshDocLibrary(layoutDocList, txtIndexChunks, txtIndexSize)
+        }
+
+        // JNI Crash containment lockfile detection
         val crashLockFile = File(filesDir, "jni_crash.lock")
         var previousCrashDetected = false
         if (crashLockFile.exists()) {
@@ -71,20 +116,19 @@ class MainActivity : Activity() {
             }
         }
 
-        // Profile device memory tiering (Final Fix 9 & Spec Alignment)
+        // Profile device memory tiering
         val actManager = getSystemService(ACTIVITY_SERVICE) as android.app.ActivityManager
         val memInfo = android.app.ActivityManager.MemoryInfo()
         actManager.getMemoryInfo(memInfo)
         val totalRamMb = (memInfo.totalMem / (1024 * 1024)).toInt()
         val cpuCores = Runtime.getRuntime().availableProcessors()
 
-        // Init Isha Runtime natively (Final Fix 1: app filesDir only!)
+        // Init Isha Runtime natively
         val filesPath = filesDir.absolutePath
         val cachePath = cacheDir.absolutePath
         val initSuccess = IshaRuntime.initializeRuntime(filesPath, cachePath, totalRamMb, cpuCores)
 
         if (initSuccess && !previousCrashDetected) {
-            // Delete the lockfile on successful, clean initialization
             if (crashLockFile.exists()) {
                 crashLockFile.delete()
             }
@@ -92,17 +136,14 @@ class MainActivity : Activity() {
         
         val btnDownloadT0 = findViewById<Button>(R.id.btnDownloadT0)
         val btnDownloadT1 = findViewById<Button>(R.id.btnDownloadT1)
-        val btnDownloadT2 = findViewById<Button>(R.id.btnDownloadT2)
         val progressDownload = findViewById<ProgressBar>(R.id.progressDownload)
         
         val btnLoadT0 = findViewById<Button>(R.id.btnLoadT0)
         val btnLoadT1 = findViewById<Button>(R.id.btnLoadT1)
-        val btnLoadT2 = findViewById<Button>(R.id.btnLoadT2)
         val btnUnload = findViewById<Button>(R.id.btnUnload)
 
         val btnDeleteT0 = findViewById<Button>(R.id.btnDeleteT0)
         val btnDeleteT1 = findViewById<Button>(R.id.btnDeleteT1)
-        val btnDeleteT2 = findViewById<Button>(R.id.btnDeleteT2)
         
         val txtChatLog = findViewById<TextView>(R.id.txtChatLog)
         txtChatLog.movementMethod = ScrollingMovementMethod()
@@ -111,163 +152,79 @@ class MainActivity : Activity() {
         val btnSend = findViewById<Button>(R.id.btnSend)
         val btnOpenRecovery = findViewById<Button>(R.id.btnOpenRecovery)
 
-        // Binding Recommendation Badges
-        val lblT0Recommended = findViewById<TextView>(R.id.lblT0Recommended)
-        val lblT1Recommended = findViewById<TextView>(R.id.lblT1Recommended)
-        val lblT2Recommended = findViewById<TextView>(R.id.lblT2Recommended)
-
-        // Dynamic hardware limits model routing policy
-        val recommendedModelName: String
-        if (totalRamMb <= 4500) { // 4GB tier
-            recommendedModelName = "qwen-0.5b"
-            lblT0Recommended.visibility = View.VISIBLE
-        } else if (totalRamMb <= 8500) { // 6GB - 8GB tier (Target Vivo T3)
-            recommendedModelName = "qwen-1.5b"
-            lblT1Recommended.visibility = View.VISIBLE
-        } else { // 12GB+ tier
-            recommendedModelName = "gemma-3-2b-it"
-            lblT2Recommended.visibility = View.VISIBLE
-        }
-
         if (!previousCrashDetected) {
             panelSafeMode.visibility = View.VISIBLE
-            txtSafeModeReason.text = String.format("Vivo T3 Hardware Profile: %d Core CPU, %dMB RAM. Recommended: %s.",
-                cpuCores, totalRamMb, recommendedModelName.uppercase())
+            txtSafeModeReason.text = String.format("Vivo T3 Hardware Profile: %d Core CPU, %dMB RAM. Qwen 1.5B Standard recommended.",
+                cpuCores, totalRamMb)
         }
 
-        // Display cold start timing (Tap-to-First-Token indicator - Final Fix 9)
+        // Display cold start timing
         val initEnd = SystemClock.elapsedRealtime()
         txtColdStart.text = String.format("Cold Start Latency: %d ms", initEnd - coldStartStart)
 
         // Initial setup for buttons based on file existence on boot
         if (File(filesDir, "qwen-0.5b.gguf").exists()) btnDownloadT0.text = "INSTALLED ✓"
         if (File(filesDir, "qwen-1.5b.gguf").exists()) btnDownloadT1.text = "INSTALLED ✓"
-        if (File(filesDir, "gemma-2b.gguf").exists()) btnDownloadT2.text = "INSTALLED ✓"
 
-        // Model switcher loaders
+        // Model loaders
         btnLoadT0.setOnClickListener {
             val file = File(filesDir, "qwen-0.5b.gguf")
             if (!file.exists()) {
-                txtChatLog.text = "[Error: Qwen2.5-0.5B-Instruct weights are not downloaded yet. Please tap the Download button below first!]"
+                txtChatLog.text = "[Error: Battery Saver (0.5B) weights are not downloaded yet.]"
                 return@setOnClickListener
             }
             if (IshaRuntime.loadModelTier("qwen-0.5b", 84)) {
-                txtActiveModel.text = "Active Model: Battery Saver (Qwen2.5-0.5B)"
-                txtActiveModelRss.text = "Active Model RSS: 84 MB"
-                txtTotalRuntimePressure.text = "Total Runtime Pressure: ~350–450MB total operational runtime footprint"
-                txtChatLog.text = "[Success: Loaded Qwen2.5-0.5B-Instruct Q4_K_M stably! Ready for secure local stream chat.]"
+                txtActiveModel.text = "Active Model: Battery Saver (Qwen 0.5B)"
+                txtChatLog.text = "[Success: Loaded Qwen2.5-0.5B-Instruct! Ready for local grounded chat.]"
             }
         }
 
         btnLoadT1.setOnClickListener {
             val file = File(filesDir, "qwen-1.5b.gguf")
             if (!file.exists()) {
-                txtChatLog.text = "[Error: Qwen2.5-1.5B-Instruct weights are not downloaded yet. Please tap the Download button below first!]"
+                txtChatLog.text = "[Error: Standard (1.5B) weights are not downloaded yet.]"
                 return@setOnClickListener
             }
             if (IshaRuntime.loadModelTier("qwen-1.5b", 700)) {
-                txtActiveModel.text = "Active Model: Standard (Qwen2.5-1.5B)"
-                txtActiveModelRss.text = "Active Model RSS: 680 MB"
-                txtTotalRuntimePressure.text = "Total Runtime Pressure: ~1.0–1.3GB realistic runtime pressure during active inference"
-                txtChatLog.text = "[Success: Loaded Qwen2.5-1.5B-Instruct Q4_K_M stably! Ready for secure local stream chat.]"
-            }
-        }
-
-        btnLoadT2.setOnClickListener {
-            val file = File(filesDir, "gemma-2b.gguf")
-            if (!file.exists()) {
-                txtChatLog.text = "[Error: Gemma-3-2B-IT weights are not downloaded yet. Please tap the Download button below first!]"
-                return@setOnClickListener
-            }
-            if (IshaRuntime.loadModelTier("gemma-2b", 1100)) {
-                txtActiveModel.text = "Active Model: High Quality (Gemma-3-2B-IT)"
-                txtActiveModelRss.text = "Active Model RSS: 1050 MB"
-                txtTotalRuntimePressure.text = "Total Runtime Pressure: ~1.8–2.2GB realistic runtime pressure under sustained reasoning"
-                txtChatLog.text = "[Success: Loaded Gemma-3-2B-IT Q4_0 stably! Session auto-expires in 45s to protect CPU temperatures.]"
-                mainScope.launch {
-                    delay(45000)
-                    if (IshaRuntime.unloadModelTier()) {
-                        txtActiveModel.text = "Active Model: UNLOADED (High Quality expired)"
-                        txtActiveModelRss.text = "Active Model RSS: 0 MB"
-                        txtTotalRuntimePressure.text = "Total Runtime Pressure: -- MB"
-                        txtChatLog.append("\n[System: High Quality Session Expired to protect Vivo CPU thermal cores]")
-                    }
-                }
+                txtActiveModel.text = "Active Model: Standard (Qwen 1.5B)"
+                txtChatLog.text = "[Success: Loaded Qwen2.5-1.5B-Instruct! Ready for local grounded chat.]"
             }
         }
 
         btnUnload.setOnClickListener {
             if (IshaRuntime.unloadModelTier()) {
                 txtActiveModel.text = "Active Model: UNLOADED"
-                txtActiveModelRss.text = "Active Model RSS: 0 MB"
-                txtTotalRuntimePressure.text = "Total Runtime Pressure: -- MB"
-                txtChatLog.text = "[Success: Model unloaded from RAM.]"
+                txtChatLog.text = "[Success: Model weights unloaded from RAM.]"
             }
         }
 
-        // Helper delete model functionality
-        fun deleteModel(fileName: String, targetDownloadBtn: Button, downloadLabel: String, modelDisplayName: String) {
-            // Safe unload first to prevent native leaks/crashes
+        btnDeleteT0.setOnClickListener {
             IshaRuntime.unloadModelTier()
             txtActiveModel.text = "Active Model: UNLOADED"
-            txtActiveModelRss.text = "Active Model RSS: 0 MB"
-            txtTotalRuntimePressure.text = "Total Runtime Pressure: -- MB"
-            
-            // Force Garbage Collection to release any native JVM mappings or file streams
-            System.gc()
-            System.runFinalization()
-
-            val file = File(filesDir, fileName)
-            if (file.exists()) {
-                var deleted = false
-                // Retry loop with sleep to allow kernel file locks to release
-                for (retry in 1..3) {
-                    if (file.delete()) {
-                        deleted = true
-                        break;
-                    }
-                    try {
-                        Thread.sleep(150)
-                    } catch (e: Exception) {}
-                    System.gc()
-                }
-
-                // Double check if the file is gone even if delete() returned false
-                if (deleted || !file.exists()) {
-                    targetDownloadBtn.text = downloadLabel
-                    txtChatLog.text = String.format("[Success: %s weights deleted successfully to reclaim scoped storage space.]", modelDisplayName)
-                } else {
-                    // Try deleteOnExit as a last resort
-                    file.deleteOnExit()
-                    txtChatLog.text = String.format("[Error: Failed to delete %s file from secure storage. File is locked by OS. It will be removed on next app start.]", modelDisplayName)
-                }
-            } else {
-                txtChatLog.text = String.format("[Info: %s is not currently installed.]", modelDisplayName)
+            val file = File(filesDir, "qwen-0.5b.gguf")
+            if (file.exists() && file.delete()) {
+                btnDownloadT0.text = "Download"
+                txtChatLog.text = "[Success: Battery Saver model deleted.]"
             }
-        }
-
-        // Set delete click listeners
-        btnDeleteT0.setOnClickListener {
-            deleteModel("qwen-0.5b.gguf", btnDownloadT0, "Download Battery Saver", "Battery Saver")
         }
 
         btnDeleteT1.setOnClickListener {
-            deleteModel("qwen-1.5b.gguf", btnDownloadT1, "Download Standard", "Standard (Recommended)")
+            IshaRuntime.unloadModelTier()
+            txtActiveModel.text = "Active Model: UNLOADED"
+            val file = File(filesDir, "qwen-1.5b.gguf")
+            if (file.exists() && file.delete()) {
+                btnDownloadT1.text = "Download"
+                txtChatLog.text = "[Success: Standard model deleted.]"
+            }
         }
 
-        btnDeleteT2.setOnClickListener {
-            deleteModel("gemma-2b.gguf", btnDownloadT2, "Download High Quality", "High Quality")
-        }
-
-        // Shared High-Fidelity Internet Downloader function
+        // Downloader
         fun triggerDownload(modelName: String, urlString: String, targetFileName: String, targetBtn: Button) {
             btnDownloadT0.isEnabled = false
             btnDownloadT1.isEnabled = false
-            btnDownloadT2.isEnabled = false
             progressDownload.visibility = View.VISIBLE
             progressDownload.progress = 0
-            txtChatLog.text = String.format("[System: Starting dynamic download of %s GGUF weights...]\n", modelName.uppercase())
-            txtChatLog.append("[From HuggingFace CDN: $urlString]\n")
+            txtChatLog.text = "[System: Starting download of $modelName weights...]\n"
             
             mainScope.launch(Dispatchers.IO) {
                 try {
@@ -276,7 +233,7 @@ class MainActivity : Activity() {
                     connection.connect()
 
                     if (connection.responseCode != java.net.HttpURLConnection.HTTP_OK) {
-                        throw java.io.IOException("Server returned HTTP " + connection.responseCode)
+                        throw java.io.IOException("HTTP error code: " + connection.responseCode)
                     }
 
                     val fileLength = connection.contentLength
@@ -289,20 +246,20 @@ class MainActivity : Activity() {
                     val data = ByteArray(8192)
                     var total: Long = 0
                     var count: Int
-                    var lastProgressUpdate = 0
+                    var lastUpdate = 0
                     
                     while (input.read(data).also { count = it } != -1) {
                         total += count
                         output.write(data, 0, count)
                         if (fileLength > 0) {
                             val currentProgress = ((total * 100) / fileLength).toInt()
-                            if (currentProgress - lastProgressUpdate >= 1) {
+                            if (currentProgress - lastUpdate >= 1) {
                                 mainScope.launch {
                                     progressDownload.progress = currentProgress
-                                    txtChatLog.text = String.format("[Downloading %s: %d%% completed (%.1f / %.1f MB)]",
-                                        modelName.uppercase(), currentProgress, total.toFloat() / (1024 * 1024), fileLength.toFloat() / (1024 * 1024))
+                                    txtChatLog.text = String.format("[Downloading %s: %d%% completed]",
+                                        modelName.uppercase(), currentProgress)
                                 }
-                                lastProgressUpdate = currentProgress
+                                lastUpdate = currentProgress
                             }
                         }
                     }
@@ -318,100 +275,110 @@ class MainActivity : Activity() {
                             progressDownload.visibility = View.GONE
                             btnDownloadT0.isEnabled = true
                             btnDownloadT1.isEnabled = true
-                            btnDownloadT2.isEnabled = true
                             targetBtn.text = "INSTALLED ✓"
-                            txtChatLog.text = String.format("[Success: Official %s weights successfully downloaded & installed atomically! Tap 'Load' to run.]",
-                                modelName.uppercase())
-                        }
-                    } else {
-                        mainScope.launch {
-                            btnDownloadT0.isEnabled = true
-                            btnDownloadT1.isEnabled = true
-                            btnDownloadT2.isEnabled = true
-                            txtChatLog.append("\n[System: Installation failed - atomic rename failed]")
+                            txtChatLog.text = "[Success: Installed $modelName weights successfully!]"
                         }
                     }
                 } catch (e: Exception) {
                     mainScope.launch {
                         btnDownloadT0.isEnabled = true
                         btnDownloadT1.isEnabled = true
-                        btnDownloadT2.isEnabled = true
-                        txtChatLog.append("\n[System: Download failed - Check connection and try again: " + e.message + "]")
+                        txtChatLog.append("\n[System: Download failed: " + e.message + "]")
                     }
                 }
             }
         }
 
-        // Set dynamic download click listeners for Battery Saver, Standard, and High Quality models
         btnDownloadT0.setOnClickListener {
-            if (File(filesDir, "qwen-0.5b.gguf").exists()) {
-                txtChatLog.text = "[Info: Battery Saver (Qwen2.5-0.5B) is already installed. If you want to reinstall, please delete it first.]"
-                return@setOnClickListener
-            }
-            triggerDownload(
-                "Battery Saver (Qwen2.5-0.5B)",
-                "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q2_k.gguf",
-                "qwen-0.5b.gguf",
-                btnDownloadT0
-            )
+            triggerDownload("qwen-0.5b", "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q2_k.gguf", "qwen-0.5b.gguf", btnDownloadT0)
         }
 
         btnDownloadT1.setOnClickListener {
-            if (File(filesDir, "qwen-1.5b.gguf").exists()) {
-                txtChatLog.text = "[Info: Standard (Qwen2.5-1.5B) is already installed. If you want to reinstall, please delete it first.]"
-                return@setOnClickListener
-            }
-            triggerDownload(
-                "Standard (Qwen2.5-1.5B)",
-                "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q2_k.gguf",
-                "qwen-1.5b.gguf",
-                btnDownloadT1
-            )
+            triggerDownload("qwen-1.5b", "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q2_k.gguf", "qwen-1.5b.gguf", btnDownloadT1)
         }
 
-        btnDownloadT2.setOnClickListener {
-            if (File(filesDir, "gemma-2b.gguf").exists()) {
-                txtChatLog.text = "[Info: High Quality (Gemma-3-2B-IT) is already installed. If you want to reinstall, please delete it first.]"
-                return@setOnClickListener
+        // Document Picker Triggers
+        btnPickDoc.setOnClickListener {
+            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "*/*"
+                putExtra(Intent.EXTRA_MIME_TYPES, arrayOf(
+                    "text/plain",
+                    "text/markdown",
+                    "application/pdf",
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                ))
             }
-            triggerDownload(
-                "High Quality (Gemma-3-2B-IT Q4_0)",
-                "https://huggingface.co/google/gemma-3-2b-it-GGUF/resolve/main/gemma-3-2b-it-q4_0.gguf",
-                "gemma-2b.gguf", // Keep target filename compatible with native engines but map presentation name exactly!
-                btnDownloadT2
-            )
+            startActivityForResult(intent, PICK_DOCUMENT_REQUEST)
         }
 
-        // 15Hz Throttled Token Stream consumer (Final Fix 5 compliance)
+        // Chat Streaming & Context Retrieval
         btnSend.setOnClickListener {
-            val prompt = editPrompt.text.toString()
+            val prompt = editPrompt.text.toString().trim()
             if (prompt.isEmpty()) return@setOnClickListener
-            txtChatLog.text = "User: $prompt\n\nAI: "
             editPrompt.text.clear()
 
-            // Map and wrap prompt inside the official Qwen/Gemma Instruct ChatTemplate
-            // to direct attention matrices, prevent hallucinations, and trigger immediate EOS cutoffs!
-            val activeModelText = txtActiveModel.text.toString()
-            val formattedPrompt = if (activeModelText.contains("Gemma", ignoreCase = true)) {
-                // Gemma Instruct ChatML Format
-                "<bos><|im_start|>user\n${prompt}<|im_end|>\n<|im_start|>assistant\n"
+            txtChatLog.text = "User: $prompt\n\nAI: "
+            layoutCitations.visibility = View.GONE
+
+            // Step 1: Query local vector index (Issue 4 - context caps)
+            val contextPayload = IshaRuntime.retrieveContextNative(prompt, "local_rag", 4)
+            val citationsList = mutableListOf<String>()
+            val contextBuilder = StringBuilder()
+            var contextLength = 0
+
+            if (contextPayload.isNotEmpty()) {
+                val lines = contextPayload.split("\n")
+                for (line in lines) {
+                    if (line.isEmpty()) continue
+                    val parts = line.split("||")
+                    if (parts.size >= 3) {
+                        val chunkId = parts[0]
+                        val text = parts[1]
+                        val score = parts[2].toDoubleOrNull() ?: 0.0
+
+                        // Strict threshold evaluation (Issue 10)
+                        if (score >= 0.35) {
+                            citationsList.add("Source: $chunkId (score: %.2f)".format(score))
+                            contextBuilder.append(text).append("\n\n")
+                            contextLength += text.length
+                            if (contextLength >= 6000 || citationsList.size >= 4) break
+                        }
+                    }
+                }
+            }
+
+            // Document indexed check (Issue 10)
+            val documentCount = db.getDocumentsList().size
+            if (documentCount > 0 && citationsList.isEmpty()) {
+                // Documents exist but similarity is below threshold: reject query safely to prevent hallucinations
+                txtChatLog.text = "User: $prompt\n\nAI: I couldn't find enough reliable information in your documents."
+                return@setOnClickListener
+            }
+
+            // Construct Grounded ChatTemplate (Issue 4 / Issue 10 compliance)
+            val finalPrompt = if (citationsList.isNotEmpty()) {
+                val contextText = contextBuilder.toString().trim()
+                txtCitations.text = citationsList.joinToString("\n")
+                layoutCitations.visibility = View.VISIBLE
+
+                "<|im_start|>system\nYou are ISHA AI. Answer the user query using ONLY the verified context below. If the context does not contain the answer, say honestly that you do not know. DO NOT hallucinate.\n\n[CONTEXT]\n$contextText\n<|im_end|>\n<|im_start|>user\n$prompt<|im_end|>\n<|im_start|>assistant\n"
             } else {
-                // Qwen Instruct ChatML Format
-                "<|im_start|>system\nYou are ISHA AI, a helpful, offline-first local assistant.<|im_end|>\n<|im_start|>user\n${prompt}<|im_end|>\n<|im_start|>assistant\n"
+                "<|im_start|>system\nYou are ISHA AI, a helpful, offline-first local assistant.<|im_end|>\n<|im_start|>user\n$prompt<|im_end|>\n<|im_start|>assistant\n"
             }
 
             streamJob?.cancel()
             val sessionChannel = Channel<String>(Channel.UNLIMITED)
             
             mainScope.launch(Dispatchers.IO) {
-                IshaRuntime.streamTokens(formattedPrompt, object : TokenCallback {
+                IshaRuntime.streamTokens(finalPrompt, object : TokenCallback {
                     override fun onToken(token: String) {
                         sessionChannel.trySend(token)
                     }
                 })
             }
 
-            // Aggregate stream tokens and batch update XML layout at 15Hz max refresh rate
+            // 15Hz Refresh Gate UI loop (Phase 1 compliance)
             streamJob = mainScope.launch {
                 val buffer = StringBuilder()
                 var lastUpdate = SystemClock.elapsedRealtime()
@@ -429,7 +396,7 @@ class MainActivity : Activity() {
                         }
                     }
                 } catch (e: Exception) {
-                    // Session channel closed or coroutine cancelled
+                    // Channel closed or coroutine cancelled
                 }
             }
         }
@@ -439,36 +406,123 @@ class MainActivity : Activity() {
             startActivity(intent)
         }
 
-        // Start dynamic thermal and memory diagnostics feedback loop (Fix 6 & Fix 7)
+        // Thermal Monitoring Loop
         mainScope.launch {
             while (true) {
-                delay(1000) // 1Hz refresh rate
-                
-                // Get thermal state and memory pressure from JNI
+                delay(1000)
                 val state = IshaRuntime.getThermalState()
-                
-                // Map internally (Fix 6)
-                if (previousCrashDetected) {
-                    txtThermalZone.text = "Thermal State: Running in lightweight recovery mode."
-                } else {
-                    when (state) {
-                        1 -> txtThermalZone.text = "Thermal State: Device warming up — optimizing performance."
-                        2 -> txtThermalZone.text = "Thermal State: Reducing AI load to keep device responsive."
-                        3 -> txtThermalZone.text = "Thermal State: AI paused temporarily to protect device temperature."
-                        else -> txtThermalZone.text = "Thermal State: NOMINAL"
-                    }
+                when (state) {
+                    1 -> txtThermalZone.text = "Thermal State: Device warming up — optimizing performance."
+                    2 -> txtThermalZone.text = "Thermal State: Throttling active. Indexing paused."
+                    3 -> txtThermalZone.text = "Thermal State: Critical. Inference disabled."
+                    else -> txtThermalZone.text = "Thermal State: NOMINAL"
                 }
-
-                // Query memory info dynamically
-                val currentMemInfo = android.app.ActivityManager.MemoryInfo()
-                actManager.getMemoryInfo(currentMemInfo)
-                val availableMb = currentMemInfo.availMem / (1024 * 1024)
-                
-                // Display runtime pressure based on active model and available RAM
-                txtTotalRuntimePressure.text = String.format("Total Runtime Pressure: ~%d MB total operational footprint (System Free RAM: %d MB)",
-                    totalRamMb - availableMb, availableMb)
             }
         }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == PICK_DOCUMENT_REQUEST && resultCode == RESULT_OK) {
+            val uri = data?.data ?: return
+            
+            // Acquire persistent URI read permissions (Scoped storage rules)
+            try {
+                contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            } catch (e: SecurityException) {
+                Log.w(TAG, "Failed to acquire persistable URI permission")
+            }
+
+            val mimeType = contentResolver.getType(uri)
+            val layoutIngestProgress = findViewById<LinearLayout>(R.id.layoutIngestProgress)
+            val progressIngest = findViewById<ProgressBar>(R.id.progressIngest)
+            val txtIngestStatus = findViewById<TextView>(R.id.txtIngestStatus)
+            val layoutDocList = findViewById<LinearLayout>(R.id.layoutDocList)
+            val txtIndexChunks = findViewById<TextView>(R.id.txtIndexChunks)
+            val txtIndexSize = findViewById<TextView>(R.id.txtIndexSize)
+
+            layoutIngestProgress.visibility = View.VISIBLE
+            progressIngest.progress = 0
+
+            mainScope.launch {
+                ragManager.ingestDocument(uri, mimeType, object : IshaRAGManager.IngestionCallback {
+                    override fun onProgress(percentage: Int, status: String) {
+                        mainScope.launch {
+                            progressIngest.progress = percentage
+                            txtIngestStatus.text = status
+                        }
+                    }
+
+                    override fun onSuccess(chunkCount: Int) {
+                        mainScope.launch {
+                            layoutIngestProgress.visibility = View.GONE
+                            Toast.makeText(this@MainActivity, "Successfully indexed $chunkCount chunks!", Toast.LENGTH_LONG).show()
+                            refreshDocLibrary(layoutDocList, txtIndexChunks, txtIndexSize)
+                        }
+                    }
+
+                    override fun onFailure(error: String) {
+                        mainScope.launch {
+                            layoutIngestProgress.visibility = View.GONE
+                            Toast.makeText(this@MainActivity, "Ingestion Failed: $error", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                })
+            }
+        }
+    }
+
+    private fun refreshDocLibrary(layoutList: LinearLayout, txtChunks: TextView, txtSize: TextView) {
+        layoutList.removeAllViews()
+        val docList = db.getDocumentsList()
+        var totalChunks = 0
+
+        val inflater = LayoutInflater.from(this)
+
+        for (doc in docList) {
+            totalChunks += doc.chunkCount
+            val view = inflater.inflate(android.R.layout.simple_list_item_2, layoutList, false)
+            val text1 = view.findViewById<TextView>(android.R.id.text1)
+            val text2 = view.findViewById<TextView>(android.R.id.text2)
+
+            text1.text = doc.path
+            text1.setTextColor(android.graphics.Color.parseColor("#1F2937"))
+            text1.textSize = 14f
+
+            val sizeKb = doc.fileSize / 1024
+            text2.text = "Size: %d KB | Chunks: %d".format(sizeKb, doc.chunkCount)
+            text2.setTextColor(android.graphics.Color.parseColor("#6B7280"))
+            text2.textSize = 12f
+
+            // Add simple delete button to layout next to the list item
+            val itemContainer = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+                setPadding(8, 8, 8, 8)
+            }
+            itemContainer.addView(view, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f))
+            
+            val deleteBtn = Button(this).apply {
+                text = "Delete"
+                textSize = 10f
+                backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#EF4444"))
+                setTextColor(android.graphics.Color.WHITE)
+                setOnClickListener {
+                    db.deleteDocument(doc.path)
+                    IshaRuntime.clearPackNative("local_rag")
+                    refreshDocLibrary(layoutList, txtChunks, txtSize)
+                }
+            }
+            itemContainer.addView(deleteBtn, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+            
+            layoutList.addView(itemContainer)
+        }
+
+        txtChunks.text = "Active Chunks: $totalChunks"
+        // Estimate vector file sizes: each chunk vector has 384 dimensions of 4-byte float32 vectors (~1.5KB per vector)
+        val indexFile = File(filesDir, "rag_index.efvi")
+        val sizeKb = if (indexFile.exists()) indexFile.length() / 1024 else 0
+        txtSize.text = "Index Memory footprint: $sizeKb KB"
     }
 
     override fun onDestroy() {

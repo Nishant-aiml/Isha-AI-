@@ -21,12 +21,12 @@ public:
     void loadMockPack(const std::string& pack_id);
     
     // Direct access to index for benchmarking
-    LocalIndex& getIndex() { return index_; }
-    const LocalIndex& getIndex() const { return index_; }
+    EdgeFlatVectorIndex& getIndex() { return index_; }
+    const EdgeFlatVectorIndex& getIndex() const { return index_; }
 
 private:
     std::shared_ptr<IEmbeddingGenerator> embedder_;
-    LocalIndex index_;
+    EdgeFlatVectorIndex index_;
     std::set<std::string> loaded_packs_;
     
     void ingestChunk(const std::string& chunk_id, const std::string& text, const std::string& pack_id);

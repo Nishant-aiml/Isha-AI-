@@ -30,4 +30,9 @@ object IshaRuntime {
     external fun checkpointSession(sessionId: String): Boolean
     external fun restoreSession(sessionId: String): Boolean
     external fun updateThermalState(thermalState: Int)
+
+    // JNI Local RAG Declarations
+    external fun ingestChunkNative(chunkId: String, chunkText: String, packId: String, isLast: Boolean): Boolean
+    external fun retrieveContextNative(query: String, packId: String, limit: Int): String
+    external fun clearPackNative(packId: String): Boolean
 }

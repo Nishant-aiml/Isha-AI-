@@ -56,7 +56,14 @@ std::vector<DocumentChunk> RetrievalEngine::retrieve(const std::string& query, c
     ISHA_LOG_INFO("RetrievalEngine", "Retrieving for query: '" + query + "' in pack '" + pack_id + "'");
     
     auto query_embedding = embedder_->generateEmbedding(query);
-    auto results = index_.search(query_embedding, pack_id, limit);
+    // Cosine similarity search with strict threshold of 0.35
+    auto results = index_.search(query_embedding, pack_id, limit, 0.35);
+    
+    // If no semantic match above threshold is found, fallback to BM25-lite keyword search
+    if (results.empty()) {
+        ISHA_LOG_INFO("RetrievalEngine", "Semantic search returned no results above threshold. Falling back to BM25-lite.");
+        results = index_.searchBM25(query, pack_id, limit);
+    }
     
     std::vector<DocumentChunk> chunks;
     chunks.reserve(results.size());

@@ -2,12 +2,16 @@
 #include <string>
 #include <memory>
 #include <mutex>
+#include <vector>
+#include <sstream>
 #include <android/log.h>
 #include "model/model_manager.hpp"
 #include "inference/llama_cpp_engine.hpp"
 #include "config/device_profile.hpp"
 #include "runtime/event_bus.hpp"
 #include "inference/kv_telemetry.hpp"
+#include "retrieval/local_index.hpp"
+#include "embeddings/embedding_engine.hpp"
 
 #define LOG_TAG "ISHA_JNI"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
@@ -17,15 +21,13 @@
 // Global JNI state
 static std::unique_ptr<isha::ModelManager> g_model_manager = nullptr;
 static std::unique_ptr<isha::LlamaCppEngine> g_llama_engine = nullptr;
+static std::unique_ptr<isha::EdgeFlatVectorIndex> g_vector_index = nullptr;
+static std::unique_ptr<isha::EmbeddingEngine> g_embedding_engine = nullptr;
 static isha::DeviceProfile g_profile;
 static std::string g_files_dir;
 static std::string g_cache_dir;
 static std::mutex g_jni_mutex;
 static std::shared_ptr<isha::CancellationToken> g_stream_cancel_token = nullptr;
-
-// Cache class references for performance and thread safety
-static jclass g_callback_class = nullptr;
-static jmethodID g_callback_on_token = nullptr;
 
 extern "C" {
 
@@ -59,11 +61,17 @@ Java_com_isha_ai_IshaRuntime_initializeRuntime(JNIEnv *env, jobject thiz,
         g_profile.total_ram_mb = total_ram_mb;
         g_profile.cpu_cores = cpu_cores;
         g_profile.os_name = "Android";
-        g_profile.has_nnapi = true;  // NNAPI capability checked at load time optionally
+        g_profile.has_nnapi = true;
         g_profile.has_vulkan = false;
 
         g_model_manager = std::make_unique<isha::ModelManager>(g_profile);
         g_llama_engine = std::make_unique<isha::LlamaCppEngine>(g_profile);
+        g_vector_index = std::make_unique<isha::EdgeFlatVectorIndex>();
+        g_embedding_engine = std::make_unique<isha::EmbeddingEngine>(384); // 384 dimensions for all-MiniLM-L6-v2 parity
+
+        // Load pre-existing index if present
+        std::string index_path = g_files_dir + "/rag_index.efvi";
+        g_vector_index->loadFromFile(index_path);
 
         LOGI("ISHA runtime native initialization succeeded. Classified Tier: %s",
              isha::deviceTierToString(tier).c_str());
@@ -93,7 +101,6 @@ Java_com_isha_ai_IshaRuntime_loadModelTier(JNIEnv *env, jobject thiz,
 
         LOGI("Attempting to load model: %s (%d MB)", name_str.c_str(), size_mb);
 
-        // Strict gating policies (Mistral-7B/T3 is banned on this tier)
         if (size_mb >= 3000 && g_profile.tier != isha::DeviceTier::FLAGSHIP) {
             LOGE("T3 Model load REJECTED: T3 is disabled on this device class (%s)",
                  isha::deviceTierToString(g_profile.tier).c_str());
@@ -106,10 +113,7 @@ Java_com_isha_ai_IshaRuntime_loadModelTier(JNIEnv *env, jobject thiz,
             return JNI_FALSE;
         }
 
-        // Formulate path in internal getFilesDir() only (Final Fix 1 compliance)
         std::string model_path = g_files_dir + "/" + name_str + ".gguf";
-        
-        // Load the actual model weights using mmap
         isha::InferenceContext ctx("session_init", nullptr, size_mb);
         bool engine_success = g_llama_engine->load(model_path, ctx);
 
@@ -203,12 +207,10 @@ Java_com_isha_ai_IshaRuntime_streamTokens(JNIEnv *env, jobject thiz,
 
     isha::InferenceContext ctx("session_stream", local_cancel_token, g_model_manager->getActiveModelSizeMB());
     
-    // Strict token budgets for T1 vs T0 in emergency mode
     if (g_model_manager->isT0ThermalEmergencyMode()) {
         ctx.max_tokens_to_generate = 32;
     }
 
-    // Call native engine streaming (Final Fix 7 compliance: stream into native ring-buffer callback)
     bool success = g_llama_engine->stream(prompt_str, ctx, [jvm, global_callback, on_token_method](const std::string &token) {
         JNIEnv *thread_env = nullptr;
         jint res = jvm->GetEnv((void **)&thread_env, JNI_VERSION_1_6);
@@ -236,13 +238,13 @@ Java_com_isha_ai_IshaRuntime_streamTokens(JNIEnv *env, jobject thiz,
 
 JNIEXPORT jint JNICALL
 Java_com_isha_ai_IshaRuntime_getThermalState(JNIEnv *env, jobject thiz) {
-    if (!g_model_manager) return 0; // NOMINAL
-    return g_model_manager->isT0ThermalEmergencyMode() ? 3 : 0; // Mapping
+    if (!g_model_manager) return 0;
+    return g_model_manager->isT0ThermalEmergencyMode() ? 3 : 0;
 }
 
 JNIEXPORT jint JNICALL
 Java_com_isha_ai_IshaRuntime_getMemoryPressure(JNIEnv *env, jobject thiz) {
-    return 0; // Standard nominal indicator
+    return 0;
 }
 
 JNIEXPORT void JNICALL
@@ -270,25 +272,126 @@ Java_com_isha_ai_IshaRuntime_updateThermalState(JNIEnv *env, jobject thiz, jint 
     std::lock_guard<std::mutex> lock(g_jni_mutex);
     if (!g_model_manager) return;
 
-    // Map Android Status enums directly to the strict 4-Zone model (Final Fix 7 compliance)
-    // thermal_state:
-    // 0 = NONE/LIGHT -> ZONE 1 (NOMINAL)
-    // 1 = MODERATE   -> ZONE 2 (WARM)
-    // 2 = SEVERE     -> ZONE 3 (HOT)
-    // 3 = CRITICAL/EMERGENCY -> ZONE 4 (CRITICAL)
     double mapped_temp = 25.0;
     if (thermal_state == 1) {
-        mapped_temp = 36.5; // Trigger ZONE 2 (35-38°C)
+        mapped_temp = 36.5;
     } else if (thermal_state == 2) {
-        mapped_temp = 39.5; // Trigger ZONE 3 (38-41°C)
+        mapped_temp = 39.5;
     } else if (thermal_state >= 3) {
-        mapped_temp = 43.5; // Trigger ZONE 4 (>41°C)
+        mapped_temp = 43.5;
     }
 
     LOGI("Received OS PowerManager thermal state update = %d. Mapping to temp cue = %.1f°C",
          thermal_state, mapped_temp);
 
     g_model_manager->thermalUnload(mapped_temp);
+}
+
+// ====================================================================
+// PHASE 2 RAG JNI BINDINGS
+// ====================================================================
+
+JNIEXPORT jboolean JNICALL
+Java_com_isha_ai_IshaRuntime_ingestChunkNative(JNIEnv *env, jobject thiz,
+                                               jstring chunk_id, jstring chunk_text,
+                                               jstring pack_id, jboolean is_last) {
+    std::lock_guard<std::mutex> lock(g_jni_mutex);
+    if (!g_vector_index || !g_embedding_engine) {
+        LOGE("Ingestion failed: Vector index or embedding engine not initialized.");
+        return JNI_FALSE;
+    }
+
+    try {
+        const char *id_c = env->GetStringUTFChars(chunk_id, nullptr);
+        const char *text_c = env->GetStringUTFChars(chunk_text, nullptr);
+        const char *pack_c = env->GetStringUTFChars(pack_id, nullptr);
+        
+        std::string id_str(id_c);
+        std::string text_str(text_c);
+        std::string pack_str(pack_c);
+
+        env->ReleaseStringUTFChars(chunk_id, id_c);
+        env->ReleaseStringUTFChars(chunk_text, text_c);
+        env->ReleaseStringUTFChars(pack_id, pack_c);
+
+        // Generate embedding locally (384 dimensions)
+        auto embedding = g_embedding_engine->generateEmbedding(text_str);
+        
+        // Add to vector index
+        g_vector_index->addChunk({id_str, text_str, pack_str, std::move(embedding)});
+
+        // Save index file periodically / at the end of ingestion
+        if (is_last) {
+            std::string index_path = g_files_dir + "/rag_index.efvi";
+            g_vector_index->saveToFile(index_path);
+        }
+
+        return JNI_TRUE;
+    } catch (const std::exception &e) {
+        LOGE("Exception in ingestChunkNative: %s", e.what());
+        return JNI_FALSE;
+    }
+}
+
+JNIEXPORT jstring JNICALL
+Java_com_isha_ai_IshaRuntime_retrieveContextNative(JNIEnv *env, jobject thiz,
+                                                   jstring query, jstring pack_id,
+                                                   jint limit) {
+    std::lock_guard<std::mutex> lock(g_jni_mutex);
+    if (!g_vector_index || !g_embedding_engine) {
+        return env->NewStringUTF("");
+    }
+
+    try {
+        const char *query_c = env->GetStringUTFChars(query, nullptr);
+        const char *pack_c = env->GetStringUTFChars(pack_id, nullptr);
+        std::string query_str(query_c);
+        std::string pack_str(pack_c);
+        env->ReleaseStringUTFChars(query, query_c);
+        env->ReleaseStringUTFChars(pack_id, pack_c);
+
+        // Cosine similarity search (Inner Product since normalized)
+        auto query_embedding = g_embedding_engine->generateEmbedding(query_str);
+        auto results = g_vector_index->search(query_embedding, pack_str, limit, 0.35);
+
+        // Fallback to BM25-lite keyword search if vector search is empty
+        if (results.empty()) {
+            LOGI("JNI retrieval: Semantic search returned no results above 0.35. Falling back to BM25-lite.");
+            results = g_vector_index->searchBM25(query_str, pack_str, limit);
+        }
+
+        // Format chunks list as formatted string: chunk_id||text||score\n...
+        std::stringstream ss;
+        for (const auto& r : results) {
+            ss << r.chunk_id << "||" << r.text << "||" << r.score << "\n";
+        }
+
+        return env->NewStringUTF(ss.str().c_str());
+    } catch (const std::exception &e) {
+        LOGE("Exception in retrieveContextNative: %s", e.what());
+        return env->NewStringUTF("");
+    }
+}
+
+JNIEXPORT jboolean JNICALL
+Java_com_isha_ai_IshaRuntime_clearPackNative(JNIEnv *env, jobject thiz, jstring pack_id) {
+    std::lock_guard<std::mutex> lock(g_jni_mutex);
+    if (!g_vector_index) return JNI_FALSE;
+
+    try {
+        const char *pack_c = env->GetStringUTFChars(pack_id, nullptr);
+        std::string pack_str(pack_c);
+        env->ReleaseStringUTFChars(pack_id, pack_c);
+
+        g_vector_index->clearPack(pack_str);
+        std::string index_path = g_files_dir + "/rag_index.efvi";
+        g_vector_index->saveToFile(index_path);
+
+        return JNI_TRUE;
+    } catch (const std::exception &e) {
+        LOGE("Exception in clearPackNative: %s", e.what());
+        return JNI_FALSE;
+    }
 }
 
 }

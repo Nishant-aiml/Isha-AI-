@@ -1,383 +1,473 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F3F4F6">
+    android:background="#F3F4F6"
+    android:orientation="vertical">
 
+    <!-- Segmented Tab Header -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp">
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="ISHA AI Production Shell"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            android:textColor="#1F2937"
-            android:gravity="center"
-            android:layout_marginBottom="16dp"/>
-
-        <LinearLayout
-            android:id="@+id/panelSafeMode"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="#FEF3C7"
-            android:orientation="vertical"
-            android:padding="12dp"
-            android:layout_marginBottom="16dp"
-            android:visibility="gone">
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="⚠️ SYSTEM SAFE MODE ACTIVE"
-                android:textStyle="bold"
-                android:textColor="#D97706"
-                android:textSize="14sp"/>
-            <TextView
-                android:id="@+id/txtSafeModeReason"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Inference degraded due to system pressure."
-                android:textColor="#D97706"
-                android:textSize="12sp"
-                android:layout_marginTop="4dp"/>
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="#FFFFFF"
-            android:orientation="vertical"
-            android:padding="16dp"
-            android:layout_marginBottom="16dp"
-            android:elevation="2dp">
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Real Device Diagnostics"
-                android:textStyle="bold"
-                android:textColor="#374151"
-                android:layout_marginBottom="8dp"/>
-            <TextView
-                android:id="@+id/txtColdStart"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Cold Start Latency: -- ms"
-                android:textColor="#4B5563"/>
-            <TextView
-                android:id="@+id/txtTokensPerSec"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Generation Speed: -- tok/s"
-                android:textColor="#4B5563"
-                android:layout_marginTop="4dp"/>
-            <TextView
-                android:id="@+id/txtActiveModel"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Active Model: UNLOADED"
-                android:textColor="#4B5563"
-                android:layout_marginTop="4dp"/>
-            <TextView
-                android:id="@+id/txtActiveModelRss"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Active Model RSS: 0 MB"
-                android:textColor="#4B5563"
-                android:layout_marginTop="4dp"/>
-            <TextView
-                android:id="@+id/txtTotalRuntimePressure"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Total Runtime Pressure: -- MB"
-                android:textColor="#4B5563"
-                android:layout_marginTop="4dp"/>
-            <TextView
-                android:id="@+id/txtThermalZone"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Thermal State: NOMINAL"
-                android:textColor="#4B5563"
-                android:layout_marginTop="4dp"/>
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="#FFFFFF"
-            android:orientation="vertical"
-            android:padding="16dp"
-            android:layout_marginBottom="16dp"
-            android:elevation="2dp">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Model Downloader &amp; Registry"
-                android:textStyle="bold"
-                android:textColor="#374151"
-                android:layout_marginBottom="12dp"/>
-
-            <!-- Progress Indicator Shared by Downloader -->
-            <ProgressBar
-                android:id="@+id/progressDownload"
-                style="?android:attr/progressBarStyleHorizontal"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:visibility="gone"/>
-
-            <!-- Battery Saver (formerly T0) -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginBottom="12dp"
-                android:padding="8dp"
-                android:background="#F9FAFB">
-                <TextView
-                    android:id="@+id/lblT0Recommended"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="★ RECOMMENDED (BATTERY SAVER)"
-                    android:textColor="#D97706"
-                    android:textStyle="bold"
-                    android:textSize="10sp"
-                    android:visibility="gone"/>
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Battery Saver: Qwen2.5-0.5B-Instruct Q4_K_M"
-                    android:textStyle="bold"
-                    android:textColor="#111827"/>
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Download: ~84 MB. Footprint: ~350–450MB total operational runtime footprint."
-                    android:textSize="12sp"
-                    android:textColor="#6B7280"/>
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginTop="4dp">
-                    <Button
-                        android:id="@+id/btnDownloadT0"
-                        android:layout_width="0dp"
-                        android:layout_weight="1"
-                        android:layout_height="wrap_content"
-                        android:text="Download Battery Saver"
-                        android:backgroundTint="#2563EB"
-                        android:textColor="#FFFFFF"
-                        android:textSize="11sp"/>
-                    <Button
-                        android:id="@+id/btnLoadT0"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Load"
-                        android:layout_marginStart="4dp"
-                        android:textSize="11sp"/>
-                    <Button
-                        android:id="@+id/btnDeleteT0"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Delete"
-                        android:backgroundTint="#EF4444"
-                        android:textColor="#FFFFFF"
-                        android:layout_marginStart="4dp"
-                        android:textSize="11sp"/>
-                </LinearLayout>
-            </LinearLayout>
-
-            <!-- Standard (Recommended) (formerly T1) -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginBottom="12dp"
-                android:padding="8dp"
-                android:background="#F9FAFB">
-                <TextView
-                    android:id="@+id/lblT1Recommended"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="★ RECOMMENDED (STANDARD PRODUCT)"
-                    android:textColor="#2563EB"
-                    android:textStyle="bold"
-                    android:textSize="10sp"
-                    android:visibility="gone"/>
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Standard (Recommended): Qwen2.5-1.5B-Instruct Q4_K_M"
-                    android:textStyle="bold"
-                    android:textColor="#111827"/>
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Download: ~700 MB. Pressure: ~1.0–1.3GB realistic runtime pressure during active inference."
-                    android:textSize="12sp"
-                    android:textColor="#6B7280"/>
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginTop="4dp">
-                    <Button
-                        android:id="@+id/btnDownloadT1"
-                        android:layout_width="0dp"
-                        android:layout_weight="1"
-                        android:layout_height="wrap_content"
-                        android:text="Download Standard"
-                        android:backgroundTint="#2563EB"
-                        android:textColor="#FFFFFF"
-                        android:textSize="11sp"/>
-                    <Button
-                        android:id="@+id/btnLoadT1"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Load"
-                        android:layout_marginStart="4dp"
-                        android:textSize="11sp"/>
-                    <Button
-                        android:id="@+id/btnDeleteT1"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Delete"
-                        android:backgroundTint="#EF4444"
-                        android:textColor="#FFFFFF"
-                        android:layout_marginStart="4dp"
-                        android:textSize="11sp"/>
-                </LinearLayout>
-            </LinearLayout>
-
-            <!-- High Quality (formerly T2) -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginBottom="12dp"
-                android:padding="8dp"
-                android:background="#F9FAFB">
-                <TextView
-                    android:id="@+id/lblT2Recommended"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="★ RECOMMENDED (HIGH QUALITY TIER)"
-                    android:textColor="#10B981"
-                    android:textStyle="bold"
-                    android:textSize="10sp"
-                    android:visibility="gone"/>
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="High Quality: Gemma-3-2B-IT Q4_0"
-                    android:textStyle="bold"
-                    android:textColor="#111827"/>
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Download: ~1.1 GB. Pressure: ~1.8–2.2GB realistic runtime pressure under sustained reasoning."
-                    android:textSize="12sp"
-                    android:textColor="#6B7280"/>
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginTop="4dp">
-                    <Button
-                        android:id="@+id/btnDownloadT2"
-                        android:layout_width="0dp"
-                        android:layout_weight="1"
-                        android:layout_height="wrap_content"
-                        android:text="Download High Quality"
-                        android:backgroundTint="#2563EB"
-                        android:textColor="#FFFFFF"
-                        android:textSize="11sp"/>
-                    <Button
-                        android:id="@+id/btnLoadT2"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Load"
-                        android:layout_marginStart="4dp"
-                        android:textSize="11sp"/>
-                    <Button
-                        android:id="@+id/btnDeleteT2"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Delete"
-                        android:backgroundTint="#EF4444"
-                        android:textColor="#FFFFFF"
-                        android:layout_marginStart="4dp"
-                        android:textSize="11sp"/>
-                </LinearLayout>
-            </LinearLayout>
-
-            <Button
-                android:id="@+id/btnUnload"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Unload Active Model"
-                android:backgroundTint="#EF4444"
-                android:textColor="#FFFFFF"/>
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="#FFFFFF"
-            android:orientation="vertical"
-            android:padding="16dp"
-            android:layout_marginBottom="16dp"
-            android:elevation="2dp">
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Inference Console"
-                android:textStyle="bold"
-                android:textColor="#374151"
-                android:layout_marginBottom="8dp"/>
-            <TextView
-                android:id="@+id/txtChatLog"
-                android:layout_width="match_parent"
-                android:layout_height="180dp"
-                android:background="#F9FAFB"
-                android:padding="8dp"
-                android:scrollbars="vertical"
-                android:text="Welcome to ISHA. Load a model to begin stream inference."
-                android:textColor="#111827"/>
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="8dp">
-                <EditText
-                    android:id="@+id/editPrompt"
-                    android:layout_weight="1"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:hint="Type prompt..."
-                    android:textColor="#1F2937"/>
-                <Button
-                    android:id="@+id/btnSend"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Send"
-                    android:backgroundTint="#10B981"
-                    android:textColor="#FFFFFF"/>
-            </LinearLayout>
-        </LinearLayout>
+        android:background="#FFFFFF"
+        android:elevation="4dp"
+        android:orientation="horizontal"
+        android:padding="8dp">
 
         <Button
-            android:id="@+id/btnOpenRecovery"
-            android:layout_width="match_parent"
+            android:id="@+id/tabChat"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Open Failsafe Recovery Console"
-            android:backgroundTint="#4B5563"
-            android:textColor="#FFFFFF"/>
+            android:layout_weight="1"
+            android:text="Chat Console"
+            android:backgroundTint="#2563EB"
+            android:textColor="#FFFFFF"
+            android:layout_marginEnd="4dp"
+            style="?android:attr/buttonStyleSmall" />
 
+        <Button
+            android:id="@+id/tabLibrary"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Document Library"
+            android:backgroundTint="#E5E7EB"
+            android:textColor="#374151"
+            android:layout_marginStart="4dp"
+            style="?android:attr/buttonStyleSmall" />
     </LinearLayout>
-</ScrollView>
+
+    <!-- Main Content Containers -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <!-- CHAT CONSOLE VIEW -->
+        <ScrollView
+            android:id="@+id/viewChatConsole"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="visible">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:id="@+id/panelSafeMode"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="#FEF3C7"
+                    android:orientation="vertical"
+                    android:padding="12dp"
+                    android:layout_marginBottom="16dp"
+                    android:visibility="gone">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="⚠️ SYSTEM SAFE MODE ACTIVE"
+                        android:textStyle="bold"
+                        android:textColor="#D97706"
+                        android:textSize="14sp"/>
+                    <TextView
+                        android:id="@+id/txtSafeModeReason"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Inference degraded due to system pressure."
+                        android:textColor="#D97706"
+                        android:textSize="12sp"
+                        android:layout_marginTop="4dp"/>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="#FFFFFF"
+                    android:orientation="vertical"
+                    android:padding="16dp"
+                    android:layout_marginBottom="16dp"
+                    android:elevation="2dp">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Edge-AI Diagnostics"
+                        android:textStyle="bold"
+                        android:textColor="#374151"
+                        android:layout_marginBottom="8dp"/>
+                    <TextView
+                        android:id="@+id/txtColdStart"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Cold Start Latency: -- ms"
+                        android:textColor="#4B5563"/>
+                    <TextView
+                        android:id="@+id/txtTokensPerSec"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Generation Speed: -- tok/s"
+                        android:textColor="#4B5563"
+                        android:layout_marginTop="4dp"/>
+                    <TextView
+                        android:id="@+id/txtActiveModel"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Active Model: UNLOADED"
+                        android:textColor="#4B5563"
+                        android:layout_marginTop="4dp"/>
+                    <TextView
+                        android:id="@+id/txtThermalZone"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Thermal State: NOMINAL"
+                        android:textColor="#4B5563"
+                        android:layout_marginTop="4dp"/>
+                </LinearLayout>
+
+                <!-- Model Installer -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="#FFFFFF"
+                    android:orientation="vertical"
+                    android:padding="16dp"
+                    android:layout_marginBottom="16dp"
+                    android:elevation="2dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Model Registry"
+                        android:textStyle="bold"
+                        android:textColor="#374151"
+                        android:layout_marginBottom="12dp"/>
+
+                    <ProgressBar
+                        android:id="@+id/progressDownload"
+                        style="?android:attr/progressBarStyleHorizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:visibility="gone"/>
+
+                    <!-- Battery Saver: T0 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginBottom="12dp"
+                        android:padding="8dp"
+                        android:background="#F9FAFB">
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Battery Saver: Qwen2.5-0.5B-Instruct Q4_K_M"
+                            android:textStyle="bold"
+                            android:textColor="#111827"/>
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Size: ~84 MB. Routing, fallback &amp; fallback RAG."
+                            android:textSize="12sp"
+                            android:textColor="#6B7280"/>
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:layout_marginTop="4dp">
+                            <Button
+                                android:id="@+id/btnDownloadT0"
+                                android:layout_width="0dp"
+                                android:layout_weight="1"
+                                android:layout_height="wrap_content"
+                                android:text="Download"
+                                android:backgroundTint="#2563EB"
+                                android:textColor="#FFFFFF"
+                                android:textSize="11sp"/>
+                            <Button
+                                android:id="@+id/btnLoadT0"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Load"
+                                android:layout_marginStart="4dp"
+                                android:textSize="11sp"/>
+                            <Button
+                                android:id="@+id/btnDeleteT0"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Delete"
+                                android:backgroundTint="#EF4444"
+                                android:textColor="#FFFFFF"
+                                android:layout_marginStart="4dp"
+                                android:textSize="11sp"/>
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Standard: T1 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginBottom="12dp"
+                        android:padding="8dp"
+                        android:background="#F9FAFB">
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Standard (Recommended): Qwen2.5-1.5B-Instruct Q4_K_M"
+                            android:textStyle="bold"
+                            android:textColor="#111827"/>
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Size: ~700 MB. Main synthesis &amp; grounded Q&amp;A."
+                            android:textSize="12sp"
+                            android:textColor="#6B7280"/>
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:layout_marginTop="4dp">
+                            <Button
+                                android:id="@+id/btnDownloadT1"
+                                android:layout_width="0dp"
+                                android:layout_weight="1"
+                                android:layout_height="wrap_content"
+                                android:text="Download"
+                                android:backgroundTint="#2563EB"
+                                android:textColor="#FFFFFF"
+                                android:textSize="11sp"/>
+                            <Button
+                                android:id="@+id/btnLoadT1"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Load"
+                                android:layout_marginStart="4dp"
+                                android:textSize="11sp"/>
+                            <Button
+                                android:id="@+id/btnDeleteT1"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Delete"
+                                android:backgroundTint="#EF4444"
+                                android:textColor="#FFFFFF"
+                                android:layout_marginStart="4dp"
+                                android:textSize="11sp"/>
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <Button
+                        android:id="@+id/btnUnload"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Unload Model weights"
+                        android:backgroundTint="#EF4444"
+                        android:textColor="#FFFFFF"/>
+                </LinearLayout>
+
+                <!-- Interactive Chat Box -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="#FFFFFF"
+                    android:orientation="vertical"
+                    android:padding="16dp"
+                    android:layout_marginBottom="16dp"
+                    android:elevation="2dp">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Grounded Chat Session"
+                        android:textStyle="bold"
+                        android:textColor="#374151"
+                        android:layout_marginBottom="8dp"/>
+                    <TextView
+                        android:id="@+id/txtChatLog"
+                        android:layout_width="match_parent"
+                        android:layout_height="180dp"
+                        android:background="#F9FAFB"
+                        android:padding="8dp"
+                        android:scrollbars="vertical"
+                        android:text="ISHA Local Knowledge Engine ready. Ingest files via Document Library."
+                        android:textColor="#111827"/>
+                    
+                    <!-- Grounding Citations Panel (Issue 9) -->
+                    <LinearLayout
+                        android:id="@+id/layoutCitations"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="8dp"
+                        android:background="#EFF6FF"
+                        android:layout_marginTop="8dp"
+                        android:visibility="gone">
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Grounding Source Citations:"
+                            android:textStyle="bold"
+                            android:textColor="#1E40AF"
+                            android:textSize="11sp"/>
+                        <TextView
+                            android:id="@+id/txtCitations"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="#1E3A8A"
+                            android:textSize="10sp"
+                            android:layout_marginTop="2dp"/>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="8dp">
+                        <EditText
+                            android:id="@+id/editPrompt"
+                            android:layout_weight="1"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:hint="Ask anything about your documents..."
+                            android:textColor="#1F2937"/>
+                        <Button
+                            android:id="@+id/btnSend"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Ask"
+                            android:backgroundTint="#10B981"
+                            android:textColor="#FFFFFF"/>
+                    </LinearLayout>
+                </LinearLayout>
+
+                <Button
+                    android:id="@+id/btnOpenRecovery"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Open Failsafe Recovery Console"
+                    android:backgroundTint="#4B5563"
+                    android:textColor="#FFFFFF"/>
+            </LinearLayout>
+        </ScrollView>
+
+        <!-- DOCUMENT LIBRARY VIEW -->
+        <LinearLayout
+            android:id="@+id/viewDocLibrary"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#FFFFFF"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:layout_marginBottom="16dp"
+                android:elevation="2dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Upload Local Knowledge Sources"
+                    android:textStyle="bold"
+                    android:textColor="#374151"
+                    android:layout_marginBottom="8dp"/>
+
+                <Button
+                    android:id="@+id/btnPickDoc"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Select Document (.txt, .md, .docx, .pdf)"
+                    android:backgroundTint="#2563EB"
+                    android:textColor="#FFFFFF" />
+
+                <!-- Ingestion Progress Panel (Issue 9) -->
+                <LinearLayout
+                    android:id="@+id/layoutIngestProgress"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginTop="12dp"
+                    android:visibility="gone">
+                    
+                    <ProgressBar
+                        android:id="@+id/progressIngest"
+                        style="?android:attr/progressBarStyleHorizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:max="100"/>
+                    
+                    <TextView
+                        android:id="@+id/txtIngestStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Parsing document..."
+                        android:textColor="#4B5563"
+                        android:textSize="12sp"
+                        android:layout_marginTop="4dp"
+                        android:gravity="center_horizontal"/>
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Vector DB Status Card (Issue 9) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#FFFFFF"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:layout_marginBottom="16dp"
+                android:elevation="2dp">
+                
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Index Telemetry"
+                    android:textStyle="bold"
+                    android:textColor="#374151"
+                    android:layout_marginBottom="8dp"/>
+                
+                <TextView
+                    android:id="@+id/txtIndexChunks"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Active Chunks: 0"
+                    android:textColor="#4B5563"/>
+                
+                <TextView
+                    android:id="@+id/txtIndexSize"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Index Memory footprint: 0 KB"
+                    android:textColor="#4B5563"
+                    android:layout_marginTop="4dp"/>
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Knowledge Pack Registry"
+                android:textStyle="bold"
+                android:textColor="#374151"
+                android:layout_marginBottom="8dp"/>
+
+            <!-- Document List View -->
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1">
+                
+                <LinearLayout
+                    android:id="@+id/layoutDocList"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+            </ScrollView>
+
+        </LinearLayout>
+    </FrameLayout>
+</LinearLayout>

@@ -1,0 +1,69 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"jsonFile" : "directory-.-Debug-d0094a50bb2071803777.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.6.0"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "isha_jni",
+					"targetIndexes" : 
+					[
+						0,
+						1
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "isha_jni::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-isha_jni-Debug-e4431cec7202615c91e3.json",
+					"name" : "isha_jni",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "llama_static::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-llama_static-Debug-d568eb76f91402c3f55d.json",
+					"name" : "llama_static",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "C:/Users/datta.000/Desktop/Isha AI/android/app/.cxx/Debug/6n433j1h/arm64-v8a",
+		"source" : "C:/Users/datta.000/Desktop/Isha AI/android/app/src/main/cpp"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 3
+	}
+}

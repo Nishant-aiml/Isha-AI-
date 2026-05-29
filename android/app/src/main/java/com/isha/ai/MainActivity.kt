@@ -306,7 +306,9 @@ class MainActivity : Activity() {
                     "text/plain",
                     "text/markdown",
                     "application/pdf",
-                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    "image/jpeg",
+                    "image/png"
                 ))
             }
             startActivityForResult(intent, PICK_DOCUMENT_REQUEST)

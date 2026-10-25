@@ -1,0 +1,139 @@
+name: Build and Release ISHA AI App
+
+on:
+  push:
+    branches: [ main, master ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    name: Run Verification Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install fastapi uvicorn pydantic httpx pytest pillow psutil marked
+
+      - name: Run Test Suite
+        run: |
+          python -m pytest tests/test_full_system.py -k "not test_apk_exists_and_valid" -v
+
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Clone Pinned llama.cpp
+        run: |
+          git clone --depth 1 --branch b4966 https://github.com/ggerganov/llama.cpp.git third_party/llama.cpp
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+
+      - name: Setup Android SDK Tools & NDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install NDK and CMake
+        run: |
+          sdkmanager --install "ndk;26.1.10909125" "cmake;3.22.1"
+
+      - name: Make Gradlew Executable
+        run: chmod +x android/gradlew
+
+      - name: Build Android Debug APK
+        run: |
+          cd android
+          ./gradlew assembleDebug
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: isha-ai-android-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+
+  build-desktop-bundle:
+    name: Package Desktop Application Bundle
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Package Application ZIP
+        run: |
+          zip -r isha-ai-app-desktop.zip backend frontend run_isha.py run_isha.bat run_isha.ps1 README.md
+
+      - name: Upload Desktop Bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: isha-ai-desktop-bundle
+          path: isha-ai-app-desktop.zip
+
+  create-release:
+    name: Publish GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    needs: [build-android, build-desktop-bundle]
+    steps:
+      - name: Download Android APK Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: isha-ai-android-apk
+          path: release_assets/
+
+      - name: Download Desktop Bundle Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: isha-ai-desktop-bundle
+          path: release_assets/
+
+      - name: Rename Artifacts for Distribution
+        run: |
+          mv release_assets/app-debug.apk release_assets/isha-ai-v1.0.0.apk || true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name || 'v1.0.0' }}
+          name: "ISHA AI Release ${{ github.ref_name || 'v1.0.0' }}"
+          draft: false
+          prerelease: false
+          body: |
+            ## ISHA AI — Intelligent Speech & Haptic Assistant v1.0.0
+            
+            ### 📱 Downloadable App Packages:
+            - **Android APK**: [`isha-ai-v1.0.0.apk`](#) (Native offline cognitive runtime with arm64-v8a C++ acceleration)
+            - **Desktop & Web Package**: [`isha-ai-app-desktop.zip`](#) (Standalone launcher with Google Stitch canvas, Online Live RAG & Knowledge Base)
+            
+            ### ✨ Features Included:
+            - **Google Stitch UI Design**: Modern frosted glassmorphism, responsive navigation rail, light/dark themes.
+            - **Online Live RAG**: Real-time web search via DuckDuckGo and Wikipedia with privacy sanitization.
+            - **Pre-Bundled Knowledge Base**: Kisan Saathi (Agriculture), Swasthya Rakshak (Health), Bharat Vidhi (Civic/Legal), and Shiksha (STEM).
+            - **Document Ingestion**: Drag-and-drop parsing for PDF, DOCX, TXT, CSV, JSON with semantic boundary chunking.
+            - **Vision Diagnostics**: Crop disease detection and doctor prescription OCR.
+            - **Voice Mode**: Speech-to-text dictation and natural speech audio playback.
+          files: |
+            release_assets/isha-ai-v1.0.0.apk
+            release_assets/isha-ai-app-desktop.zip

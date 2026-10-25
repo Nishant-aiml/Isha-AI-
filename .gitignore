@@ -1,7 +1,11 @@
 # Added by code-review-graph
 .code-review-graph/
 
-# Build artifacts
+# Python artifacts
+__pycache__/
+*.pyc
+backend/data/
+
 build/
 bin/
 obj/

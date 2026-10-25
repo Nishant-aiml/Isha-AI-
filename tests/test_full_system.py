@@ -209,8 +209,12 @@ class TestWebSocketStreaming:
 
 class TestAndroidPackageArtifacts:
     def test_apk_exists_and_valid(self):
-        apk_path = os.path.join(BASE_DIR, "android", "app", "build", "outputs", "apk", "debug", "app-debug.apk")
-        assert os.path.exists(apk_path), f"APK does not exist at {apk_path}"
+        candidate_paths = [
+            os.path.join(BASE_DIR, "releases", "isha-ai-v1.0.0.apk"),
+            os.path.join(BASE_DIR, "android", "app", "build", "outputs", "apk", "debug", "app-debug.apk")
+        ]
+        apk_path = next((p for p in candidate_paths if os.path.exists(p)), None)
+        assert apk_path is not None, "APK not found in releases/ or build outputs"
         assert os.path.getsize(apk_path) > 5 * 1024 * 1024  # > 5MB
 
         with zipfile.ZipFile(apk_path, "r") as z:

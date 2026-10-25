@@ -1,0 +1,57 @@
+{
+  "title": "Tech & Coding (Programming, DSA & Computer Science)",
+  "description": "Essential software development guidance: Python, Java, C++, algorithms, data structures, Git commands, Linux, SQL databases, and AI concepts.",
+  "icon": "💻",
+  "chunks": [
+    {
+      "id": "tech_001",
+      "title": "Python Programming Fundamentals",
+      "text": "Python is an interpreted, high-level, dynamically-typed language. Key idioms: List comprehensions [x**2 for x in nums if x % 2 == 0]; dictionary comprehensions; Generators with 'yield' for memory-efficient lazy evaluation; Context managers 'with open(...) as f:' for safe resource disposal; '*args' and '**kwargs' for variable arguments; and '@decorator' for modifying function behavior."
+    },
+    {
+      "id": "tech_002",
+      "title": "Java Object-Oriented Programming (OOP) Pillars",
+      "text": "Four pillars of Java OOP: 1. Encapsulation (bundling data with private fields and public getters/setters). 2. Inheritance ('extends' for code reuse and hierarchical classification). 3. Polymorphism (Method Overloading compile-time, Method Overriding runtime with @Override). 4. Abstraction ('abstract' classes and 'interface' contracts defining behavior without implementation details)."
+    },
+    {
+      "id": "tech_003",
+      "title": "C++ Memory Management and Smart Pointers",
+      "text": "In C++, heap allocation with raw 'new'/'delete' risks memory leaks. Modern C++ (C++11/14/17) enforces RAII (Resource Acquisition Is Initialization) via smart pointers in <memory>: std::unique_ptr for exclusive ownership (zero overhead, move-only); std::shared_ptr for reference-counted shared ownership; and std::weak_ptr to break cyclic dependencies."
+    },
+    {
+      "id": "tech_004",
+      "title": "Data Structures: Arrays vs Linked Lists",
+      "text": "Arrays provide O(1) random access by index due to contiguous memory allocation, but resizing and middle insertions/deletions take O(n). Singly Linked Lists store data and next pointer, allowing O(1) insertions/deletions at known nodes, but require O(n) sequential traversal to find elements and incur pointer memory overhead."
+    },
+    {
+      "id": "tech_005",
+      "title": "Big-O Time Complexity Analysis",
+      "text": "Big-O characterizes algorithm scalability as input n grows. Constant O(1): Hash table lookup, array index. Logarithmic O(log n): Binary search on sorted array. Linear O(n): Single loop scan. Linearithmic O(n log n): Efficient sorting (MergeSort, QuickSort average, HeapSort). Quadratic O(n^2): Nested loops (BubbleSort, SelectionSort). Exponential O(2^n): Recursive Fibonacci."
+    },
+    {
+      "id": "tech_006",
+      "title": "SQL Relational Database Queries and JOINs",
+      "text": "INNER JOIN returns rows where condition matches in both tables. LEFT JOIN returns all rows from left table plus matched rows from right table (NULL if no match). RIGHT JOIN returns all rows from right table. GROUP BY aggregates rows via COUNT, SUM, AVG. HAVING filters aggregated results (unlike WHERE which filters before grouping). Indexes speed up SELECT lookups at cost of slower writes."
+    },
+    {
+      "id": "tech_007",
+      "title": "Git Essential Workflow & Branching",
+      "text": "Initialize repo: git init. Clone remote: git clone <url>. Create & switch branch: git checkout -b feature-branch (or git switch -c). Stage files: git add <files>. Commit changes: git commit -m 'Descriptive message'. Fetch & merge remote: git pull origin main. Push branch: git push -u origin feature-branch. Save temporary work without committing: git stash."
+    },
+    {
+      "id": "tech_008",
+      "title": "Linux Shell Commands for Developers",
+      "text": "Search text in files: grep -rn 'pattern' ./dir. Search files by name: find . -name '*.kt'. Stream editing: sed 's/foo/bar/g' file. Column processing: awk '{print $1, $3}' file. File permissions: chmod 755 script.sh (rwxr-xr-x). Check running processes: ps aux | grep app, or htop. View disk usage: df -h (filesystems), du -sh * (directory sizes)."
+    },
+    {
+      "id": "tech_009",
+      "title": "REST API Architecture & HTTP Status Codes",
+      "text": "REST operates over HTTP with standard verbs: GET (read resource), POST (create resource), PUT (replace resource), PATCH (partial update), DELETE (remove resource). Status code categories: 2xx Success (200 OK, 201 Created), 3xx Redirection (301 Moved, 304 Not Modified), 4xx Client Error (400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found), 5xx Server Error (500 Internal Server Error, 502 Bad Gateway)."
+    },
+    {
+      "id": "tech_010",
+      "title": "Artificial Intelligence, LLMs and Quantization",
+      "text": "Large Language Models (LLMs) are autoregressive Transformer neural networks trained on predicting next tokens using Self-Attention. Quantization reduces model precision from 16-bit float (FP16) to 4-bit integer (e.g. Q4_K_M in GGUF format), shrinking memory footprint by 70% (e.g. 1.5B parameters fits in ~700MB RAM) to enable on-device inference on mobile phones."
+    }
+  ]
+}

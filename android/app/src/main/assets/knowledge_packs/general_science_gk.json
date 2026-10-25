@@ -1,0 +1,47 @@
+{
+  "title": "General Science, Space & World Knowledge",
+  "description": "Foundational knowledge: solar system, space exploration (ISRO), Indian history milestones, geography, climate, and inventions.",
+  "icon": "🌍",
+  "chunks": [
+    {
+      "id": "gk_001",
+      "title": "Solar System Structure and Planetary Facts",
+      "text": "The Solar System consists of the Sun and eight planets. Inner terrestrial planets (rocky, dense): Mercury (smallest, closest), Venus (hottest due to runaway CO2 greenhouse effect), Earth (only planet with liquid water), Mars (red planet with iron oxide soil). Outer gas & ice giants: Jupiter (largest, Great Red Spot), Saturn (prominent ring system), Uranus (rotates on side), Neptune (farthest, fastest winds)."
+    },
+    {
+      "id": "gk_002",
+      "title": "ISRO Landmark Space Exploration Missions",
+      "text": "Indian Space Research Organisation (ISRO) landmarks: Chandrayaan-1 (2008, confirmed water molecules on Moon); Mars Orbiter Mission / Mangalyaan (2013, reached Mars orbit on maiden attempt); Chandrayaan-3 (August 23, 2023, historic soft landing near Moon's south pole with Vikram lander and Pragyan rover); Aditya-L1 (2023, solar observation observatory positioned at Lagrange Point 1); and Gaganyaan (human spaceflight mission)."
+    },
+    {
+      "id": "gk_003",
+      "title": "Earth Atmospheric Layers & Ozone Shield",
+      "text": "Atmospheric layers from ground up: 1. Troposphere (0-12 km, where all weather occurs, temperature drops with altitude). 2. Stratosphere (12-50 km, houses the protective Ozone layer O3 which absorbs harmful solar UV-B radiation). 3. Mesosphere (50-85 km, coldest layer where meteors burn up). 4. Thermosphere (85-600 km, contains Ionosphere for radio communications and auroras). 5. Exosphere (transitions into outer space vacuum)."
+    },
+    {
+      "id": "gk_004",
+      "title": "Human Body Major Organ Systems",
+      "text": "Circulatory system: Heart has 4 chambers (right atrium/ventricle pump deoxygenated blood to lungs via pulmonary artery; left atrium/ventricle pump oxygenated blood to body via aorta). Respiratory system: Gas exchange occurs in millions of microscopic alveoli in lungs. Excretory system: Kidneys filter metabolic waste (urea) through functional nephrons. Nervous system: Central (brain & spinal cord) and Peripheral nerves communicate via electrochemical synapses."
+    },
+    {
+      "id": "gk_005",
+      "title": "Renewable Energy: Solar, Wind and Green Hydrogen",
+      "text": "Solar Photovoltaic (PV) cells convert sunlight directly into DC electricity using silicon semiconductor p-n junctions. Wind turbines convert kinetic air motion into mechanical rotation to drive electric generators. Green Hydrogen is produced by splitting water into hydrogen and oxygen via electrolysis powered exclusively by renewable energy, producing zero greenhouse emissions upon combustion."
+    },
+    {
+      "id": "gk_006",
+      "title": "Major Milestones in Indian History",
+      "text": "Indus Valley Civilization (~2500 BCE, urban planning, Harappa & Mohenjo-daro). Vedic Period and composition of Upanishads. Maurya Empire (~322-185 BCE, Chandragupta and Ashoka's edicts of Dhamma). Gupta Empire (Golden Age of mathematics and astronomy, Aryabhata). First War of Indian Independence (1857). Mahatma Gandhi's Satyagraha, Non-Cooperation, and Dandi March. Indian Independence on August 15, 1947, and adoption of Constitution on January 26, 1950."
+    },
+    {
+      "id": "gk_007",
+      "title": "Geography of India: Major Physical Divisions",
+      "text": "India's physiographic divisions: 1. The Northern Mountains (Himalayas, young fold mountains with highest peak Kanchenjunga in India). 2. The Indo-Gangetic Plains (fertile alluvial soil formed by Indus, Ganga, Brahmaputra rivers). 3. The Peninsular Plateau (ancient Deccan plateau bounded by Western and Eastern Ghats). 4. The Thar Desert (arid western Rajasthan). 5. The Coastal Plains and Island groups (Andaman & Nicobar in Bay of Bengal, Lakshadweep in Arabian Sea)."
+    },
+    {
+      "id": "gk_008",
+      "title": "Famous Scientific Inventions and Discoveries",
+      "text": "Penicillin (first antibiotic, discovered by Alexander Fleming in 1928). Universal Gravitation & Three Laws of Motion (Sir Isaac Newton, 1687). Theory of General and Special Relativity (Albert Einstein, 1905/1915). Periodic Table (Dmitri Mendeleev, 1869). Discovery of Raman Effect (Sir C.V. Raman, 1928, Nobel Prize in Physics). Inoculation/Vaccination concept (Edward Jenner with smallpox, 1796)."
+    }
+  ]
+}

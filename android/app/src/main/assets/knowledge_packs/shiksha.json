@@ -1,6 +1,6 @@
 {
   "title": "Shiksha STEM & Reasoning",
-  "description": "Scientific constants, physics laws, calculus, biological pathways, and competitive exam reasoning concepts.",
+  "description": "Scientific constants, physics laws, calculus, biological pathways, chemistry trends, and reasoning fundamentals.",
   "icon": "🎓",
   "chunks": [
     {
@@ -22,6 +22,26 @@
       "id": "shiksha_004",
       "title": "Fundamental Calculus Derivatives and Integrals",
       "text": "Standard derivative rules: d/dx(x^n) = n*x^(n-1); d/dx(sin x) = cos x; d/dx(cos x) = -sin x; d/dx(e^x) = e^x; d/dx(ln x) = 1/x. Product rule: (u*v)' = u'v + uv'. Chain rule: d/dx[f(g(x))] = f'(g(x))*g'(x). Fundamental Theorem of Calculus connects differentiation and integration: ∫ from a to b of f(x) dx = F(b) - F(a)."
+    },
+    {
+      "id": "shiksha_005",
+      "title": "Ohm's Law, Resistance & Power in Electrical Circuits",
+      "text": "Ohm's Law states current I is proportional to potential difference V: V = I * R. Series resistance: R_total = R1 + R2 + R3. Parallel resistance: 1/R_total = 1/R1 + 1/R2 + 1/R3. Electrical power dissipated: P = V * I = I^2 * R = V^2 / R. Electrical energy is measured in kilowatt-hours (1 kWh = 3.6 × 10^6 Joules)."
+    },
+    {
+      "id": "shiksha_006",
+      "title": "Periodic Table Periodic Trends",
+      "text": "Electronegativity increases across a period (left to right) and decreases down a group (Fluorine is most electronegative). Atomic radius decreases across a period due to increasing effective nuclear charge, and increases down a group due to addition of electron shells. Ionization Energy increases across a period and decreases down a group."
+    },
+    {
+      "id": "shiksha_007",
+      "title": "Optics: Snell's Law and Total Internal Reflection",
+      "text": "Snell's Law of refraction: n1 * sin(θ1) = n2 * sin(θ2), where n is refractive index. Total Internal Reflection (TIR) occurs when light travels from denser to rarer medium (n1 > n2) at an angle of incidence greater than critical angle θc = arcsin(n2/n1). TIR enables optical fiber communications, endoscopes, and diamond brilliance."
+    },
+    {
+      "id": "shiksha_008",
+      "title": "Work, Energy and Power Formulas",
+      "text": "Work done W = F * d * cos(θ). Kinetic Energy KE = 1/2 * m * v^2. Gravitational Potential Energy PE = m * g * h. Work-Energy Theorem states net work done equals change in kinetic energy: W_net = ΔKE. Law of Conservation of Energy: Total mechanical energy E = KE + PE remains constant in conservative force fields."
     }
   ]
 }

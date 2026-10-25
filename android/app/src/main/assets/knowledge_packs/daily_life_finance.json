@@ -1,0 +1,47 @@
+{
+  "title": "Daily Life, Finance & Cyber Safety",
+  "description": "Practical everyday guidance: UPI fraud prevention, banking security, mutual funds/SIP, income tax slabs, consumer rights, and emergency preparedness.",
+  "icon": "💳",
+  "chunks": [
+    {
+      "id": "fin_001",
+      "title": "UPI Safety Rule: PIN is ONLY for Paying, NEVER for Receiving",
+      "text": "Golden UPI Rule: You NEVER need to enter your UPI PIN to receive money into your bank account. Entering your UPI PIN always authorizes money to leave your account. If a buyer, lottery claim, or government scheme asks you to scan a QR code or enter your UPI PIN to 'receive cashback or money', it is 100% a scam."
+    },
+    {
+      "id": "fin_002",
+      "title": "QR Code & Phishing Scams Prevention",
+      "text": "Never scan a QR code sent over WhatsApp, SMS, or OLX to receive payments. Legitimate banks and buyers send funds directly using your mobile number or VPA without requiring you to scan anything. Never click on shortened links (bit.ly, tinyurl) claiming your SIM card, electricity bill, or bank account will be blocked unless you verify KYC immediately."
+    },
+    {
+      "id": "fin_003",
+      "title": "Systematic Investment Plan (SIP) & Compounding",
+      "text": "A Systematic Investment Plan (SIP) invests a fixed sum into mutual funds monthly, benefiting from rupee-cost averaging (buying more units when markets drop, fewer when markets rise). The Rule of 72 estimates years required to double your money: 72 divided by annual interest rate (e.g., at 12% CAGR, investments double every 72/12 = 6 years)."
+    },
+    {
+      "id": "fin_004",
+      "title": "Public Provident Fund (PPF) & Sukanya Samriddhi (SSY)",
+      "text": "PPF has a 15-year tenure with government-backed sovereign guarantee. Minimum annual investment is ₹500, maximum ₹1,50,000. Falls under EEE tax status (Exempt on investment, Exempt on interest, Exempt on maturity). Sukanya Samriddhi Yojana (SSY) is for girl children under age 10, offering higher interest rates and EEE tax benefits."
+    },
+    {
+      "id": "fin_005",
+      "title": "New Income Tax Regime Basics",
+      "text": "Under the New Tax Regime, no tax is payable up to ₹3,00,000 income. For salaried individuals, standard deduction is ₹75,000. With Section 87A rebate, resident individuals with total taxable income up to ₹7,00,000 pay zero income tax. Slabs: 0-3L Nil, 3-7L 5%, 7-10L 10%, 10-12L 15%, 12-15L 20%, above 15L 30%."
+    },
+    {
+      "id": "fin_006",
+      "title": "Health Insurance Policy Checklist",
+      "text": "When buying health insurance, verify: 1. Room rent capping (prefer policies with No Room Rent Capping). 2. Co-payment clause (prefer 0% co-pay). 3. Waiting period for pre-existing diseases (usually 24 to 36 months). 4. Restoration/Recharge benefit (restores sum insured if exhausted). 5. Daycare treatments coverage and network hospital cashless list."
+    },
+    {
+      "id": "fin_007",
+      "title": "Consumer Grievance Redressal (National Consumer Helpline 1915)",
+      "text": "If a retailer, e-commerce company, airline, or telecom provider delivers defective goods or refuses legitimate refund, call National Consumer Helpline at 1915 or register complaint at consumerhelpline.gov.in. If unresolved, file an e-complaint on e-Daakhil (edaakhil.nic.in) for Consumer Dispute Redressal Commission without legal fees."
+    },
+    {
+      "id": "fin_008",
+      "title": "Home Emergency Preparedness & Safe Water",
+      "text": "Maintain an emergency grab-and-go kit containing: 3-day supply of drinking water, non-perishable foods, first aid kit (ORS, bandages, paracetamol, antiseptic), torch with spare batteries, power bank, photocopies of ID cards, and emergency medicines. To purify contaminated water: boil vigorously for at least 1 minute, or add 2 drops of chlorine bleach (4-6% sodium hypochlorite) per litre and wait 30 minutes."
+    }
+  ]
+}

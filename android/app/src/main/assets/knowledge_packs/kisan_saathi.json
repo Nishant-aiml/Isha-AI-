@@ -1,12 +1,12 @@
 {
-  "title": "Kisan Saathi (Agriculture & Crop Care)",
-  "description": "Offline agricultural advisor: crop diseases, soil health, fertilizer dosing, weather precautions, and government schemes.",
+  "title": "Kisan Saathi (Agriculture, Crops & Farming)",
+  "description": "Comprehensive agricultural guidance: crop diseases, soil health, fertilizer dosing, irrigation, weather precautions, livestock, and government schemes.",
   "icon": "🌾",
   "chunks": [
     {
       "id": "kisan_001",
       "title": "Wheat Nitrogen Deficiency & Correction",
-      "text": "Nitrogen deficiency in wheat causes yellowing of lower leaves, stunted plant height, and reduced tillering. Correction: Apply 60 kg/ha urea at basal dose and top-dress remaining 60 kg/ha in two splits during crown root initiation (CRI, 21 days) and heading stage. Ensure soil has adequate moisture."
+      "text": "Nitrogen deficiency in wheat causes yellowing of lower leaves, stunted plant height, and reduced tillering. Correction: Apply 60 kg/ha urea at basal dose and top-dress remaining 60 kg/ha in two splits during crown root initiation (CRI, 21 days) and heading stage. Ensure soil has adequate moisture before urea application."
     },
     {
       "id": "kisan_002",
@@ -16,7 +16,7 @@
     {
       "id": "kisan_003",
       "title": "Rice Blast Disease Management",
-      "text": "Rice Blast (Magnaporthe oryzae) manifests as spindle-shaped or diamond lesions with greyish centres and brown margins on leaves, collars, and neck. Spray Tricyclazole 75% WP at 0.6 g/litre water or Isoprothiolane 40% EC at 1.5 ml/litre. Avoid excessive nitrogen fertilizer during cloudy weather."
+      "text": "Rice Blast (Magnaporthe oryzae) manifests as spindle-shaped or diamond lesions with greyish centres and brown margins on leaves, collars, and neck. Spray Tricyclazole 75% WP at 0.6 g/litre water or Isoprothiolane 40% EC at 1.5 ml/litre. Avoid excessive nitrogen fertilizer during cloudy or humid weather."
     },
     {
       "id": "kisan_004",
@@ -42,6 +42,36 @@
       "id": "kisan_008",
       "title": "Organic Pest Repellents (Neemastra & Bramhastra)",
       "text": "Neemastra formula: 5 kg crushed neem leaves + 5 litres cow urine + 2 kg cow dung fermented in 100 litres water for 48 hours; controls sucking pests and caterpillars. Bramhastra: Boil crushed neem, custard apple, papaya, and guava leaves in cow urine; spray at 30 ml per litre for borers."
+    },
+    {
+      "id": "kisan_009",
+      "title": "Mustard Aphid (Lipaphis erysimi) Control",
+      "text": "Mustard aphids suck sap from inflorescences, leaves, and pods, curling leaves and stunting seed formation. Economic threshold level (ETL) is 25-30 aphids per 10 cm terminal shoot. Spray Dimethoate 30% EC at 1.7 ml/litre or Thiamethoxam 25% WG at 0.2 g/litre. Spray late afternoon to protect pollinator bees."
+    },
+    {
+      "id": "kisan_010",
+      "title": "Millets (Shree Anna) Cultivation & Water Efficiency",
+      "text": "Millets (Bajra, Jowar, Ragi, Kodo, Kutki) require 70% less water than rice and mature in 70-100 days. They thrive in poor soils, endure temperatures up to 45°C, and are naturally gluten-free with high iron and calcium content. Seed rate for Ragi is 4-5 kg/acre; apply 40:20:20 kg NPK per hectare."
+    },
+    {
+      "id": "kisan_011",
+      "title": "Soil Micronutrient Management: Zinc and Boron",
+      "text": "Zinc deficiency causes 'Khaira' disease in paddy (chlorotic patches with reddish-brown pigmentation). Apply Zinc Sulphate (ZnSO4 21%) at 25 kg/ha to soil or spray 0.5% ZnSO4 with 0.25% slaked lime. Boron deficiency causes fruit cracking in tomato and pomegranate; spray 0.2% Solubor at flowering."
+    },
+    {
+      "id": "kisan_012",
+      "title": "Dairy Cattle Mastitis & Lumpy Skin Disease Prevention",
+      "text": "Bovine Mastitis (udder infection) causes swollen, hot udders and curdled or blood-tinged milk. Clean teats with 0.5% povidone-iodine dip after milking and infuse intramammary antibiotic under veterinary supervision. For Lumpy Skin Disease (LSD), isolate infected cattle, spray vector repellents, and administer Goat Pox vaccine (heterologous protection)."
+    },
+    {
+      "id": "kisan_013",
+      "title": "Kisan Credit Card (KCC) Scheme Benefits",
+      "text": "Kisan Credit Card provides farmers with hassle-free credit up to ₹3,00,000 at a baseline 7% interest rate. With prompt repayment incentive of 3%, the effective interest rate drops to only 4% per annum. No collateral required for loans up to ₹1,60,000. Covers post-harvest expenses, crop cultivation, and cattle maintenance."
+    },
+    {
+      "id": "kisan_014",
+      "title": "Grain Storage & Pest Protection",
+      "text": "Dry harvested grains to below 10-12% moisture content before bagging to prevent fungal aflatoxins and weevil infestation. Clean grain bins thoroughly and line bottom with dried neem leaves. For sealed silos, use Aluminium Phosphide tablets (1 tablet per tonne) strictly under airtight hermetic seal for 7 days."
     }
   ]
 }

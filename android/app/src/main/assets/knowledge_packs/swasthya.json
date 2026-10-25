@@ -1,6 +1,6 @@
 {
-  "title": "Swasthya Rakshak (Health & First Aid)",
-  "description": "Essential medical guidance: first aid, pediatric dosage guidelines, disease prevention, and emergency response.",
+  "title": "Swasthya Rakshak (Health, First Aid & Emergency)",
+  "description": "Essential medical guidance: first aid, pediatric dosage guidelines, disease prevention, stroke/heart attack emergency, and public health schemes.",
   "icon": "🩺",
   "chunks": [
     {
@@ -37,6 +37,31 @@
       "id": "swasthya_007",
       "title": "Ayushman Bharat PM-JAY Scheme Details",
       "text": "Ayushman Bharat Pradhan Mantri Jan Arogya Yojana (PM-JAY) provides cashless secondary and tertiary hospitalization cover of up to ₹5,00,000 per family per year across empaneled public and private hospitals across India. Covers pre-existing conditions from day one, including pre- and post-hospitalization expenses for up to 15 days."
+    },
+    {
+      "id": "swasthya_008",
+      "title": "Snakebite First Aid (Do's and Don'ts)",
+      "text": "DO NOT tie tight tourniquets, do not suck venom, and do not make cuts on the bite mark. DO: Keep patient calm, immobilize the bitten limb using a splint or sling at heart level, remove rings and constrictive clothing, and rush immediately to a hospital with Anti-Snake Venom (ASV). Polyvalent ASV neutralizes Cobra, Krait, Russell's Viper, and Saw-scaled Viper venoms."
+    },
+    {
+      "id": "swasthya_009",
+      "title": "Stroke Recognition (F.A.S.T. Protocol)",
+      "text": "Recognize acute stroke using FAST: F (Face drooping on one side), A (Arm weakness when raising both arms), S (Speech difficulty, slurring, inability to repeat simple sentence), T (Time to call 108 immediately). Golden window for intravenous thrombolysis (tissue plasminogen activator tPA) is within 4.5 hours of symptom onset."
+    },
+    {
+      "id": "swasthya_010",
+      "title": "Heart Attack Emergency Action",
+      "text": "Symptoms: Crushing central chest pain or heaviness lasting >10 minutes, radiating to left shoulder, jaw, back, accompanied by sweating, nausea, shortness of breath. Action: Have patient rest comfortably, call 108, give 300 mg soluble Aspirin/Disprin to chew immediately (unless allergic or actively bleeding), and prepare for CPR if responsiveness is lost."
+    },
+    {
+      "id": "swasthya_011",
+      "title": "Dog Bite & Rabies Post-Exposure Prophylaxis (PEP)",
+      "text": "Immediately wash the animal bite wound thoroughly under vigorous running water with soap for at least 15 minutes. Apply povidone-iodine or alcohol. DO NOT stitch the wound primarily. Administer Anti-Rabies Vaccine (ARV) on Days 0, 3, 7, and 28. For Category III bites (broken skin or bleeding), Rabies Immunoglobulin (RIG) must be infiltrated into the wound."
+    },
+    {
+      "id": "swasthya_012",
+      "title": "Tuberculosis (TB) Symptoms & Treatment (DOTS)",
+      "text": "Suspect pulmonary TB if cough lasts >2 weeks, accompanied by fever in evening, night sweats, weight loss, and hemoptysis (blood in sputum). Diagnosis via Sputum smear microscopy and CBNAAT/GeneXpert. Government provides free 6-month Fixed-Dose Combination (FDC) treatment under National TB Elimination Program (NTEP) plus ₹500/month Nikshay Poshan financial aid."
     }
   ]
 }

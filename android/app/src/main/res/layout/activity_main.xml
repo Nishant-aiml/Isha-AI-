@@ -1256,7 +1256,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Powered by FLUX.1 [schnell] &amp; Stable Diffusion. Free high-resolution 1024x1024 text-to-image synthesis."
+                        android:text="Continuous Multi-Tier Engine: 100% Offline On-Device Neural Canvas + Cloud Visuals. Generates anytime, with or without internet."
                         android:textSize="10sp"
                         android:textColor="#64748B"
                         android:layout_marginBottom="8dp"/>

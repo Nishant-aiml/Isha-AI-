@@ -1,17 +1,17 @@
 {
-  "title": "Bharat Vidhi & Civic Core",
-  "description": "Indian Constitution, legal safeguards, consumer protection, police FIR procedures, and citizen helplines.",
+  "title": "Bharat Vidhi & Civic Core (Law & Citizen Rights)",
+  "description": "Indian Constitution, legal safeguards, consumer protection, new criminal laws (BNS/BNSS), police FIR procedures, and citizen helplines.",
   "icon": "⚖️",
   "chunks": [
     {
       "id": "bharat_001",
       "title": "National Emergency Helpline Numbers",
-      "text": "National Emergency Unified Helpline: 112 (Police, Fire, Ambulance). Police: 100, Fire: 101, Ambulance: 108. Women Helpline (National): 1091 and 181. National Cyber Crime Reporting Portal: 1930. Childline Helpline: 1098. Senior Citizen Helpline (Elderline): 14567. Railway Security Helpline: 139."
+      "text": "National Emergency Unified Helpline: 112 (Police, Fire, Ambulance). Police: 100, Fire: 101, Ambulance: 108. Women Helpline (National): 1091 and 181. National Cyber Crime Reporting Portal: 1930. Childline Helpline: 1098. Senior Citizen Helpline (Elderline): 14567. Railway Security Helpline: 139. Disaster Management Helpline: 1078."
     },
     {
       "id": "bharat_002",
-      "title": "Filing a Police FIR (First Information Report)",
-      "text": "Section 154 CrPC / BNSS mandates that an officer in charge of a police station must register an FIR upon information of a cognizable offence. A citizen has the legal right to receive a signed copy of the FIR immediately and free of cost. If a police station refuses to register an FIR, the complainant can send the substance of information in writing via registered post to the Superintendent of Police (SP) or file a Zero FIR at any nearby station."
+      "title": "Filing a Police FIR (First Information Report) & Zero FIR",
+      "text": "Under Section 173 Bharatiya Nagarik Suraksha Sanhita (BNSS) / Section 154 CrPC, an officer in charge must register an FIR upon information of a cognizable offence. A citizen has the legal right to receive a signed copy of the FIR immediately and free of cost. If a crime occurred outside police station jurisdiction, police must register a 'Zero FIR' and transfer it later. Refusal to register FIR is punishable under law."
     },
     {
       "id": "bharat_003",
@@ -27,6 +27,21 @@
       "id": "bharat_005",
       "title": "Consumer Protection Act 2019 Remedies",
       "text": "Under Consumer Protection Act 2019, consumers can file e-complaints via the e-Daakhil portal without needing a lawyer. District Commissions adjudicate claims up to ₹50 Lakh, State Commissions up to ₹2 Crore, and National Commission above ₹2 Crore. Covers unfair trade practices, misleading advertisements, defective goods, and deficiency in services."
+    },
+    {
+      "id": "bharat_006",
+      "title": "Cybercrime Financial Fraud Golden Hour (Helpline 1930)",
+      "text": "If victimized by financial cyber fraud (UPI fraud, phishing, credit card scam), immediately dial 1930 within the 'Golden Hour' (first 2-4 hours). The Citizen Financial Cyber Fraud Reporting and Management System (CFCFRMS) coordinates with banks to freeze transferred funds in the fraudster's account before withdrawal. Also lodge complaint on cybercrime.gov.in."
+    },
+    {
+      "id": "bharat_007",
+      "title": "Rights of an Arrested Person",
+      "text": "Under Article 22 of Constitution and BNSS/CrPC: 1. Police must inform the grounds of arrest immediately. 2. Right to consult and be defended by a legal practitioner of choice. 3. Right to free legal aid via DLSA if indigent. 4. Right to have a friend or relative informed of the arrest. 5. Must be produced before the nearest Judicial Magistrate within 24 hours of arrest (excluding journey time)."
+    },
+    {
+      "id": "bharat_008",
+      "title": "Traffic Police Rules & DigiLocker Digital Documents",
+      "text": "Under Rule 139 of Central Motor Vehicles Rules, citizens can present Driving License (DL), Registration Certificate (RC), and Insurance electronically via Government DigiLocker or mParivahan apps. Traffic police must accept these as legally equivalent to original physical cards. Police cannot seize physical documents if digital versions are presented."
     }
   ]
 }

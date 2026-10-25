@@ -427,20 +427,17 @@ class MainActivity : Activity() {
             cardGeneratedImage?.visibility = View.GONE
             imgGeneratedResult?.setImageDrawable(null)
 
-            // Check if this is an AI Image Generation Request (FLUX.1 Schnell)
+            // Check if this is an AI Image Generation Request (Online + 100% Offline Continuous)
             if (IshaImageGenerator.isImageGenerationIntent(queryText)) {
                 val corePrompt = IshaImageGenerator.extractImagePrompt(queryText)
-                txtChatLog.text = "User: $queryText\n\nAI: 🎨 Generating high-resolution visual with FLUX.1 [schnell]..."
+                txtChatLog.text = "User: $queryText\n\nAI: 🎨 Synthesizing visual for \"$corePrompt\"..."
                 mainScope.launch {
-                    val bitmap = IshaImageGenerator.generateImage(corePrompt)
-                    if (bitmap != null) {
-                        imgGeneratedResult?.setImageBitmap(bitmap)
-                        txtGeneratedPrompt?.text = "Prompt: \"$corePrompt\""
-                        cardGeneratedImage?.visibility = View.VISIBLE
-                        txtChatLog.text = "User: $queryText\n\nAI: ✨ Here is your generated visual! Powered by FLUX.1 [schnell]."
-                    } else {
-                        txtChatLog.text = "User: $queryText\n\nAI: ❌ Failed to generate visual. Please check internet connection."
-                    }
+                    val result = IshaImageGenerator.generateVisual(corePrompt)
+                    imgGeneratedResult?.setImageBitmap(result.bitmap)
+                    val modeTag = if (result.isOffline) "⚡ 100% Offline (On-Device Neural Canvas)" else "🌐 Cloud Edge AI"
+                    txtGeneratedPrompt?.text = "Prompt: \"${result.prompt}\" • $modeTag"
+                    cardGeneratedImage?.visibility = View.VISIBLE
+                    txtChatLog.text = "User: $queryText\n\nAI: ✨ Here is your generated visual!\n🎨 Engine: ${result.engineName}"
                 }
                 return@setOnClickListener
             }
@@ -1233,7 +1230,11 @@ class MainActivity : Activity() {
             val text1 = view.findViewById<TextView>(android.R.id.text1)
             val text2 = view.findViewById<TextView>(android.R.id.text2)
 
-            text1.text = doc.path
+            text1.text = if (doc.path.startsWith("builtin_")) {
+                "📦 " + doc.path.removePrefix("builtin_").replace(".json", "").replace("_", " ").uppercase()
+            } else {
+                "📄 " + doc.path
+            }
             text1.setTextColor(android.graphics.Color.parseColor("#1F2937"))
             text1.textSize = 14f
 

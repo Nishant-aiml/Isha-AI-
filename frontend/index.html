@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="/css/stitch.css">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#0a0e17">
-  <link rel="icon" type="image/png" href="/icon-192.png">
+  <link rel="icon" type="image/png" href="/app_dp.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -16,51 +16,56 @@
 </head>
 <body>
   <div class="stitch-container">
-    <!-- TOP APP HEADER -->
+    <!-- CONSUMER-FACING APP HEADER -->
     <header class="stitch-header">
-      <div class="brand-section">
-        <div class="brand-logo-badge">I</div>
-        <div>
+      <div class="brand-section" id="brandHomeBtn" title="ISHA AI Home">
+        <div class="brand-dp-wrapper">
+          <img src="/app_dp.png" alt="ISHA Logo" class="brand-dp-img">
+        </div>
+        <div class="brand-info">
           <div class="brand-title">
-            ISHA AI
-            <span class="stitch-pill" id="modeIndicator">
-              <span class="pill-dot saffron" id="modeDot"></span>
-              <span id="modeText">Device Offline Mode</span>
-            </span>
+            ISHA
+            <span class="brand-badge">AI</span>
           </div>
-          <div class="brand-sub">Intelligent Speech & Haptic Assistant • Cognitive Runtime</div>
+          <div class="brand-status-sub">
+            <span class="pill-dot emerald" id="headerStatusDot"></span>
+            <span id="headerStatusText">100% On-Device Private</span>
+          </div>
         </div>
       </div>
 
-      <div class="header-telemetry">
-        <!-- Hardware Tier Selector -->
-        <div class="stitch-pill interactive" id="tierSelectorBtn" title="Switch simulated hardware tier">
-          <span>📱</span>
-          <span id="headerTierText">Tier 2: 8GB</span>
-        </div>
+      <!-- PERSONA PILLS (USER SIDE QUICK SELECTOR) -->
+      <div class="persona-pills-bar" id="personaPillsBar">
+        <button class="persona-pill active" data-pack="all">✨ All Topics</button>
+        <button class="persona-pill" data-pack="kisan_saathi">🌾 Kisan (Farming)</button>
+        <button class="persona-pill" data-pack="swasthya">🩺 Health & First Aid</button>
+        <button class="persona-pill" data-pack="bharat_core">⚖️ Citizen Rights</button>
+        <button class="persona-pill" data-pack="shiksha">🎓 Study & STEM</button>
+      </div>
 
-        <!-- Thermal Zone Indicator -->
-        <div class="stitch-pill interactive" id="thermalIndicatorBtn" title="Thermal zone state">
-          <span class="pill-dot emerald" id="thermalDot"></span>
-          <span id="headerThermalText">Normal (<38°C)</span>
-        </div>
-
-        <!-- RAM Footprint -->
-        <div class="stitch-pill" title="Process RSS Memory">
-          <span>💾</span>
-          <span id="headerRamText">-- MB</span>
-        </div>
-
-        <!-- Theme Toggle -->
-        <div class="stitch-pill interactive" id="themeToggleBtn" title="Toggle Light/Dark Theme">
-          <span id="themeIcon">☀️</span>
-        </div>
+      <!-- USER ACTIONS & TOGGLES (RIGHT) -->
+      <div class="header-actions-right">
+        <!-- Live Internet Mode Toggle Button -->
+        <button class="mode-toggle-btn" id="onlineRagHeaderToggle" title="Toggle real-time live internet search">
+          <span class="pill-dot" id="headerRagDot"></span>
+          <span id="headerRagText">🌐 Live Web: OFF</span>
+        </button>
 
         <!-- PWA Install App Button -->
-        <div class="stitch-pill interactive" id="installAppBtn" style="display: none; background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(6, 182, 212, 0.2)); border-color: var(--border-accent); color: var(--accent-saffron);" title="Install ISHA AI as an application">
+        <button class="stitch-pill interactive" id="installAppBtn" style="display: none; background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(6, 182, 212, 0.2)); border-color: var(--border-accent); color: var(--accent-saffron);" title="Install ISHA AI as an application">
           <span>📲</span>
           <span>Install App</span>
-        </div>
+        </button>
+
+        <!-- Theme Toggle -->
+        <button class="stitch-icon-btn" id="themeToggleBtn" title="Toggle Light/Dark Theme">
+          <span id="themeIcon">☀️</span>
+        </button>
+
+        <!-- Developer Mode Drawer Toggle Button -->
+        <button class="stitch-icon-btn" id="openDevDrawerBtn" title="Developer & Hardware Diagnostics">
+          ⚙️
+        </button>
       </div>
     </header>
 
@@ -68,25 +73,21 @@
     <div class="stitch-workspace">
       <!-- NAVIGATION RAIL -->
       <nav class="stitch-rail">
-        <button class="rail-btn active" data-tab="chatTab" title="Conversational & Grounded Reasoning Canvas">
+        <button class="rail-btn active" data-tab="chatTab" title="Conversational Assistant">
           💬
           <span class="label">Chat</span>
         </button>
-        <button class="rail-btn" data-tab="kbTab" title="Knowledge Base & Packs Studio">
+        <button class="rail-btn" data-tab="kbTab" title="My Documents & Knowledge Base">
           📚
-          <span class="label">Library</span>
+          <span class="label">Docs</span>
         </button>
-        <button class="rail-btn" data-tab="ragTab" title="Online Live RAG & MCP Explorer">
+        <button class="rail-btn" data-tab="ragTab" title="Live Internet Explorer">
           🌐
-          <span class="label">Live RAG</span>
+          <span class="label">Live Web</span>
         </button>
-        <button class="rail-btn" data-tab="visionTab" title="Multimodal Vision & Camera Studio">
-          👁️
+        <button class="rail-btn" data-tab="visionTab" title="Photo & Disease Doctor">
+          📸
           <span class="label">Vision</span>
-        </button>
-        <button class="rail-btn" data-tab="watchdogTab" title="Telemetry & Watchdog Profiler">
-          ⚡
-          <span class="label">Watchdog</span>
         </button>
       </nav>
 
@@ -96,31 +97,40 @@
         <!-- TAB 1: CHAT & GROUNDED REASONING -->
         <section id="chatTab" class="tab-pane active">
           <div class="chat-scroll-area" id="chatTimeline">
-            <!-- Welcome Card -->
-            <div class="chat-message assistant">
-              <div class="avatar-badge">I</div>
-              <div class="message-bubble">
-                <h3 style="margin-bottom: 8px; color: var(--accent-saffron);">Welcome to ISHA AI Cognitive Runtime</h3>
-                <p style="margin-bottom: 10px;">
-                  I am <strong>ISHA</strong> — designed for zero-cloud dependency, strict offline privacy, and live internet augmentation when needed.
-                </p>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 12px;">
-                  <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 10px;">
-                    <strong style="color: var(--accent-saffron);">🌾 Kisan Saathi</strong>
-                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Crop diseases, fertilizer dosage, irrigation schedules.</p>
-                  </div>
-                  <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 10px;">
-                    <strong style="color: var(--accent-cyan);">🩺 Swasthya Rakshak</strong>
-                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Child paracetamol dosage, ORS, burn first-aid.</p>
-                  </div>
-                  <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 10px;">
-                    <strong style="color: var(--accent-emerald);">⚖️ Bharat Vidhi</strong>
-                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Citizen rights, police FIR procedures, helpline 112.</p>
-                  </div>
-                  <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 10px;">
-                    <strong style="color: var(--accent-indigo);">🌐 Online Live RAG</strong>
-                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Live internet search + DuckDuckGo/Wikipedia with privacy scrubbing.</p>
-                  </div>
+            <!-- HERO WELCOME BANNER (USER SIDE) -->
+            <div class="hero-welcome-screen" id="heroWelcome">
+              <div class="hero-dp-badge">
+                <img src="/app_dp.png" alt="ISHA AI">
+              </div>
+              <h1 class="hero-title">Namaste! How can I help you?</h1>
+              <p class="hero-sub">
+                I am <strong>ISHA</strong>, your personal on-device assistant. I run 100% privately without leaving your device. Switch on <strong>Live Web</strong> anytime for real-time internet answers.
+              </p>
+
+              <!-- Quick suggestion cards -->
+              <div class="hero-cards-grid">
+                <div class="hero-card" data-query="How to identify and treat yellow rust in wheat?" data-pack="kisan_saathi">
+                  <div class="hero-card-icon">🌾</div>
+                  <div class="hero-card-title">Kisan Crop Doctor</div>
+                  <div class="hero-card-desc">Identify wheat rust, rice blast, and calculate exact fertilizer doses.</div>
+                </div>
+
+                <div class="hero-card" data-query="What is the exact paracetamol dosage for a 12kg child?" data-pack="swasthya">
+                  <div class="hero-card-icon">🩺</div>
+                  <div class="hero-card-title">Health & First Aid</div>
+                  <div class="hero-card-desc">Safe weight-adjusted child medicine dosage and first aid guidance.</div>
+                </div>
+
+                <div class="hero-card" data-query="What is the legal process to file an FIR if police refuses?" data-pack="bharat_core">
+                  <div class="hero-card-icon">⚖️</div>
+                  <div class="hero-card-title">Know Your Legal Rights</div>
+                  <div class="hero-card-desc">Citizen safeguards, filing a Zero FIR, and emergency helpline numbers.</div>
+                </div>
+
+                <div class="hero-card" data-query="What are the latest breakthrough updates in artificial intelligence models?" data-online="true">
+                  <div class="hero-card-icon">🌐</div>
+                  <div class="hero-card-title">Live Web Search</div>
+                  <div class="hero-card-desc">Fetch live news and articles from DuckDuckGo and Wikipedia.</div>
                 </div>
               </div>
             </div>
@@ -128,58 +138,42 @@
 
           <!-- FLOATING PROMPT DOCK -->
           <div class="prompt-dock-container">
-            <!-- Quick Chips -->
-            <div class="quick-chips-row" id="quickChipsRow">
-              <div class="quick-chip" data-query="How to identify and treat yellow rust in wheat?">🌾 Wheat Yellow Rust</div>
-              <div class="quick-chip" data-query="What is the exact paracetamol dosage for a 12kg child?">🩺 Child Paracetamol Dose</div>
-              <div class="quick-chip" data-query="What is the legal process to file an FIR if police refuses?">⚖️ Police FIR Rights</div>
-              <div class="quick-chip" data-query="How does drip irrigation save water and increase yield?">💧 Drip Irrigation</div>
-              <div class="quick-chip" data-query="What are the latest breakthrough updates in artificial intelligence models?" data-online="true">🌐 Live AI News (Online RAG)</div>
-            </div>
-
-            <!-- Dock Card -->
             <div class="prompt-dock">
               <div class="dock-controls-top">
-                <div class="dock-toggles">
-                  <!-- Live Online RAG Switch -->
-                  <div class="toggle-switch-badge" id="onlineRagToggle">
-                    <span id="ragToggleDot" class="pill-dot"></span>
-                    <span id="ragToggleText">🌐 Online Live RAG: OFF</span>
-                  </div>
-
-                  <!-- Active Pack Dropdown -->
-                  <select id="packSelector" style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-subtle); border-radius: var(--radius-full); padding: 4px 10px; font-size: 0.74rem; outline: none; cursor: pointer;">
-                    <option value="all">🔍 All Knowledge Packs</option>
-                    <option value="kisan_saathi">🌾 Kisan Saathi (Agriculture)</option>
-                    <option value="swasthya">🩺 Swasthya Rakshak (Health)</option>
-                    <option value="bharat_core">⚖️ Bharat Vidhi (Civic & Legal)</option>
-                    <option value="shiksha">🎓 Shiksha (STEM Prep)</option>
-                    <option value="user_library">📁 Custom Document Library</option>
-                  </select>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span id="activeTopicBadge" style="font-size: 0.76rem; font-weight: 600; color: var(--accent-saffron); display: flex; align-items: center; gap: 4px;">
+                    ✨ Active Topic: All Knowledge
+                  </span>
                 </div>
-
                 <!-- Voice Wave Canvas -->
-                <canvas id="audioWaveCanvas" width="120" height="24"></canvas>
+                <canvas id="audioWaveCanvas" width="100" height="20"></canvas>
               </div>
 
               <!-- Input Row -->
               <div class="dock-input-row">
-                <textarea id="promptInput" class="prompt-input" placeholder="Ask ISHA anything offline, or toggle Online Live RAG..." rows="1"></textarea>
+                <!-- Attach Document Button -->
+                <button class="dock-btn" id="attachDocBtn" title="Upload and Chat with PDF / Word / Notes">
+                  📎
+                </button>
+                <input type="file" id="promptDocInput" accept=".pdf,.docx,.txt,.md,.csv,.json" style="display: none;">
+
+                <!-- Photo / Camera Button -->
+                <button class="dock-btn" id="attachImageBtn" title="Take or Upload Photo (Crop Disease, Prescription)">
+                  📷
+                </button>
+                <input type="file" id="imageFileInput" accept="image/*" style="display: none;">
+
+                <!-- Prompt Input -->
+                <textarea id="promptInput" class="prompt-input" placeholder="Ask ISHA anything in English or Hindi..." rows="1"></textarea>
                 
                 <div class="dock-actions">
-                  <!-- Image Upload Button -->
-                  <button class="dock-btn" id="attachImageBtn" title="Attach Image for Visual Analysis">
-                    📷
-                  </button>
-                  <input type="file" id="imageFileInput" accept="image/*" style="display: none;">
-
                   <!-- Voice STT Button -->
                   <button class="dock-btn" id="voiceMicBtn" title="Voice Input (Speech-to-Text)">
                     🎙️
                   </button>
 
                   <!-- Send Button -->
-                  <button class="dock-btn send-btn" id="sendBtn" title="Send Query">
+                  <button class="dock-btn send-btn" id="sendBtn" title="Send Message">
                     ➤
                   </button>
                 </div>
@@ -188,17 +182,17 @@
           </div>
         </section>
 
-        <!-- TAB 2: KNOWLEDGE BASE STUDIO -->
+        <!-- TAB 2: MY DOCUMENTS & KNOWLEDGE BASE -->
         <section id="kbTab" class="tab-pane">
           <div class="studio-layout">
             <div class="card-title-row">
               <div>
-                <h2>Knowledge Base & Document Studio</h2>
-                <p style="color: var(--text-muted); font-size: 0.85rem;">Manage pre-loaded domain packs and ingest custom PDFs, text notes, and manuals.</p>
+                <h2>My Documents & Knowledge Packs</h2>
+                <p style="color: var(--text-muted); font-size: 0.88rem;">Upload your own books, study notes, or guides to get instant grounded answers.</p>
               </div>
-              <div class="stitch-pill" id="totalIndexChunksPill">
+              <div class="stitch-pill">
                 <span>📑</span>
-                <span id="totalChunksDisplay">-- Indexed Chunks</span>
+                <span id="totalChunksDisplay">-- Knowledge Points</span>
               </div>
             </div>
 
@@ -206,21 +200,21 @@
               <!-- Upload Document Card -->
               <div class="stitch-card">
                 <div class="card-heading">
-                  <span>📥</span> Ingest New Document
+                  <span>📥</span> Upload a Book or Document
                 </div>
                 <div class="dropzone-area" id="kbDropzone">
                   <div class="dropzone-icon">📄</div>
                   <div>
-                    <strong>Drag & drop PDF, TXT, DOCX, CSV, or MD</strong>
-                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Boundary-aware chunking • 64-D embedding • SHA-256 deduplication</p>
+                    <strong>Drag & drop any PDF, Word document, TXT, or CSV</strong>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Automatically parsed and indexed privately on your device.</p>
                   </div>
                   <input type="file" id="kbFileInput" style="display: none;" accept=".pdf,.txt,.md,.docx,.doc,.csv,.json">
-                  <button class="stitch-pill interactive" onclick="document.getElementById('kbFileInput').click();">Select File from Computer</button>
+                  <button class="stitch-pill interactive" onclick="document.getElementById('kbFileInput').click();">Choose File from Device</button>
                 </div>
                 <!-- Progress status -->
                 <div id="ingestProgressBox" style="display: none; background: rgba(0,0,0,0.2); border-radius: var(--radius-sm); padding: 12px;">
                   <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 6px;">
-                    <span id="ingestStatusMsg">Ingesting document...</span>
+                    <span id="ingestStatusMsg">Reading document...</span>
                     <span id="ingestPct">0%</span>
                   </div>
                   <div style="background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px; overflow: hidden;">
@@ -232,7 +226,7 @@
               <!-- Knowledge Packs List -->
               <div class="stitch-card">
                 <div class="card-heading">
-                  <span>📚</span> Active Knowledge Packs
+                  <span>📚</span> Built-in Knowledge Guides
                 </div>
                 <div id="packsListContainer" style="display: flex; flex-direction: column; gap: 10px; max-height: 280px; overflow-y: auto;">
                   <!-- Dynamic Pack Items -->
@@ -244,17 +238,17 @@
             <div class="stitch-card">
               <div class="card-title-row">
                 <div class="card-heading">
-                  <span>🔍</span> Knowledge Chunk Explorer
+                  <span>🔍</span> Search Verified Knowledge Chunks
                 </div>
-                <input type="text" id="chunkSearchInput" placeholder="Filter chunks by keyword..." style="background: var(--bg-card); border: 1px solid var(--border-subtle); color: var(--text-primary); border-radius: var(--radius-full); padding: 6px 14px; font-size: 0.8rem; outline: none; width: 240px;">
+                <input type="text" id="chunkSearchInput" placeholder="Filter by keyword (e.g. urea, fever, fir)..." style="background: var(--bg-card); border: 1px solid var(--border-subtle); color: var(--text-primary); border-radius: var(--radius-full); padding: 8px 16px; font-size: 0.85rem; outline: none; width: 280px;">
               </div>
               <div style="max-height: 340px; overflow-y: auto; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);">
                 <table class="chunk-table">
                   <thead>
                     <tr>
-                      <th style="width: 15%;">Chunk ID</th>
-                      <th style="width: 15%;">Pack</th>
-                      <th style="width: 70%;">Extracted Knowledge Text</th>
+                      <th style="width: 15%;">Topic ID</th>
+                      <th style="width: 20%;">Knowledge Domain</th>
+                      <th style="width: 65%;">Verified Advice Text</th>
                     </tr>
                   </thead>
                   <tbody id="chunksTableBody">
@@ -266,42 +260,42 @@
           </div>
         </section>
 
-        <!-- TAB 3: ONLINE LIVE RAG & MCP EXPLORER -->
+        <!-- TAB 3: LIVE INTERNET EXPLORER -->
         <section id="ragTab" class="tab-pane">
           <div class="studio-layout">
             <div class="card-title-row">
               <div>
-                <h2>Online Live RAG & MCP Studio</h2>
-                <p style="color: var(--text-muted); font-size: 0.85rem;">Live web retrieval engine with real-time privacy scrubbing and MCP tool calls.</p>
+                <h2>Live Internet Search Studio</h2>
+                <p style="color: var(--text-muted); font-size: 0.88rem;">Search real-time web sources with automatic privacy protection.</p>
               </div>
               <div class="stitch-pill">
                 <span class="pill-dot emerald"></span>
-                <span>DuckDuckGo & Wikipedia Connectors Active</span>
+                <span>DuckDuckGo & Wikipedia Active</span>
               </div>
             </div>
 
             <!-- Search Sandbox -->
             <div class="stitch-card">
               <div class="card-heading">
-                <span>🔎</span> Live Web Retrieval Sandbox
+                <span>🔎</span> Live Web Search
               </div>
               <div style="display: flex; gap: 10px;">
-                <input type="text" id="liveSearchInput" placeholder="Enter query for live web crawling (e.g. latest James Webb telescope findings)..." style="flex: 1; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 10px 16px; color: var(--text-primary); font-size: 0.9rem; outline: none;">
-                <button class="stitch-pill interactive" id="execLiveSearchBtn" style="background: linear-gradient(135deg, var(--accent-cyan), var(--accent-indigo)); color: #fff; border: none; padding: 0 20px;">
-                  Fetch Live Web Sources
+                <input type="text" id="liveSearchInput" placeholder="Search the web (e.g. latest solar energy policies in India)..." style="flex: 1; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 12px 18px; color: var(--text-primary); font-size: 0.95rem; outline: none;">
+                <button class="stitch-pill interactive" id="execLiveSearchBtn" style="background: linear-gradient(135deg, var(--accent-cyan), var(--accent-indigo)); color: #fff; border: none; padding: 0 24px; font-weight: 600;">
+                  Search Web
                 </button>
               </div>
 
-              <!-- Privacy Scrubber Inspector -->
-              <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 14px; margin-top: 10px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; font-weight: 600; color: var(--accent-emerald);">
-                  <span>🛡️ ISHA Privacy Sanitization Guard</span>
-                  <span>Zero PII Transmitted</span>
+              <!-- Privacy Shield Notice -->
+              <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: var(--radius-sm); padding: 14px; margin-top: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; font-weight: 700; color: var(--accent-emerald);">
+                  <span>🛡️ ISHA Privacy Shield Active</span>
+                  <span>100% Anonymized</span>
                 </div>
-                <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 6px;">
-                  All user personal identifiers, phone numbers, contact names, and exact GPS coordinates are stripped locally on-device before querying external search providers.
+                <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 6px;">
+                  Your personal identity, phone numbers, contact names, and exact location are stripped locally on your device before searching external websites.
                 </p>
-                <div id="sanitizedQueryDisplay" style="margin-top: 8px; font-family: var(--font-mono); font-size: 0.76rem; color: var(--accent-cyan);">
+                <div id="sanitizedQueryDisplay" style="margin-top: 8px; font-family: var(--font-mono); font-size: 0.78rem; color: var(--accent-cyan);">
                   Sanitized Query Output: (Waiting for query...)
                 </div>
               </div>
@@ -314,13 +308,13 @@
           </div>
         </section>
 
-        <!-- TAB 4: VISION & MULTIMODAL STUDIO -->
+        <!-- TAB 4: PHOTO & DISEASE DOCTOR (VISION) -->
         <section id="visionTab" class="tab-pane">
           <div class="studio-layout">
             <div class="card-title-row">
               <div>
-                <h2>Multimodal Vision & Camera Studio</h2>
-                <p style="color: var(--text-muted); font-size: 0.85rem;">Diagnose agricultural leaf diseases, inspect doctor prescriptions, and analyze visual documents.</p>
+                <h2>Photo & Disease Doctor</h2>
+                <p style="color: var(--text-muted); font-size: 0.88rem;">Take or upload a photo of a diseased leaf or medicine prescription to diagnose immediately.</p>
               </div>
             </div>
 
@@ -328,141 +322,114 @@
               <!-- Visual Input Workspace -->
               <div class="stitch-card">
                 <div class="card-heading">
-                  <span>📸</span> Image / Camera Feed
+                  <span>📸</span> Upload or Select a Sample
                 </div>
-                <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-                  <button class="stitch-pill interactive" id="loadSampleWheatRustBtn">🌾 Wheat Stripe Rust</button>
+                <div style="display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;">
+                  <button class="stitch-pill interactive" id="loadSampleWheatRustBtn">🌾 Wheat Yellow Rust</button>
                   <button class="stitch-pill interactive" id="loadSampleRiceBlastBtn">🌾 Rice Blast</button>
-                  <button class="stitch-pill interactive" id="loadSamplePrescriptionBtn">🩺 Prescription OCR</button>
+                  <button class="stitch-pill interactive" id="loadSamplePrescriptionBtn">🩺 Doctor Prescription</button>
                 </div>
                 <div id="visionDropArea" style="border: 2px dashed var(--border-subtle); border-radius: var(--radius-md); height: 260px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; overflow: hidden; background: rgba(0,0,0,0.2);">
                   <img id="visionPreviewImg" style="max-height: 100%; max-width: 100%; object-fit: contain; display: none;" />
                   <div id="visionDropPrompt" style="text-align: center; color: var(--text-muted);">
-                    <div style="font-size: 2.2rem; margin-bottom: 6px;">🖼️</div>
-                    <strong>Drop an image or select a sample scenario</strong>
+                    <div style="font-size: 2.4rem; margin-bottom: 8px;">🖼️</div>
+                    <strong>Drop a photo here or click to upload</strong>
                   </div>
                 </div>
                 <input type="file" id="visionUploadInput" accept="image/*" style="display: none;">
                 <div style="display: flex; gap: 10px; margin-top: 10px;">
-                  <button class="stitch-pill interactive" onclick="document.getElementById('visionUploadInput').click();" style="flex: 1;">Upload Image</button>
-                  <button class="stitch-pill interactive" id="runVisionAnalysisBtn" style="flex: 1; background: linear-gradient(135deg, var(--accent-saffron), var(--accent-cyan)); color: #fff; border: none;">Run Diagnosis</button>
+                  <button class="stitch-pill interactive" onclick="document.getElementById('visionUploadInput').click();" style="flex: 1;">Upload Photo</button>
+                  <button class="stitch-pill interactive" id="runVisionAnalysisBtn" style="flex: 1; background: linear-gradient(135deg, var(--accent-saffron), var(--accent-cyan)); color: #fff; border: none; font-weight: 600;">Run Diagnosis</button>
                 </div>
               </div>
 
               <!-- Diagnosis Results Card -->
               <div class="stitch-card">
                 <div class="card-heading">
-                  <span>🔬</span> Edge Diagnostic Assessment
+                  <span>🔬</span> Instant Diagnostic Result
                 </div>
                 <div id="visionResultArea" style="display: flex; flex-direction: column; gap: 14px;">
-                  <div style="color: var(--text-muted); font-size: 0.85rem;">
-                    Load a sample or upload an image to see on-device feature extraction and pathology classification.
+                  <div style="color: var(--text-muted); font-size: 0.88rem;">
+                    Upload a crop photo or prescription to see instant identification, severity assessment, and recommended treatment.
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        </section>
-
-        <!-- TAB 5: WATCHDOG & TELEMETRY PROFILER -->
-        <section id="watchdogTab" class="tab-pane">
-          <div class="studio-layout">
-            <div class="card-title-row">
-              <div>
-                <h2>Runtime Watchdog & Hardware Profiler</h2>
-                <p style="color: var(--text-muted); font-size: 0.85rem;">Simulate hardware tiers, monitor memory guard, and observe the Dynamic Degradation Ladder.</p>
-              </div>
-              <div class="stitch-pill">
-                <span class="pill-dot emerald"></span>
-                <span>Watchdog Status: HEALTHY</span>
-              </div>
-            </div>
-
-            <!-- Tier Switcher -->
-            <div class="stitch-card">
-              <div class="card-heading">
-                <span>📱</span> Hardware Tier Configuration
-              </div>
-              <p style="font-size: 0.85rem; color: var(--text-secondary);">
-                ISHA automatically adjusts token budgets, batch sizes, and model precision based on device RAM class.
-              </p>
-              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 10px;">
-                <button class="stitch-card interactive" id="tierBtn1" style="cursor: pointer; padding: 16px; text-align: left;">
-                  <strong style="color: var(--accent-saffron);">Tier 1: Budget Mobile</strong>
-                  <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">3-4GB RAM • 512 Max Tokens • Conservative Batching</p>
-                </button>
-                <button class="stitch-card interactive" id="tierBtn2" style="cursor: pointer; padding: 16px; text-align: left; border-color: var(--accent-cyan);">
-                  <strong style="color: var(--accent-cyan);">Tier 2: Standard</strong>
-                  <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">6-8GB RAM • 1024 Max Tokens • Standard Edge Pipeline</p>
-                </button>
-                <button class="stitch-card interactive" id="tierBtn3" style="cursor: pointer; padding: 16px; text-align: left;">
-                  <strong style="color: var(--accent-emerald);">Tier 3: Flagship</strong>
-                  <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">12-16GB+ RAM • 2048 Max Tokens • Max Throughput</p>
-                </button>
-              </div>
-            </div>
-
-            <!-- Thermal Zones -->
-            <div class="stitch-card">
-              <div class="card-heading">
-                <span>🌡️</span> Thermal Zone Simulation (Dynamic Degradation Ladder)
-              </div>
-              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 8px;">
-                <button class="stitch-pill interactive" id="thermalBtn1" style="justify-content: center; padding: 10px;">Zone 1: Normal (<38°C)</button>
-                <button class="stitch-pill interactive" id="thermalBtn2" style="justify-content: center; padding: 10px;">Zone 2: Warm (38-42°C)</button>
-                <button class="stitch-pill interactive" id="thermalBtn3" style="justify-content: center; padding: 10px;">Zone 3: Hot (42-46°C)</button>
-                <button class="stitch-pill interactive" id="thermalBtn4" style="justify-content: center; padding: 10px;">Zone 4: Critical (>46°C)</button>
-              </div>
-            </div>
-
-            <!-- Live Stats Grid -->
-            <div class="studio-grid-2">
-              <div class="stitch-card">
-                <div class="card-heading"><span>📊</span> Process Telemetry</div>
-                <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem;">
-                  <div style="display: flex; justify-content: space-between;">
-                    <span style="color: var(--text-muted);">Process RSS Memory:</span>
-                    <strong id="watchdogRss">-- MB</strong>
-                  </div>
-                  <div style="display: flex; justify-content: space-between;">
-                    <span style="color: var(--text-muted);">System RAM Usage:</span>
-                    <strong id="watchdogSysRam">-- %</strong>
-                  </div>
-                  <div style="display: flex; justify-content: space-between;">
-                    <span style="color: var(--text-muted);">CPU Utilization:</span>
-                    <strong id="watchdogCpu">-- %</strong>
-                  </div>
-                  <div style="display: flex; justify-content: space-between;">
-                    <span style="color: var(--text-muted);">Process Uptime:</span>
-                    <strong id="watchdogUptime">-- s</strong>
-                  </div>
-                </div>
-              </div>
-
-              <div class="stitch-card">
-                <div class="card-heading"><span>🧠</span> Inference Cache & Generation</div>
-                <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem;">
-                  <div style="display: flex; justify-content: space-between;">
-                    <span style="color: var(--text-muted);">KV Cache Occupancy:</span>
-                    <strong id="watchdogKvCache">0 / 2048 Tokens</strong>
-                  </div>
-                  <div style="display: flex; justify-content: space-between;">
-                    <span style="color: var(--text-muted);">Total Tokens Synthesized:</span>
-                    <strong id="watchdogTotalTokens">0</strong>
-                  </div>
-                  <div style="display: flex; justify-content: space-between;">
-                    <span style="color: var(--text-muted);">Thermal Mitigation Policy:</span>
-                    <strong id="watchdogThrottlePolicy" style="color: var(--accent-emerald);">None</strong>
-                  </div>
-                </div>
-              </div>
-            </div>
-
           </div>
         </section>
 
       </main>
     </div>
+
+    <!-- DEVELOPER & TELEMETRY SLIDE-OVER DRAWER -->
+    <div class="dev-drawer-backdrop" id="devDrawerBackdrop"></div>
+    <aside class="dev-drawer" id="devDrawer">
+      <div class="dev-drawer-header">
+        <div>
+          <h3>⚙️ Developer Diagnostics</h3>
+          <p style="font-size: 0.75rem; color: var(--text-muted);">Hardware tiering, thermals, and runtime watchdog</p>
+        </div>
+        <button class="stitch-icon-btn" id="closeDevDrawerBtn">✕</button>
+      </div>
+
+      <!-- Hardware Tiers -->
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <strong style="font-size: 0.85rem;">📱 Hardware Tier Simulation</strong>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <button class="stitch-card interactive" id="tierBtn1" style="padding: 10px; cursor: pointer; text-align: left;">
+            <strong style="color: var(--accent-saffron); font-size: 0.82rem;">Tier 1: Budget Mobile (4GB)</strong>
+            <p style="font-size: 0.72rem; color: var(--text-muted);">512 Tokens Max • Conservative batching</p>
+          </button>
+          <button class="stitch-card interactive" id="tierBtn2" style="padding: 10px; cursor: pointer; text-align: left; border-color: var(--accent-cyan);">
+            <strong style="color: var(--accent-cyan); font-size: 0.82rem;">Tier 2: Standard (8GB)</strong>
+            <p style="font-size: 0.72rem; color: var(--text-muted);">1024 Tokens Max • Balanced Edge Pipeline</p>
+          </button>
+          <button class="stitch-card interactive" id="tierBtn3" style="padding: 10px; cursor: pointer; text-align: left;">
+            <strong style="color: var(--accent-emerald); font-size: 0.82rem;">Tier 3: Flagship (16GB+)</strong>
+            <p style="font-size: 0.72rem; color: var(--text-muted);">2048 Tokens Max • Maximum Throughput</p>
+          </button>
+        </div>
+      </div>
+
+      <!-- Thermal Zones -->
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <strong style="font-size: 0.85rem;">🌡️ Thermal Zones (Degradation Ladder)</strong>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+          <button class="stitch-pill interactive" id="thermalBtn1" style="justify-content: center; font-size: 0.75rem;">Zone 1: Normal</button>
+          <button class="stitch-pill interactive" id="thermalBtn2" style="justify-content: center; font-size: 0.75rem;">Zone 2: Warm</button>
+          <button class="stitch-pill interactive" id="thermalBtn3" style="justify-content: center; font-size: 0.75rem;">Zone 3: Hot</button>
+          <button class="stitch-pill interactive" id="thermalBtn4" style="justify-content: center; font-size: 0.75rem;">Zone 4: Critical</button>
+        </div>
+      </div>
+
+      <!-- System Stats -->
+      <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.8rem; background: rgba(0,0,0,0.2); padding: 12px; border-radius: var(--radius-sm);">
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--text-muted);">Process RSS:</span>
+          <strong id="watchdogRss">-- MB</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--text-muted);">System RAM:</span>
+          <strong id="watchdogSysRam">-- %</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--text-muted);">CPU Utilization:</span>
+          <strong id="watchdogCpu">-- %</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--text-muted);">KV Cache Occupancy:</span>
+          <strong id="watchdogKvCache">0 / 2048</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--text-muted);">Total Tokens Synthesized:</span>
+          <strong id="watchdogTotalTokens">0</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--text-muted);">Watchdog Status:</span>
+          <strong style="color: var(--accent-emerald);">HEALTHY</strong>
+        </div>
+      </div>
+    </aside>
   </div>
 
   <script src="/js/stitch-app.js"></script>

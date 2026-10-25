@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/app_dp.png" alt="ISHA AI Logo" width="160" style="border-radius: 28px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+</p>
+
 # ISHA AI — Intelligent Speech & Haptic Assistant
 > **"Minimum Compute. Maximum Intelligence. Structure does the thinking. Model does the speaking."**
 

@@ -1,7 +1,13 @@
 /**
  * ISHA AI - Google Stitch Client Application
- * Handles Real-time Streaming, Knowledge Base Ingestion, Online Live RAG,
- * Vision Diagnostics, Voice STT/TTS, and Watchdog Telemetry.
+ * Consumer-Facing & Human-Centric Architecture:
+ * - Real-time grounded streaming
+ * - Instant Persona Switching (Farming, Health, Legal, STEM)
+ * - Live Web Search toggle
+ * - Document Ingestion & Chat
+ * - Voice STT & TTS with Speech Waveform
+ * - Multimodal Camera & Vision Analysis
+ * - Hidden Slide-Over Developer Diagnostics Drawer
  */
 
 let ws = null;
@@ -13,17 +19,26 @@ let isGenerating = false;
 let currentStreamBubble = null;
 let currentTraceContent = null;
 let accumulatedMarkdown = "";
-let audioContext = null;
-let analyser = null;
 let animationFrameId = null;
+
+const packTitles = {
+  "all": "✨ All Knowledge Topics",
+  "kisan_saathi": "🌾 Kisan Crop & Farm Doctor",
+  "swasthya": "🩺 Health & Family First Aid",
+  "bharat_core": "⚖️ Citizen Rights & Legal",
+  "shiksha": "🎓 Study & STEM Helper",
+  "user_library": "📁 My Uploaded Documents"
+};
 
 document.addEventListener("DOMContentLoaded", () => {
   initTheme();
   initPWA();
   initTabs();
+  initPersonas();
   initWebSocket();
   initPromptDock();
-  initQuickChips();
+  initHeroCards();
+  initDeveloperDrawer();
   initKnowledgeBase();
   initLiveRagExplorer();
   initVisionStudio();
@@ -32,7 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 /* ==========================================================================
-   THEME & UI SWITCHING
+   THEME & PWA
    ========================================================================== */
 function initTheme() {
   const savedTheme = localStorage.getItem("isha_theme") || "dark";
@@ -55,10 +70,9 @@ function updateThemeIcon(theme) {
 
 let deferredInstallPrompt = null;
 function initPWA() {
-  // Register Service Worker
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(err => {
-      console.warn('[PWA] ServiceWorker registration skipped:', err);
+      console.warn('[PWA] ServiceWorker:', err);
     });
   }
 
@@ -79,12 +93,15 @@ function initPWA() {
         }
         deferredInstallPrompt = null;
       } else {
-        alert("To install ISHA AI on your device:\n- In Chrome/Edge: Click the install icon in the URL address bar.\n- On Android: Tap menu (⋮) -> 'Add to Home screen' or 'Install App'.\n- On iPhone/iPad: Tap Share -> 'Add to Home Screen'.");
+        alert("To install ISHA AI:\n- On Desktop: Click the install icon in the URL bar.\n- On Android: Tap menu (⋮) -> 'Add to Home screen' or 'Install App'.\n- On iPhone/iPad: Tap Share -> 'Add to Home Screen'.");
       }
     });
   }
 }
 
+/* ==========================================================================
+   NAVIGATION & PERSONA SWITCHING
+   ========================================================================== */
 function initTabs() {
   const railBtns = document.querySelectorAll(".rail-btn");
   railBtns.forEach(btn => {
@@ -92,6 +109,10 @@ function initTabs() {
       const tabId = btn.getAttribute("data-tab");
       switchTab(tabId);
     });
+  });
+
+  document.getElementById("brandHomeBtn").addEventListener("click", () => {
+    switchTab("chatTab");
   });
 }
 
@@ -107,6 +128,42 @@ function switchTab(tabId) {
   currentTab = tabId;
 
   if (tabId === "kbTab") loadPacks();
+}
+
+function initPersonas() {
+  const pills = document.querySelectorAll("#personaPillsBar .persona-pill");
+  pills.forEach(pill => {
+    pill.addEventListener("click", () => {
+      pills.forEach(p => p.classList.remove("active"));
+      pill.classList.add("active");
+      activePack = pill.getAttribute("data-pack");
+      document.getElementById("activeTopicBadge").textContent = packTitles[activePack] || "✨ Active Topic";
+    });
+  });
+}
+
+/* ==========================================================================
+   DEVELOPER SLIDE-OVER DRAWER
+   ========================================================================== */
+function initDeveloperDrawer() {
+  const openBtn = document.getElementById("openDevDrawerBtn");
+  const closeBtn = document.getElementById("closeDevDrawerBtn");
+  const drawer = document.getElementById("devDrawer");
+  const backdrop = document.getElementById("devDrawerBackdrop");
+
+  const openDrawer = () => {
+    drawer.classList.add("active");
+    backdrop.classList.add("active");
+  };
+
+  const closeDrawer = () => {
+    drawer.classList.remove("active");
+    backdrop.classList.remove("active");
+  };
+
+  if (openBtn) openBtn.addEventListener("click", openDrawer);
+  if (closeBtn) closeBtn.addEventListener("click", closeDrawer);
+  if (backdrop) backdrop.addEventListener("click", closeDrawer);
 }
 
 /* ==========================================================================
@@ -154,28 +211,26 @@ function handleStreamEvent(msg) {
     isGenerating = false;
     updateSendBtnState(false);
     if (currentStreamBubble) {
-      appendTTSButton(currentStreamBubble, accumulatedMarkdown);
+      appendMessageActions(currentStreamBubble.parentElement, accumulatedMarkdown);
     }
     chatHistory.push({ role: "assistant", content: accumulatedMarkdown });
   } else if (msg.type === "error") {
     isGenerating = false;
     updateSendBtnState(false);
     if (currentStreamBubble) {
-      currentStreamBubble.innerHTML += `<p style="color: var(--accent-rose); margin-top: 8px;"><strong>Error:</strong> ${msg.error}</p>`;
+      currentStreamBubble.innerHTML += `<p style="color: var(--accent-rose); margin-top: 8px;"><strong>Notice:</strong> ${msg.error}</p>`;
     }
   }
 }
 
 /* ==========================================================================
-   CHAT CANVAS & PROMPT DOCK
+   PROMPT DOCK & HERO SCREEN
    ========================================================================== */
 function initPromptDock() {
   const promptInput = document.getElementById("promptInput");
   const sendBtn = document.getElementById("sendBtn");
-  const onlineRagToggle = document.getElementById("onlineRagToggle");
-  const packSelector = document.getElementById("packSelector");
+  const headerRagToggle = document.getElementById("onlineRagHeaderToggle");
 
-  // Auto-resize textarea
   promptInput.addEventListener("input", () => {
     promptInput.style.height = "auto";
     promptInput.style.height = Math.min(promptInput.scrollHeight, 120) + "px";
@@ -192,18 +247,29 @@ function initPromptDock() {
     dispatchQuery();
   });
 
-  // Online Live RAG Toggle
-  onlineRagToggle.addEventListener("click", () => {
+  // Header Live Web Toggle Button
+  headerRagToggle.addEventListener("click", () => {
     isOnlineRagActive = !isOnlineRagActive;
     updateOnlineRagUI();
   });
 
-  // Pack selector
-  packSelector.addEventListener("change", (e) => {
-    activePack = e.target.value;
+  // Attach Document Button in Prompt Dock
+  const attachDocBtn = document.getElementById("attachDocBtn");
+  const promptDocInput = document.getElementById("promptDocInput");
+  attachDocBtn.addEventListener("click", () => {
+    promptDocInput.click();
   });
 
-  // Attach Image Button in Prompt Dock
+  promptDocInput.addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      appendUserMessage(`📎 Uploaded document: ${file.name}`);
+      await handleFileUpload(file);
+      appendAssistantSimpleMessage(`I have read and indexed **${file.name}**. What would you like to know or extract from it?`);
+    }
+  });
+
+  // Photo / Camera Button in Prompt Dock
   document.getElementById("attachImageBtn").addEventListener("click", () => {
     document.getElementById("imageFileInput").click();
   });
@@ -220,42 +286,54 @@ function initPromptDock() {
     }
   });
 
-  // Voice Microphone button
   initVoiceSTT();
 }
 
 function updateOnlineRagUI() {
-  const toggle = document.getElementById("onlineRagToggle");
-  const toggleDot = document.getElementById("ragToggleDot");
-  const toggleText = document.getElementById("ragToggleText");
-  const modeDot = document.getElementById("modeDot");
-  const modeText = document.getElementById("modeText");
+  const headerBtn = document.getElementById("onlineRagHeaderToggle");
+  const dot = document.getElementById("headerRagDot");
+  const text = document.getElementById("headerRagText");
+  const statusDot = document.getElementById("headerStatusDot");
+  const statusText = document.getElementById("headerStatusText");
 
   if (isOnlineRagActive) {
-    toggle.classList.add("active");
-    toggleDot.className = "pill-dot cyan";
-    toggleText.textContent = "🌐 Online Live RAG: ON";
-    modeDot.className = "pill-dot cyan";
-    modeText.textContent = "Online Live Mode (Live RAG)";
+    headerBtn.classList.add("online");
+    dot.className = "pill-dot cyan";
+    text.textContent = "🌐 Live Web: ON";
+    statusDot.className = "pill-dot cyan";
+    statusText.textContent = "Live Internet Active";
   } else {
-    toggle.classList.remove("active");
-    toggleDot.className = "pill-dot";
-    toggleText.textContent = "🌐 Online Live RAG: OFF";
-    modeDot.className = "pill-dot saffron";
-    modeText.textContent = "Device Offline Mode";
+    headerBtn.classList.remove("online");
+    dot.className = "pill-dot";
+    text.textContent = "🌐 Live Web: OFF";
+    statusDot.className = "pill-dot emerald";
+    statusText.textContent = "100% On-Device Private";
   }
 }
 
-function initQuickChips() {
-  const chips = document.querySelectorAll(".quick-chip");
-  chips.forEach(chip => {
-    chip.addEventListener("click", () => {
-      const query = chip.getAttribute("data-query");
-      const requiresOnline = chip.getAttribute("data-online") === "true";
-      if (requiresOnline && !isOnlineRagActive) {
+function initHeroCards() {
+  const cards = document.querySelectorAll(".hero-card");
+  cards.forEach(card => {
+    card.addEventListener("click", () => {
+      const query = card.getAttribute("data-query");
+      const pack = card.getAttribute("data-pack");
+      const online = card.getAttribute("data-online") === "true";
+
+      if (pack) {
+        activePack = pack;
+        const pill = document.querySelector(`.persona-pill[data-pack="${pack}"]`);
+        if (pill) {
+          document.querySelectorAll(".persona-pill").forEach(p => p.classList.remove("active"));
+          pill.classList.add("active");
+        }
+        document.getElementById("activeTopicBadge").textContent = packTitles[activePack] || "✨ Active Topic";
+      }
+
+      if (online && !isOnlineRagActive) {
         isOnlineRagActive = true;
         updateOnlineRagUI();
       }
+
       document.getElementById("promptInput").value = query;
       dispatchQuery();
     });
@@ -270,7 +348,11 @@ function dispatchQuery() {
   if (!query) return;
 
   promptInput.value = "";
-  promptInput.style.height = "28px";
+  promptInput.style.height = "32px";
+
+  // Hide hero screen on first message
+  const hero = document.getElementById("heroWelcome");
+  if (hero) hero.style.display = "none";
 
   // Append user message
   appendUserMessage(query);
@@ -292,7 +374,7 @@ function dispatchQuery() {
     updateSendBtnState(true);
     ws.send(JSON.stringify(payload));
   } else {
-    console.warn("[ISHA] WebSocket not connected; using REST fallback");
+    console.warn("[ISHA] Using HTTP fallback");
     fallbackHttpQuery(payload);
   }
 }
@@ -302,8 +384,22 @@ function appendUserMessage(text) {
   const msgEl = document.createElement("div");
   msgEl.className = "chat-message user";
   msgEl.innerHTML = `
-    <div class="avatar-badge">U</div>
+    <div class="avatar-badge">👤</div>
     <div class="message-bubble">${escapeHtml(text)}</div>
+  `;
+  timeline.appendChild(msgEl);
+  scrollChatToBottom();
+}
+
+function appendAssistantSimpleMessage(text) {
+  const timeline = document.getElementById("chatTimeline");
+  const msgEl = document.createElement("div");
+  msgEl.className = "chat-message assistant";
+  msgEl.innerHTML = `
+    <div class="avatar-badge">
+      <img src="/app_dp.png" alt="ISHA">
+    </div>
+    <div class="message-bubble">${marked.parse(text)}</div>
   `;
   timeline.appendChild(msgEl);
   scrollChatToBottom();
@@ -314,14 +410,16 @@ function prepareAssistantStreamBubble() {
   const msgEl = document.createElement("div");
   msgEl.className = "chat-message assistant";
   msgEl.innerHTML = `
-    <div class="avatar-badge">I</div>
+    <div class="avatar-badge">
+      <img src="/app_dp.png" alt="ISHA">
+    </div>
     <div class="message-bubble">
       <div class="stream-content" style="min-height: 20px;">
-        <span style="color: var(--text-muted); font-size: 0.85rem;">Thinking & retrieving grounded context...</span>
+        <span style="color: var(--text-muted); font-size: 0.9rem;">Consulting verified knowledge...</span>
       </div>
       <div class="grounding-trace" style="display: none;">
         <div class="trace-header">
-          <span>🔍 Grounding Context & Citations</span>
+          <span>🌿 Sources & Grounded Evidence</span>
           <span class="trace-toggle-arrow">▼</span>
         </div>
         <div class="trace-content" style="display: none;"></div>
@@ -347,26 +445,26 @@ function renderRetrievalTrace(data) {
   (data.citations || []).forEach(c => {
     const isWeb = c.type === "web";
     const badgeColor = isWeb ? "var(--accent-cyan)" : "var(--accent-saffron)";
+    const icon = isWeb ? "🌐 Live Web" : "🌿 Verified Knowledge";
     citationsHtml += `
       <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 8px 12px; margin-top: 4px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
           <strong style="color: ${badgeColor}; font-size: 0.8rem;">[${c.citation_id}] ${escapeHtml(c.title)}</strong>
-          <span style="font-size: 0.72rem; color: var(--text-muted);">Relevance: ${Math.round(c.score * 100)}%</span>
+          <span style="font-size: 0.72rem; color: var(--text-muted);">${icon}</span>
         </div>
-        <p style="font-size: 0.75rem; color: var(--text-secondary);">${escapeHtml(c.snippet)}</p>
-        ${c.url ? `<a href="${c.url}" target="_blank" style="color: var(--accent-cyan); font-size: 0.72rem; text-decoration: none; margin-top: 4px; display: inline-block;">Open Source URL ↗</a>` : ""}
+        <p style="font-size: 0.78rem; color: var(--text-secondary);">${escapeHtml(c.snippet)}</p>
+        ${c.url ? `<a href="${c.url}" target="_blank" style="color: var(--accent-cyan); font-size: 0.74rem; text-decoration: none; margin-top: 4px; display: inline-block;">Open Source ↗</a>` : ""}
       </div>
     `;
   });
 
   traceBody.innerHTML = `
-    <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 6px;">
-      ⚡ Retrieval Latency: <strong>${data.retrieval_time_ms} ms</strong> | Local Chunks: <strong>${data.local_matches}</strong> | Web Sources: <strong>${data.web_matches}</strong>
+    <div style="font-size: 0.76rem; color: var(--text-muted); margin-bottom: 6px;">
+      Grounded in <strong>${data.local_matches}</strong> offline facts • <strong>${data.web_matches}</strong> web results
     </div>
-    ${citationsHtml || "<p style='font-size: 0.75rem;'>No external grounding citations required for this query.</p>"}
+    ${citationsHtml || "<p style='font-size: 0.78rem;'>Answered directly from foundational understanding.</p>"}
   `;
 
-  // Toggle trace collapse
   const header = traceBox.querySelector(".trace-header");
   header.addEventListener("click", () => {
     const isVisible = traceBody.style.display !== "none";
@@ -375,22 +473,33 @@ function renderRetrievalTrace(data) {
   });
 }
 
-function appendTTSButton(bubbleEl, textToSpeak) {
-  const ttsBtn = document.createElement("button");
-  ttsBtn.className = "citation-chip";
-  ttsBtn.style.marginTop = "12px";
-  ttsBtn.style.display = "inline-flex";
-  ttsBtn.innerHTML = `🔊 Listen to ISHA`;
-  ttsBtn.addEventListener("click", () => {
-    playSpeech(textToSpeak);
+function appendMessageActions(bubbleEl, text) {
+  const actionsDiv = document.createElement("div");
+  actionsDiv.className = "message-actions";
+
+  // TTS Listen button
+  const listenBtn = document.createElement("button");
+  listenBtn.className = "action-chip-btn";
+  listenBtn.innerHTML = `🔊 Listen`;
+  listenBtn.addEventListener("click", () => playSpeech(text));
+
+  // Copy button
+  const copyBtn = document.createElement("button");
+  copyBtn.className = "action-chip-btn";
+  copyBtn.innerHTML = `📋 Copy`;
+  copyBtn.addEventListener("click", () => {
+    navigator.clipboard.writeText(text);
+    copyBtn.innerHTML = `✓ Copied`;
+    setTimeout(() => { copyBtn.innerHTML = `📋 Copy`; }, 2000);
   });
-  bubbleEl.appendChild(ttsBtn);
+
+  actionsDiv.appendChild(listenBtn);
+  actionsDiv.appendChild(copyBtn);
+  bubbleEl.appendChild(actionsDiv);
 }
 
 function playSpeech(text) {
-  // Strip markdown formatting for cleaner speech synthesis
-  const cleanText = text.replace(/[#*`_\[\]()]/g, " ").substring(0, 400);
-
+  const cleanText = text.replace(/[#*`_\[\]()]/g, " ").substring(0, 450);
   if ('speechSynthesis' in window) {
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(cleanText);
@@ -488,12 +597,12 @@ function startAudioWaveAnimation() {
     ctx.lineWidth = 2;
 
     for (let x = 0; x < canvas.width; x++) {
-      const y = canvas.height / 2 + Math.sin(x * 0.15 + phase) * (canvas.height / 3);
+      const y = canvas.height / 2 + Math.sin(x * 0.18 + phase) * (canvas.height / 3);
       if (x === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     }
     ctx.stroke();
-    phase += 0.2;
+    phase += 0.25;
     animationFrameId = requestAnimationFrame(renderWave);
   }
 
@@ -555,7 +664,7 @@ async function loadPacks() {
     renderPacksList(packs);
 
     let totalChunks = packs.reduce((acc, p) => acc + p.chunks_count, 0);
-    document.getElementById("totalChunksDisplay").textContent = `${totalChunks} Indexed Chunks`;
+    document.getElementById("totalChunksDisplay").textContent = `${totalChunks} Knowledge Points`;
   } catch (err) {
     console.error("Failed to load packs:", err);
   }
@@ -568,21 +677,21 @@ function renderPacksList(packs) {
   packs.forEach(pack => {
     const div = document.createElement("div");
     div.className = "stitch-card";
-    div.style.padding = "12px 16px";
+    div.style.padding = "14px 18px";
     div.style.flexDirection = "row";
     div.style.alignItems = "center";
     div.style.justifyContent = "space-between";
 
     div.innerHTML = `
       <div style="display: flex; align-items: center; gap: 12px;">
-        <span style="font-size: 1.5rem;">${pack.icon}</span>
+        <span style="font-size: 1.6rem;">${pack.icon}</span>
         <div>
-          <strong style="font-size: 0.9rem;">${escapeHtml(pack.title)}</strong>
-          <p style="font-size: 0.74rem; color: var(--text-muted);">${escapeHtml(pack.description)}</p>
+          <strong style="font-size: 0.92rem;">${escapeHtml(pack.title)}</strong>
+          <p style="font-size: 0.78rem; color: var(--text-muted);">${escapeHtml(pack.description)}</p>
         </div>
       </div>
       <div class="stitch-pill">
-        <span>${pack.chunks_count} chunks</span>
+        <span>${pack.chunks_count} facts</span>
       </div>
     `;
     container.appendChild(div);
@@ -595,10 +704,12 @@ async function handleFileUpload(file) {
   const statusMsg = document.getElementById("ingestStatusMsg");
   const pctText = document.getElementById("ingestPct");
 
-  progressBox.style.display = "block";
-  statusMsg.textContent = `Ingesting ${file.name}...`;
-  progressBar.style.width = "40%";
-  pctText.textContent = "40%";
+  if (progressBox) {
+    progressBox.style.display = "block";
+    statusMsg.textContent = `Reading ${file.name}...`;
+    progressBar.style.width = "40%";
+    pctText.textContent = "40%";
+  }
 
   const formData = new FormData();
   formData.append("file", file);
@@ -611,19 +722,21 @@ async function handleFileUpload(file) {
     });
     const result = await res.json();
 
-    progressBar.style.width = "100%";
-    pctText.textContent = "100%";
-    statusMsg.textContent = result.message || "Ingestion complete!";
+    if (progressBox) {
+      progressBar.style.width = "100%";
+      pctText.textContent = "100%";
+      statusMsg.textContent = result.message || "Document indexed!";
+      setTimeout(() => {
+        progressBox.style.display = "none";
+        progressBar.style.width = "0%";
+      }, 1800);
+    }
 
-    setTimeout(() => {
-      progressBox.style.display = "none";
-      progressBar.style.width = "0%";
-      loadPacks();
-      loadAllChunks();
-    }, 1800);
+    loadPacks();
+    loadAllChunks();
+    return result;
   } catch (err) {
-    statusMsg.textContent = "Ingestion failed: " + err.message;
-    progressBar.style.background = "var(--accent-rose)";
+    if (statusMsg) statusMsg.textContent = "Upload error: " + err.message;
   }
 }
 
@@ -646,8 +759,8 @@ function renderChunksTable(chunks) {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td><span class="citation-chip" style="margin: 0;">${escapeHtml(c.chunk_id)}</span></td>
-      <td><strong style="color: var(--accent-cyan); font-size: 0.78rem;">${escapeHtml(c.pack_id)}</strong></td>
-      <td style="color: var(--text-secondary); line-height: 1.4;">${escapeHtml(c.text)}</td>
+      <td><strong style="color: var(--accent-cyan); font-size: 0.8rem;">${escapeHtml(c.pack_id)}</strong></td>
+      <td style="color: var(--text-secondary); line-height: 1.5;">${escapeHtml(c.text)}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -666,7 +779,7 @@ function filterChunksTable(query) {
 }
 
 /* ==========================================================================
-   ONLINE LIVE RAG & MCP EXPLORER
+   ONLINE LIVE RAG
    ========================================================================== */
 function initLiveRagExplorer() {
   const execBtn = document.getElementById("execLiveSearchBtn");
@@ -689,7 +802,7 @@ async function executeLiveRagSearch(query) {
   const sanitizedDisplay = document.getElementById("sanitizedQueryDisplay");
   const resultsContainer = document.getElementById("liveSearchResultsContainer");
 
-  resultsContainer.innerHTML = `<div style="color: var(--accent-cyan); font-size: 0.85rem;">Scraping live internet and querying Wikipedia...</div>`;
+  resultsContainer.innerHTML = `<div style="color: var(--accent-cyan); font-size: 0.88rem;">Crawling live internet articles & Wikipedia...</div>`;
 
   try {
     const res = await fetch("/api/rag/online-search", {
@@ -699,11 +812,11 @@ async function executeLiveRagSearch(query) {
     });
     const data = await res.json();
 
-    sanitizedDisplay.textContent = `Sanitized Query: "${data.query}" • PII Checked: Clean`;
+    sanitizedDisplay.textContent = `Sanitized Query: "${data.query}" • Personal data scrubbed: Clean`;
     resultsContainer.innerHTML = "";
 
     if (!data.sources || data.sources.length === 0) {
-      resultsContainer.innerHTML = `<div style="color: var(--text-muted); font-size: 0.85rem;">No web sources returned for this query.</div>`;
+      resultsContainer.innerHTML = `<div style="color: var(--text-muted); font-size: 0.88rem;">No web sources returned for this query.</div>`;
       return;
     }
 
@@ -713,17 +826,17 @@ async function executeLiveRagSearch(query) {
       card.style.padding = "16px";
       card.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <strong style="color: var(--accent-cyan); font-size: 0.95rem;">[W${idx + 1}] ${escapeHtml(src.title)}</strong>
+          <strong style="color: var(--accent-cyan); font-size: 0.98rem;">${escapeHtml(src.title)}</strong>
           <span class="stitch-pill">${src.provider}</span>
         </div>
-        <p style="font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5; margin-top: 6px;">${escapeHtml(src.snippet)}</p>
-        <a href="${src.url}" target="_blank" style="color: var(--accent-saffron); font-size: 0.78rem; text-decoration: none; margin-top: 6px; display: inline-block;">View Source Article ↗</a>
+        <p style="font-size: 0.84rem; color: var(--text-secondary); line-height: 1.5; margin-top: 6px;">${escapeHtml(src.snippet)}</p>
+        <a href="${src.url}" target="_blank" style="color: var(--accent-saffron); font-size: 0.8rem; text-decoration: none; margin-top: 6px; display: inline-block;">Open Web Article ↗</a>
       `;
       resultsContainer.appendChild(card);
     });
 
   } catch (err) {
-    resultsContainer.innerHTML = `<div style="color: var(--accent-rose); font-size: 0.85rem;">Search failed: ${err.message}</div>`;
+    resultsContainer.innerHTML = `<div style="color: var(--accent-rose); font-size: 0.88rem;">Search failed: ${err.message}</div>`;
   }
 }
 
@@ -731,6 +844,7 @@ async function executeLiveRagSearch(query) {
    VISION & MULTIMODAL STUDIO
    ========================================================================== */
 let activeVisionBase64 = "";
+let activeVisionContextHint = "";
 
 function initVisionStudio() {
   const uploadInput = document.getElementById("visionUploadInput");
@@ -747,7 +861,6 @@ function initVisionStudio() {
     }
   });
 
-  // Pre-loaded samples
   document.getElementById("loadSampleWheatRustBtn").addEventListener("click", () => {
     loadSamplePlaceholder("Wheat Stripe Rust Foliage", "yellow rust stripe pustules wheat leaf");
   });
@@ -775,13 +888,11 @@ function loadVisionImage(base64Data, label) {
 }
 
 function loadSamplePlaceholder(label, contextHint) {
-  // Generate high-resolution colored canvas placeholder
   const canvas = document.createElement("canvas");
   canvas.width = 480;
   canvas.height = 320;
   const ctx = canvas.getContext("2d");
   
-  // Gradient fill
   const grad = ctx.createLinearGradient(0, 0, 480, 320);
   grad.addColorStop(0, "#1e293b");
   grad.addColorStop(1, "#0f172a");
@@ -795,14 +906,13 @@ function loadSamplePlaceholder(label, contextHint) {
 
   ctx.fillStyle = "#94a3b8";
   ctx.font = "14px Inter, sans-serif";
-  ctx.fillText("Simulated Multimodal Optical Input", 240, 180);
+  ctx.fillText("Optical Diagnostic Sample", 240, 180);
 
   const dataUrl = canvas.toDataURL("image/jpeg");
   loadVisionImage(dataUrl, label);
   activeVisionContextHint = contextHint;
 }
 
-let activeVisionContextHint = "";
 async function runVisionDiagnosis() {
   if (!activeVisionBase64) {
     alert("Please select or drop an image first.");
@@ -810,7 +920,7 @@ async function runVisionDiagnosis() {
   }
 
   const resultArea = document.getElementById("visionResultArea");
-  resultArea.innerHTML = `<div style="color: var(--accent-cyan); font-size: 0.85rem;">Running on-device frame analysis & feature extraction...</div>`;
+  resultArea.innerHTML = `<div style="color: var(--accent-cyan); font-size: 0.88rem;">Analyzing visual symptoms and optical features...</div>`;
 
   try {
     const res = await fetch("/api/vision/analyze", {
@@ -824,27 +934,27 @@ async function runVisionDiagnosis() {
     const data = await res.json();
 
     resultArea.innerHTML = `
-      <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: var(--radius-sm); padding: 16px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-          <strong style="color: var(--accent-emerald); font-size: 1rem;">${escapeHtml(data.diagnosis)}</strong>
+      <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: var(--radius-sm); padding: 18px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <strong style="color: var(--accent-emerald); font-size: 1.05rem;">${escapeHtml(data.diagnosis)}</strong>
           <span class="stitch-pill" style="border-color: var(--accent-emerald); color: var(--accent-emerald);">Confidence: ${Math.round(data.confidence * 100)}%</span>
         </div>
-        <p style="font-size: 0.85rem; color: var(--text-primary); margin-top: 8px; line-height: 1.5;">${escapeHtml(data.remedy)}</p>
+        <p style="font-size: 0.9rem; color: var(--text-primary); margin-top: 8px; line-height: 1.6;">${escapeHtml(data.remedy)}</p>
       </div>
 
-      <div style="display: flex; gap: 10px; font-size: 0.78rem; color: var(--text-muted);">
+      <div style="display: flex; gap: 10px; font-size: 0.8rem; color: var(--text-muted);">
         <span>Resolution: ${data.image_metadata.width}x${data.image_metadata.height}</span>
         <span>Format: ${data.image_metadata.format}</span>
-        <span>Frame Governor: 5 FPS Cap (Safe)</span>
+        <span>Inspection: Instant On-Device</span>
       </div>
     `;
   } catch (err) {
-    resultArea.innerHTML = `<div style="color: var(--accent-rose); font-size: 0.85rem;">Vision analysis failed: ${err.message}</div>`;
+    resultArea.innerHTML = `<div style="color: var(--accent-rose); font-size: 0.88rem;">Diagnosis error: ${err.message}</div>`;
   }
 }
 
 /* ==========================================================================
-   WATCHDOG & HARDWARE TELEMETRY
+   WATCHDOG & HARDWARE TELEMETRY (SLIDE OVER DRAWER)
    ========================================================================== */
 function initWatchdog() {
   document.getElementById("tierBtn1").addEventListener("click", () => setTier(1));
@@ -855,9 +965,6 @@ function initWatchdog() {
   document.getElementById("thermalBtn2").addEventListener("click", () => setThermal(2));
   document.getElementById("thermalBtn3").addEventListener("click", () => setThermal(3));
   document.getElementById("thermalBtn4").addEventListener("click", () => setThermal(4));
-
-  document.getElementById("tierSelectorBtn").addEventListener("click", () => switchTab("watchdogTab"));
-  document.getElementById("thermalIndicatorBtn").addEventListener("click", () => switchTab("watchdogTab"));
 }
 
 async function setTier(tier) {
@@ -869,9 +976,7 @@ async function setTier(tier) {
     });
     const data = await res.json();
     updateTelemetryUI(data);
-  } catch (e) {
-    console.error("Failed to set tier:", e);
-  }
+  } catch (e) {}
 }
 
 async function setThermal(zone) {
@@ -883,9 +988,7 @@ async function setThermal(zone) {
     });
     const data = await res.json();
     updateTelemetryUI(data);
-  } catch (e) {
-    console.error("Failed to set thermal:", e);
-  }
+  } catch (e) {}
 }
 
 function startTelemetryPolling() {
@@ -902,38 +1005,15 @@ async function fetchTelemetry() {
 }
 
 function updateTelemetryUI(data) {
-  // Header badges
-  const headerTier = document.getElementById("headerTierText");
-  const headerThermal = document.getElementById("headerThermalText");
-  const thermalDot = document.getElementById("thermalDot");
-  const headerRam = document.getElementById("headerRamText");
-
-  if (headerTier) headerTier.textContent = `Tier ${data.tier}: ${data.device_class}`;
-  if (headerThermal) headerThermal.textContent = data.thermal_status;
-  if (headerRam) headerRam.textContent = `${data.process_rss_mb} MB`;
-
-  if (thermalDot) {
-    const dotClasses = { 1: "emerald", 2: "saffron", 3: "rose", 4: "rose" };
-    thermalDot.className = `pill-dot ${dotClasses[data.thermal_zone] || "emerald"}`;
-  }
-
-  // Watchdog tab details
   const watchdogRss = document.getElementById("watchdogRss");
   const watchdogSysRam = document.getElementById("watchdogSysRam");
   const watchdogCpu = document.getElementById("watchdogCpu");
-  const watchdogUptime = document.getElementById("watchdogUptime");
   const watchdogKvCache = document.getElementById("watchdogKvCache");
   const watchdogTotalTokens = document.getElementById("watchdogTotalTokens");
-  const watchdogThrottlePolicy = document.getElementById("watchdogThrottlePolicy");
 
   if (watchdogRss) watchdogRss.textContent = `${data.process_rss_mb} MB`;
   if (watchdogSysRam) watchdogSysRam.textContent = `${data.system_ram_pct} %`;
   if (watchdogCpu) watchdogCpu.textContent = `${data.cpu_percent} %`;
-  if (watchdogUptime) watchdogUptime.textContent = `${data.uptime_seconds} s`;
-  if (watchdogKvCache) watchdogKvCache.textContent = `${data.kv_cache_tokens} / ${data.max_context} Tokens`;
+  if (watchdogKvCache) watchdogKvCache.textContent = `${data.kv_cache_tokens} / ${data.max_context}`;
   if (watchdogTotalTokens) watchdogTotalTokens.textContent = data.total_tokens;
-  if (watchdogThrottlePolicy) {
-    watchdogThrottlePolicy.textContent = data.thermal_throttle;
-    watchdogThrottlePolicy.style.color = data.thermal_color;
-  }
 }

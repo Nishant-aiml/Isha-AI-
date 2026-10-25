@@ -18,13 +18,20 @@ object IshaCloudAI {
     private const val PREFS_NAME = "isha_ai_cloud_prefs"
     private const val KEY_PROVIDER = "cloud_provider"
     private const val KEY_API_KEY = "cloud_api_key"
+    private const val KEY_SELECTED_MODEL = "cloud_selected_model"
     private const val KEY_BACKEND_URL = "cloud_backend_url"
 
     const val PROVIDER_HYBRID = "hybrid"   // Auto: Cloud if key available, else Web RAG + Cognitive
-    const val PROVIDER_GROQ = "groq"       // Free Groq Cloud (Llama 3.3 70B)
+    const val PROVIDER_GROQ = "groq"       // Free Groq Cloud (Llama 3.3 70B / 3.2 3B)
     const val PROVIDER_GEMINI = "gemini"   // Free Google AI Studio (Gemini 1.5/2.5 Flash)
     const val PROVIDER_BACKEND = "backend" // Custom Isha Server (/api/chat)
     const val PROVIDER_LOCAL = "local"     // Force local on-device only
+
+    // Available Cloud Models
+    const val MODEL_GROQ_LLAMA_70B = "llama-3.3-70b-versatile"
+    const val MODEL_GROQ_LLAMA_3B = "llama-3.2-3b-preview"
+    const val MODEL_GROQ_MISTRAL_7B = "mixtral-8x7b-32768"
+    const val MODEL_GEMINI_FLASH = "gemini-1.5-flash"
 
     fun getProvider(context: Context): String {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -36,16 +43,24 @@ object IshaCloudAI {
         return prefs.getString(KEY_API_KEY, "") ?: ""
     }
 
+    fun getSelectedModel(context: Context): String {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val prov = getProvider(context)
+        val defaultModel = if (prov == PROVIDER_GEMINI) MODEL_GEMINI_FLASH else MODEL_GROQ_LLAMA_70B
+        return prefs.getString(KEY_SELECTED_MODEL, defaultModel) ?: defaultModel
+    }
+
     fun getBackendUrl(context: Context): String {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         return prefs.getString(KEY_BACKEND_URL, "http://10.0.2.2:8000") ?: "http://10.0.2.2:8000"
     }
 
-    fun saveConfig(context: Context, provider: String, apiKey: String, backendUrl: String = "") {
+    fun saveConfig(context: Context, provider: String, apiKey: String, selectedModel: String = "", backendUrl: String = "") {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().apply {
             putString(KEY_PROVIDER, provider)
             putString(KEY_API_KEY, apiKey.trim())
+            if (selectedModel.isNotEmpty()) putString(KEY_SELECTED_MODEL, selectedModel.trim())
             if (backendUrl.isNotEmpty()) putString(KEY_BACKEND_URL, backendUrl.trim())
             apply()
         }
@@ -67,18 +82,19 @@ object IshaCloudAI {
     }
 
     /**
-     * Streams an answer from the selected free cloud provider with grounded context.
-     * Returns true if successful, false if fallback is required.
+     * Streams an answer from the selected free cloud provider with grounded context and optional image Base64.
      */
     suspend fun streamCloudInference(
         context: Context,
         query: String,
         groundedContext: String,
+        imageBase64: String? = null,
         onToken: (String) -> Unit
     ): Boolean = withContext(Dispatchers.IO) {
         val provider = getProvider(context)
         val apiKey = getApiKey(context)
         val backendUrl = getBackendUrl(context)
+        val modelName = getSelectedModel(context)
 
         // Determine actual active cloud target
         val activeTarget = when {
@@ -99,8 +115,8 @@ object IshaCloudAI {
 
         try {
             when (activeTarget) {
-                PROVIDER_GROQ -> streamGroq(apiKey, promptWithContext, onToken)
-                PROVIDER_GEMINI -> streamGemini(apiKey, promptWithContext, onToken)
+                PROVIDER_GROQ -> streamGroq(apiKey, promptWithContext, modelName, onToken)
+                PROVIDER_GEMINI -> streamGemini(apiKey, promptWithContext, imageBase64, onToken)
                 PROVIDER_BACKEND -> streamBackend(backendUrl, query, groundedContext, onToken)
                 else -> false
             }
@@ -111,9 +127,14 @@ object IshaCloudAI {
     }
 
     /**
-     * Groq Cloud Inference (Free Tier, Llama 3.3 70B Versatile, Streaming SSE)
+     * Groq Cloud Inference (Free Tier, Llama 3.3 70B / 3.2 3B, Streaming SSE)
      */
-    private suspend fun streamGroq(apiKey: String, prompt: String, onToken: (String) -> Unit): Boolean {
+    private suspend fun streamGroq(
+        apiKey: String,
+        prompt: String,
+        modelName: String = MODEL_GROQ_LLAMA_70B,
+        onToken: (String) -> Unit
+    ): Boolean {
         if (apiKey.isEmpty()) return false
         val url = URL("https://api.groq.com/openai/v1/chat/completions")
         val conn = (url.openConnection() as HttpURLConnection).apply {
@@ -126,7 +147,7 @@ object IshaCloudAI {
         }
 
         val body = JSONObject().apply {
-            put("model", "llama-3.3-70b-versatile")
+            put("model", if (modelName.isNotEmpty()) modelName else MODEL_GROQ_LLAMA_70B)
             put("messages", JSONArray().apply {
                 put(JSONObject().apply {
                     put("role", "system")
@@ -181,34 +202,49 @@ object IshaCloudAI {
     }
 
     /**
-     * Google AI Studio Gemini API (Free Tier, Gemini 1.5 Flash)
+     * Google AI Studio Gemini API (Free Tier, Gemini 1.5 Flash, Multimodal Vision QA)
      */
-    private suspend fun streamGemini(apiKey: String, prompt: String, onToken: (String) -> Unit): Boolean {
+    private suspend fun streamGemini(
+        apiKey: String,
+        prompt: String,
+        imageBase64: String? = null,
+        onToken: (String) -> Unit
+    ): Boolean {
         if (apiKey.isEmpty()) return false
         val endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$apiKey"
         val url = URL(endpoint)
         val conn = (url.openConnection() as HttpURLConnection).apply {
             requestMethod = "POST"
-            connectTimeout = 12000
-            readTimeout = 25000
+            connectTimeout = 15000
+            readTimeout = 30000
             doOutput = true
             setRequestProperty("Content-Type", "application/json")
+        }
+
+        val partsArray = JSONArray().apply {
+            put(JSONObject().apply {
+                put("text", prompt)
+            })
+            if (imageBase64 != null && imageBase64.isNotEmpty()) {
+                put(JSONObject().apply {
+                    put("inlineData", JSONObject().apply {
+                        put("mimeType", "image/jpeg")
+                        put("data", imageBase64)
+                    })
+                })
+            }
         }
 
         val body = JSONObject().apply {
             put("contents", JSONArray().apply {
                 put(JSONObject().apply {
-                    put("parts", JSONArray().apply {
-                        put(JSONObject().apply {
-                            put("text", prompt)
-                        })
-                    })
+                    put("parts", partsArray)
                 })
             })
             put("systemInstruction", JSONObject().apply {
                 put("parts", JSONArray().apply {
                     put(JSONObject().apply {
-                        put("text", "You are ISHA AI, an expert, accurate, and grounded AI assistant. Answer truthfully, concisely, and helpfully.")
+                        put("text", "You are ISHA AI, an expert, accurate, and grounded AI assistant. Answer truthfully, concisely, and helpfully. For images, inspect the visual features in detail.")
                     })
                 })
             })
@@ -238,7 +274,6 @@ object IshaCloudAI {
             if (parts != null && parts.length() > 0) {
                 val text = parts.getJSONObject(0).optString("text", "")
                 if (text.isNotEmpty()) {
-                    // Stream out text smoothly
                     val tokens = text.split(Regex("(?<=\\s)|(?=\\s)"))
                     for (t in tokens) {
                         onToken(t)

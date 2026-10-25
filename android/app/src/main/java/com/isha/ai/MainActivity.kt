@@ -109,14 +109,37 @@ class MainActivity : Activity() {
             viewDocLibrary.visibility = View.GONE
         }
 
+        val tabModels = findViewById<Button>(R.id.tabModels)
+        val viewModelsHub = findViewById<ScrollView>(R.id.viewModelsHub)
+
+        fun selectTab(selectedTab: Button, targetView: View) {
+            val tabs = listOf(tabChat, tabLibrary, tabModels)
+            val views = listOf(viewChatConsole, viewDocLibrary, viewModelsHub)
+            for (t in tabs) {
+                if (t == selectedTab) {
+                    t?.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#F59E0B"))
+                    t?.setTextColor(android.graphics.Color.WHITE)
+                } else {
+                    t?.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#F1F5F9"))
+                    t?.setTextColor(android.graphics.Color.parseColor("#475569"))
+                }
+            }
+            for (v in views) {
+                v?.visibility = if (v == targetView) View.VISIBLE else View.GONE
+            }
+        }
+
+        tabChat.setOnClickListener {
+            selectTab(tabChat, viewChatConsole)
+        }
+
         tabLibrary.setOnClickListener {
-            tabLibrary.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#F59E0B"))
-            tabLibrary.setTextColor(android.graphics.Color.WHITE)
-            tabChat.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#F1F5F9"))
-            tabChat.setTextColor(android.graphics.Color.parseColor("#475569"))
-            viewDocLibrary.visibility = View.VISIBLE
-            viewChatConsole.visibility = View.GONE
+            selectTab(tabLibrary, viewDocLibrary)
             refreshDocLibrary(layoutDocList, txtIndexChunks, txtIndexSize)
+        }
+
+        tabModels?.setOnClickListener {
+            selectTab(tabModels, viewModelsHub)
         }
 
         // Google AI Edge Gallery & Stitch UI Controls
@@ -183,6 +206,47 @@ class MainActivity : Activity() {
             attachedImageName = null
             layoutImagePreview.visibility = View.GONE
             imgAttachedPreview.setImageDrawable(null)
+        }
+
+        // AI Image Generation Trigger Button (FLUX.1 Schnell)
+        val btnGenerateImage = findViewById<Button>(R.id.btnGenerateImage)
+        btnGenerateImage?.setOnClickListener {
+            val editP = findViewById<EditText>(R.id.editPrompt)
+            editP.setText("Generate image of ")
+            editP.setSelection(editP.text.length)
+            editP.requestFocus()
+            findViewById<Button>(R.id.tabChat)?.performClick()
+            Toast.makeText(this, "Enter prompt to generate high-res FLUX.1 visual", Toast.LENGTH_SHORT).show()
+        }
+
+        // Multimodal Visual QA Action Buttons
+        val btnAnalyzeAttachedImage = findViewById<Button>(R.id.btnAnalyzeAttachedImage)
+        val chipAnalyzeCrop = findViewById<Button>(R.id.chipAnalyzeCrop)
+        val chipAnalyzeMeds = findViewById<Button>(R.id.chipAnalyzeMeds)
+        val chipAnalyzeGeneral = findViewById<Button>(R.id.chipAnalyzeGeneral)
+
+        btnAnalyzeAttachedImage?.setOnClickListener {
+            val editP = findViewById<EditText>(R.id.editPrompt)
+            editP.setText("Analyze this attached image in detail and describe its features.")
+            findViewById<Button>(R.id.btnSend)?.performClick()
+        }
+
+        chipAnalyzeCrop?.setOnClickListener {
+            val editP = findViewById<EditText>(R.id.editPrompt)
+            editP.setText("Inspect this crop leaf image for pests, fungal rust, or disease symptoms and recommend sprays.")
+            findViewById<Button>(R.id.btnSend)?.performClick()
+        }
+
+        chipAnalyzeMeds?.setOnClickListener {
+            val editP = findViewById<EditText>(R.id.editPrompt)
+            editP.setText("Transcribe this prescription and medicine packaging, checking pediatric and adult dosage guidelines.")
+            findViewById<Button>(R.id.btnSend)?.performClick()
+        }
+
+        chipAnalyzeGeneral?.setOnClickListener {
+            val editP = findViewById<EditText>(R.id.editPrompt)
+            editP.setText("Identify and describe all objects, text, and scene context in this photo.")
+            findViewById<Button>(R.id.btnSend)?.performClick()
         }
 
         // Voice Input (Speech to Text)
@@ -491,9 +555,48 @@ class MainActivity : Activity() {
             editPrompt.text.clear()
             cardWelcomeHero?.visibility = View.GONE
 
-            // Clear previous web image card
+            // Clear previous image cards
             cardWebImage.visibility = View.GONE
             imgWebResult.setImageDrawable(null)
+
+            val cardGeneratedImage = findViewById<LinearLayout>(R.id.cardGeneratedImage)
+            val imgGeneratedResult = findViewById<ImageView>(R.id.imgGeneratedResult)
+            val txtGeneratedPrompt = findViewById<TextView>(R.id.txtGeneratedPrompt)
+            cardGeneratedImage?.visibility = View.GONE
+            imgGeneratedResult?.setImageDrawable(null)
+
+            // Check if this is an AI Image Generation Request (FLUX.1 Schnell)
+            if (IshaImageGenerator.isImageGenerationIntent(queryText)) {
+                val corePrompt = IshaImageGenerator.extractImagePrompt(queryText)
+                txtChatLog.text = "User: $queryText\n\nAI: 🎨 Generating high-resolution visual with FLUX.1 [schnell]..."
+                mainScope.launch {
+                    val bitmap = IshaImageGenerator.generateImage(corePrompt)
+                    if (bitmap != null) {
+                        imgGeneratedResult?.setImageBitmap(bitmap)
+                        txtGeneratedPrompt?.text = "Prompt: \"$corePrompt\""
+                        cardGeneratedImage?.visibility = View.VISIBLE
+                        txtChatLog.text = "User: $queryText\n\nAI: ✨ Here is your generated visual! Powered by FLUX.1 [schnell]."
+                    } else {
+                        txtChatLog.text = "User: $queryText\n\nAI: ❌ Failed to generate visual. Please check internet connection."
+                    }
+                }
+                return@setOnClickListener
+            }
+
+            // Extract Base64 if image is attached (for Multimodal Visual QA)
+            var attachedBase64: String? = null
+            if (attachedImageUri != null) {
+                try {
+                    val stream = contentResolver.openInputStream(attachedImageUri!!)
+                    val bytes = stream?.readBytes()
+                    stream?.close()
+                    if (bytes != null) {
+                        attachedBase64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to encode image to base64: ${e.message}")
+                }
+            }
 
             txtChatLog.text = "User: $queryText\n\nAI: "
             layoutCitations.visibility = View.GONE
@@ -614,7 +717,8 @@ class MainActivity : Activity() {
                     val success = IshaCloudAI.streamCloudInference(
                         this@MainActivity,
                         queryText,
-                        fullContext
+                        fullContext,
+                        attachedBase64
                     ) { token ->
                         buffer.append(token)
                         val now = SystemClock.elapsedRealtime()
@@ -755,6 +859,119 @@ class MainActivity : Activity() {
             val intent = Intent(this, RecoveryActivity::class.java)
             startActivity(intent)
         }
+
+        // Model Hub: Device Tier & Telemetry
+        val txtHubDeviceTier = findViewById<TextView>(R.id.txtHubDeviceTier)
+        val txtHubActiveEngine = findViewById<TextView>(R.id.txtHubActiveEngine)
+        txtHubDeviceTier?.text = when (deviceTier) {
+            1 -> "Tier 1: Budget Mobile (₹8k–₹12k • ${totalRamMb}MB RAM)\nStrategy: 100% Free Cloud Offload + Zero-RAM Local RAG"
+            2 -> "Tier 2: Mid-Range (₹13k–₹20k • ${totalRamMb}MB RAM)\nStrategy: Hybrid Execution (GGUF SLMs + Cloud Offload)"
+            else -> "Tier 3: Flagship (₹25k+ • ${totalRamMb}MB RAM)\nStrategy: 100% On-Device SLM + NPU Vision"
+        }
+
+        // Model Hub: Cloud Models Selector
+        val rgHubCloudModels = findViewById<RadioGroup>(R.id.rgHubCloudModels)
+        val rbHubGeminiFlash = findViewById<RadioButton>(R.id.rbHubGeminiFlash)
+        val rbHubGroqLlama70B = findViewById<RadioButton>(R.id.rbHubGroqLlama70B)
+        val rbHubGroqLlama3B = findViewById<RadioButton>(R.id.rbHubGroqLlama3B)
+        val rbHubGroqMistral = findViewById<RadioButton>(R.id.rbHubGroqMistral)
+        val editHubApiKey = findViewById<EditText>(R.id.editHubApiKey)
+        val btnHubSaveKey = findViewById<Button>(R.id.btnHubSaveKey)
+
+        val activeCloudModel = IshaCloudAI.getSelectedModel(this)
+        when (activeCloudModel) {
+            IshaCloudAI.MODEL_GROQ_LLAMA_70B -> rbHubGroqLlama70B?.isChecked = true
+            IshaCloudAI.MODEL_GROQ_LLAMA_3B -> rbHubGroqLlama3B?.isChecked = true
+            IshaCloudAI.MODEL_GROQ_MISTRAL_7B -> rbHubGroqMistral?.isChecked = true
+            else -> rbHubGeminiFlash?.isChecked = true
+        }
+        val existingKey = IshaCloudAI.getApiKey(this)
+        if (existingKey.isNotEmpty()) {
+            editHubApiKey?.setText(existingKey)
+        }
+
+        btnHubSaveKey?.setOnClickListener {
+            val key = editHubApiKey?.text?.toString()?.trim() ?: ""
+            val (prov, mod) = when {
+                rbHubGroqLlama70B?.isChecked == true -> Pair(IshaCloudAI.PROVIDER_GROQ, IshaCloudAI.MODEL_GROQ_LLAMA_70B)
+                rbHubGroqLlama3B?.isChecked == true -> Pair(IshaCloudAI.PROVIDER_GROQ, IshaCloudAI.MODEL_GROQ_LLAMA_3B)
+                rbHubGroqMistral?.isChecked == true -> Pair(IshaCloudAI.PROVIDER_GROQ, IshaCloudAI.MODEL_GROQ_MISTRAL_7B)
+                else -> Pair(IshaCloudAI.PROVIDER_GEMINI, IshaCloudAI.MODEL_GEMINI_FLASH)
+            }
+            IshaCloudAI.saveConfig(this, prov, key, mod)
+            txtHubActiveEngine?.text = "Active Engine: $prov ($mod)"
+            Toast.makeText(this, "Activated $mod successfully!", Toast.LENGTH_SHORT).show()
+        }
+
+        // Model Hub: Tier 2 On-Device SLMs (Qwen 0.5B, Llama 1B, Qwen 1.5B)
+        val btnHubDownload05B = findViewById<Button>(R.id.btnHubDownload05B)
+        val btnHubLoad05B = findViewById<Button>(R.id.btnHubLoad05B)
+        val btnHubDownload1B = findViewById<Button>(R.id.btnHubDownload1B)
+        val btnHubLoad1B = findViewById<Button>(R.id.btnHubLoad1B)
+        val btnHubDownload15B = findViewById<Button>(R.id.btnHubDownload15B)
+        val btnHubLoad15B = findViewById<Button>(R.id.btnHubLoad15B)
+        val btnHubUnloadModel = findViewById<Button>(R.id.btnHubUnloadModel)
+
+        btnHubDownload05B?.setOnClickListener {
+            triggerDownload("qwen-0.5b", "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf", "qwen-0.5b.gguf", btnHubDownload05B)
+        }
+        btnHubLoad05B?.setOnClickListener {
+            val file = File(filesDir, "qwen-0.5b.gguf")
+            if (file.exists() && IshaRuntime.loadModelTier("qwen-0.5b", 350)) {
+                isNeuralModelLoaded = true
+                txtHubActiveEngine?.text = "Active Engine: On-Device Qwen 2.5 0.5B (Active in RAM)"
+                Toast.makeText(this, "Loaded Qwen 2.5 0.5B into RAM", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "Model not downloaded yet. Tap Download first.", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        btnHubDownload1B?.setOnClickListener {
+            triggerDownload("llama-1b", "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q4_K_M.gguf", "llama-1b.gguf", btnHubDownload1B)
+        }
+        btnHubLoad1B?.setOnClickListener {
+            val file = File(filesDir, "llama-1b.gguf")
+            if (file.exists() && IshaRuntime.loadModelTier("llama-1b", 500)) {
+                isNeuralModelLoaded = true
+                txtHubActiveEngine?.text = "Active Engine: On-Device Llama 3.2 1B (Active in RAM)"
+                Toast.makeText(this, "Loaded Llama 3.2 1B into RAM", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "Model not downloaded yet. Tap Download first.", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        btnHubDownload15B?.setOnClickListener {
+            triggerDownload("qwen-1.5b", "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf", "qwen-1.5b.gguf", btnHubDownload15B)
+        }
+        btnHubLoad15B?.setOnClickListener {
+            val file = File(filesDir, "qwen-1.5b.gguf")
+            if (file.exists() && IshaRuntime.loadModelTier("qwen-1.5b", 700)) {
+                isNeuralModelLoaded = true
+                txtHubActiveEngine?.text = "Active Engine: On-Device Qwen 2.5 1.5B (Active in RAM)"
+                Toast.makeText(this, "Loaded Qwen 2.5 1.5B into RAM", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "Model not downloaded yet. Tap Download first.", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        btnHubUnloadModel?.setOnClickListener {
+            IshaRuntime.unloadModelTier()
+            isNeuralModelLoaded = false
+            txtHubActiveEngine?.text = "Active Engine: UNLOADED (Using Hybrid Cloud & RAG)"
+            Toast.makeText(this, "Model unloaded from RAM", Toast.LENGTH_SHORT).show()
+        }
+
+        // Model Hub: Image Generation Test
+        val editHubImagePrompt = findViewById<EditText>(R.id.editHubImagePrompt)
+        val btnHubGenerateImage = findViewById<Button>(R.id.btnHubGenerateImage)
+        btnHubGenerateImage?.setOnClickListener {
+            val prompt = editHubImagePrompt?.text?.toString()?.trim() ?: "Cybernetic tiger in neon Tokyo, 8k"
+            val editPrompt = findViewById<EditText>(R.id.editPrompt)
+            editPrompt.setText("Generate image: $prompt")
+            findViewById<Button>(R.id.tabChat)?.performClick()
+            findViewById<Button>(R.id.btnSend)?.performClick()
+        }
+
 
         // Thermal Monitoring Loop
         mainScope.launch {

@@ -90,13 +90,13 @@
             style="?android:attr/borderlessButtonStyle" />
     </LinearLayout>
 
-    <!-- MODERN NAVIGATION TABS -->
+    <!-- MODERN NAVIGATION TABS (Assistant, Docs, Model Hub) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="48dp"
         android:background="#FFFFFF"
         android:orientation="horizontal"
-        android:paddingHorizontal="16dp"
+        android:paddingHorizontal="12dp"
         android:paddingBottom="8dp">
 
         <Button
@@ -104,12 +104,12 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:text="💬 Assistant"
+            android:text="💬 Chat"
             android:backgroundTint="#F59E0B"
             android:textColor="#FFFFFF"
-            android:textSize="13sp"
+            android:textSize="11sp"
             android:textStyle="bold"
-            android:layout_marginEnd="6dp"
+            android:layout_marginEnd="4dp"
             style="?android:attr/buttonStyleSmall" />
 
         <Button
@@ -117,12 +117,24 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:text="📚 Knowledge &amp; Docs"
+            android:text="📚 Docs"
             android:backgroundTint="#F1F5F9"
             android:textColor="#475569"
-            android:textSize="13sp"
+            android:textSize="11sp"
             android:textStyle="bold"
-            android:layout_marginStart="6dp"
+            android:layout_marginEnd="4dp"
+            style="?android:attr/buttonStyleSmall" />
+
+        <Button
+            android:id="@+id/tabModels"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:text="🤖 Models Hub"
+            android:backgroundTint="#F1F5F9"
+            android:textColor="#475569"
+            android:textSize="11sp"
+            android:textStyle="bold"
             style="?android:attr/buttonStyleSmall" />
     </LinearLayout>
 
@@ -542,6 +554,41 @@
                         android:layout_marginStart="4dp" />
                 </LinearLayout>
 
+                <!-- AI GENERATED IMAGE CARD (FLUX.1 Schnell / Stable Diffusion) -->
+                <LinearLayout
+                    android:id="@+id/cardGeneratedImage"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_rounded_card"
+                    android:orientation="vertical"
+                    android:padding="10dp"
+                    android:layout_marginBottom="12dp"
+                    android:visibility="gone">
+                    <ImageView
+                        android:id="@+id/imgGeneratedResult"
+                        android:layout_width="match_parent"
+                        android:layout_height="240dp"
+                        android:scaleType="centerCrop"
+                        android:background="#E2E8F0" />
+                    <TextView
+                        android:id="@+id/txtGeneratedCaption"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="🎨 AI Generated Artwork (FLUX.1 [schnell])"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:textColor="#0F172A"
+                        android:layout_marginTop="6dp" />
+                    <TextView
+                        android:id="@+id/txtGeneratedPrompt"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Prompt..."
+                        android:textSize="11sp"
+                        android:textColor="#64748B"
+                        android:layout_marginTop="2dp" />
+                </LinearLayout>
+
                 <!-- CHAT MESSAGE LOG -->
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -686,6 +733,336 @@
                     android:orientation="vertical" />
             </ScrollView>
         </LinearLayout>
+    
+        <!-- ================= MODEL SELECTION & HARDWARE HUB ================= -->
+        <ScrollView
+            android:id="@+id/viewModelsHub"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <!-- Hardware Tier Profile Card -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_rounded_card"
+                    android:orientation="vertical"
+                    android:padding="14dp"
+                    android:layout_marginBottom="12dp">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="⚡ Device Hardware Profiling &amp; Routing"
+                        android:textStyle="bold"
+                        android:textColor="#0F172A"
+                        android:textSize="13sp"
+                        android:layout_marginBottom="4dp"/>
+                    <TextView
+                        android:id="@+id/txtHubDeviceTier"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Detected: Profiling device..."
+                        android:textSize="11sp"
+                        android:textColor="#D97706"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="4dp"/>
+                    <TextView
+                        android:id="@+id/txtHubActiveEngine"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Active Engine: Auto Hybrid (Cloud + On-Device RAG)"
+                        android:textSize="11sp"
+                        android:textColor="#10B981"/>
+                </LinearLayout>
+
+                <!-- TIER 1: Free Cloud Text Models -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_rounded_card"
+                    android:orientation="vertical"
+                    android:padding="14dp"
+                    android:layout_marginBottom="12dp">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="☁️ Tier 1: Free Cloud Text Engines"
+                        android:textStyle="bold"
+                        android:textColor="#0F172A"
+                        android:textSize="13sp"
+                        android:layout_marginBottom="2dp"/>
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="100% Free Cloud Offload for budget &amp; mid-range phones. Zero battery drain."
+                        android:textSize="10sp"
+                        android:textColor="#64748B"
+                        android:layout_marginBottom="8dp"/>
+
+                    <RadioGroup
+                        android:id="@+id/rgHubCloudModels"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginBottom="8dp">
+                        <RadioButton
+                            android:id="@+id/rbHubGeminiFlash"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="✨ Google Gemini 1.5 Flash (1M Tokens, Vision QA)"
+                            android:checked="true"
+                            android:textSize="11sp"
+                            android:textColor="#334155" />
+                        <RadioButton
+                            android:id="@+id/rbHubGroqLlama70B"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="🚀 Groq Llama 3.3 70B (Ultra-Fast 200+ tok/s)"
+                            android:textSize="11sp"
+                            android:textColor="#334155" />
+                        <RadioButton
+                            android:id="@+id/rbHubGroqLlama3B"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="⚡ Groq Llama 3.2 3B (Fast Conversational)"
+                            android:textSize="11sp"
+                            android:textColor="#334155" />
+                        <RadioButton
+                            android:id="@+id/rbHubGroqMistral"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="🌪️ Groq Mistral 7B (Logic &amp; Reasoning)"
+                            android:textSize="11sp"
+                            android:textColor="#334155" />
+                    </RadioGroup>
+
+                    <EditText
+                        android:id="@+id/editHubApiKey"
+                        android:layout_width="match_parent"
+                        android:layout_height="40dp"
+                        android:hint="Enter Free Gemini (AIza...) or Groq (gsk_...) Key"
+                        android:textSize="11sp"
+                        android:inputType="textPassword"
+                        android:background="@drawable/bg_pill_button"
+                        android:paddingHorizontal="12dp"
+                        android:textColor="#0F172A"
+                        android:layout_marginBottom="6dp"/>
+
+                    <Button
+                        android:id="@+id/btnHubSaveKey"
+                        android:layout_width="match_parent"
+                        android:layout_height="36dp"
+                        android:text="Activate Selected Cloud Model"
+                        android:textSize="10sp"
+                        android:backgroundTint="#F59E0B"
+                        android:textColor="#FFFFFF"
+                        style="?android:attr/buttonStyleSmall"/>
+                </LinearLayout>
+
+                <!-- TIER 2: On-Device Quantized SLMs (GGUF Q4_K_M) -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_rounded_card"
+                    android:orientation="vertical"
+                    android:padding="14dp"
+                    android:layout_marginBottom="12dp">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="📱 Tier 2: On-Device Offline SLMs (GGUF Q4_K_M)"
+                        android:textStyle="bold"
+                        android:textColor="#0F172A"
+                        android:textSize="13sp"
+                        android:layout_marginBottom="2dp"/>
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="4-bit coherent quantization. Runs 100% offline with zero data usage."
+                        android:textSize="10sp"
+                        android:textColor="#64748B"
+                        android:layout_marginBottom="8dp"/>
+
+                    <!-- Model 1: Qwen 0.5B -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="8dp">
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Qwen 2.5 0.5B (Battery Saver)"
+                                android:textStyle="bold"
+                                android:textSize="11sp"
+                                android:textColor="#0F172A"/>
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="~390MB • 3-4GB RAM phones"
+                                android:textSize="9sp"
+                                android:textColor="#64748B"/>
+                        </LinearLayout>
+                        <Button android:id="@+id/btnHubDownload05B" android:layout_width="wrap_content" android:layout_height="32dp" android:text="Download" android:textSize="9sp"/>
+                        <Button android:id="@+id/btnHubLoad05B" android:layout_width="wrap_content" android:layout_height="32dp" android:text="Load" android:textSize="9sp" android:layout_marginStart="4dp"/>
+                    </LinearLayout>
+
+                    <!-- Model 2: Llama 3.2 1B -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="8dp">
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Llama 3.2 1B (Meta Edge SLM)"
+                                android:textStyle="bold"
+                                android:textSize="11sp"
+                                android:textColor="#0F172A"/>
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="~800MB • 4-6GB RAM phones"
+                                android:textSize="9sp"
+                                android:textColor="#64748B"/>
+                        </LinearLayout>
+                        <Button android:id="@+id/btnHubDownload1B" android:layout_width="wrap_content" android:layout_height="32dp" android:text="Download" android:textSize="9sp"/>
+                        <Button android:id="@+id/btnHubLoad1B" android:layout_width="wrap_content" android:layout_height="32dp" android:text="Load" android:textSize="9sp" android:layout_marginStart="4dp"/>
+                    </LinearLayout>
+
+                    <!-- Model 3: Qwen 1.5B -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="8dp">
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Qwen 2.5 1.5B (Standard SLM)"
+                                android:textStyle="bold"
+                                android:textSize="11sp"
+                                android:textColor="#0F172A"/>
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="~1.1GB • 6-8GB RAM phones"
+                                android:textSize="9sp"
+                                android:textColor="#64748B"/>
+                        </LinearLayout>
+                        <Button android:id="@+id/btnHubDownload15B" android:layout_width="wrap_content" android:layout_height="32dp" android:text="Download" android:textSize="9sp"/>
+                        <Button android:id="@+id/btnHubLoad15B" android:layout_width="wrap_content" android:layout_height="32dp" android:text="Load" android:textSize="9sp" android:layout_marginStart="4dp"/>
+                    </LinearLayout>
+
+                    <Button
+                        android:id="@+id/btnHubUnloadModel"
+                        android:layout_width="match_parent"
+                        android:layout_height="34dp"
+                        android:text="Unload Model From RAM"
+                        android:textSize="9sp"
+                        android:textColor="#DC2626"
+                        android:background="@drawable/bg_pill_button"
+                        style="?android:attr/borderlessButtonStyle"/>
+                </LinearLayout>
+
+                <!-- TIER 3: Flagship Engines -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_rounded_card"
+                    android:orientation="vertical"
+                    android:padding="14dp"
+                    android:layout_marginBottom="12dp">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="💎 Tier 3: Flagship Hardware Engines (₹25k+)"
+                        android:textStyle="bold"
+                        android:textColor="#0F172A"
+                        android:textSize="13sp"
+                        android:layout_marginBottom="2dp"/>
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Supports Phi-3.5 Mini (3.8B), Gemma 2 (2B), and MobileDiffusion NPU execution on 12GB+ RAM devices."
+                        android:textSize="10sp"
+                        android:textColor="#64748B"/>
+                </LinearLayout>
+
+                <!-- AI IMAGE GENERATION ENGINE (FLUX.1 [schnell]) -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_rounded_card"
+                    android:orientation="vertical"
+                    android:padding="14dp"
+                    android:layout_marginBottom="12dp">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="🎨 AI Image Generation Engine"
+                        android:textStyle="bold"
+                        android:textColor="#0F172A"
+                        android:textSize="13sp"
+                        android:layout_marginBottom="2dp"/>
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Powered by FLUX.1 [schnell] &amp; Stable Diffusion. Free high-resolution 1024x1024 text-to-image synthesis."
+                        android:textSize="10sp"
+                        android:textColor="#64748B"
+                        android:layout_marginBottom="8dp"/>
+
+                    <EditText
+                        android:id="@+id/editHubImagePrompt"
+                        android:layout_width="match_parent"
+                        android:layout_height="40dp"
+                        android:hint="Try: Cybernetic tiger in neon Tokyo, 8k"
+                        android:textSize="11sp"
+                        android:background="@drawable/bg_pill_button"
+                        android:paddingHorizontal="12dp"
+                        android:textColor="#0F172A"
+                        android:layout_marginBottom="6dp"/>
+
+                    <Button
+                        android:id="@+id/btnHubGenerateImage"
+                        android:layout_width="match_parent"
+                        android:layout_height="36dp"
+                        android:text="🎨 Generate AI Artwork"
+                        android:textSize="10sp"
+                        android:backgroundTint="#7C3AED"
+                        android:textColor="#FFFFFF"
+                        style="?android:attr/buttonStyleSmall"/>
+                </LinearLayout>
+            </LinearLayout>
+        </ScrollView>
+
     </FrameLayout>
 
     <!-- CONSUMER FLOATING BOTTOM PROMPT BAR -->
@@ -696,44 +1073,103 @@
         android:elevation="8dp"
         android:orientation="vertical">
 
-        <!-- ATTACHED IMAGE PREVIEW (Google AI Edge Gallery Multimodal Vision Feature) -->
+        <!-- ATTACHED IMAGE PREVIEW (Multimodal Visual QA) -->
         <LinearLayout
             android:id="@+id/layoutImagePreview"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="#F1F5F9"
-            android:orientation="horizontal"
-            android:paddingHorizontal="12dp"
-            android:paddingVertical="6dp"
-            android:gravity="center_vertical"
+            android:orientation="vertical"
+            android:padding="8dp"
             android:visibility="gone">
 
-            <ImageView
-                android:id="@+id/imgAttachedPreview"
-                android:layout_width="38dp"
-                android:layout_height="38dp"
-                android:scaleType="centerCrop"
-                android:background="#E2E8F0" />
-
-            <TextView
-                android:id="@+id/txtAttachedImageName"
-                android:layout_width="0dp"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginStart="8dp"
-                android:text="image.jpg"
-                android:textSize="12sp"
-                android:textColor="#334155" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
-            <Button
-                android:id="@+id/btnRemoveImage"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:text="✖"
-                android:textSize="11sp"
-                android:textColor="#64748B"
-                android:background="@drawable/bg_pill_button"
-                style="?android:attr/borderlessButtonStyle" />
+                <ImageView
+                    android:id="@+id/imgAttachedPreview"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:scaleType="centerCrop"
+                    android:background="#E2E8F0" />
+
+                <TextView
+                    android:id="@+id/txtAttachedImageName"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:text="image.jpg"
+                    android:textSize="12sp"
+                    android:textColor="#334155" />
+
+                <Button
+                    android:id="@+id/btnAnalyzeAttachedImage"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:text="🔍 Analyze"
+                    android:textSize="10sp"
+                    android:backgroundTint="#0284C7"
+                    android:textColor="#FFFFFF"
+                    style="?android:attr/buttonStyleSmall" />
+
+                <Button
+                    android:id="@+id/btnRemoveImage"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:text="✖"
+                    android:textSize="11sp"
+                    android:textColor="#64748B"
+                    android:background="@drawable/bg_pill_button"
+                    android:layout_marginStart="4dp"
+                    style="?android:attr/borderlessButtonStyle" />
+            </LinearLayout>
+
+            <!-- Quick Analysis Action Chips -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="4dp">
+
+                <Button
+                    android:id="@+id/chipAnalyzeCrop"
+                    android:layout_width="0dp"
+                    android:layout_height="28dp"
+                    android:layout_weight="1"
+                    android:text="🌾 Crop Health"
+                    android:textSize="9sp"
+                    android:background="@drawable/bg_pill_button"
+                    android:textColor="#059669"
+                    android:layout_marginEnd="3dp"
+                    style="?android:attr/borderlessButtonStyle"/>
+
+                <Button
+                    android:id="@+id/chipAnalyzeMeds"
+                    android:layout_width="0dp"
+                    android:layout_height="28dp"
+                    android:layout_weight="1"
+                    android:text="🩺 Medicine"
+                    android:textSize="9sp"
+                    android:background="@drawable/bg_pill_button"
+                    android:textColor="#2563EB"
+                    android:layout_marginEnd="3dp"
+                    style="?android:attr/borderlessButtonStyle"/>
+
+                <Button
+                    android:id="@+id/chipAnalyzeGeneral"
+                    android:layout_width="0dp"
+                    android:layout_height="28dp"
+                    android:layout_weight="1"
+                    android:text="👁️ Describe"
+                    android:textSize="9sp"
+                    android:background="@drawable/bg_pill_button"
+                    android:textColor="#7C3AED"
+                    style="?android:attr/borderlessButtonStyle"/>
+            </LinearLayout>
         </LinearLayout>
 
         <!-- INPUT ROW -->
@@ -747,25 +1183,37 @@
             <!-- Camera / Image Attachment Button (Multimodal Vision) -->
             <Button
                 android:id="@+id/btnAttachImage"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
                 android:text="📷"
-                android:textSize="16sp"
+                android:textSize="15sp"
                 android:background="@drawable/bg_pill_button"
                 android:textColor="#475569"
-                android:layout_marginEnd="6dp"
+                android:layout_marginEnd="4dp"
+                style="?android:attr/borderlessButtonStyle" />
+
+            <!-- AI Image Generator Button (FLUX.1 Schnell) -->
+            <Button
+                android:id="@+id/btnGenerateImage"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:text="🎨"
+                android:textSize="15sp"
+                android:background="@drawable/bg_pill_button"
+                android:textColor="#7C3AED"
+                android:layout_marginEnd="4dp"
                 style="?android:attr/borderlessButtonStyle" />
 
             <!-- Voice STT Speech-to-Text Button -->
             <Button
                 android:id="@+id/btnVoiceInput"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
                 android:text="🎙️"
-                android:textSize="16sp"
+                android:textSize="15sp"
                 android:background="@drawable/bg_pill_button"
                 android:textColor="#475569"
-                android:layout_marginEnd="6dp"
+                android:layout_marginEnd="4dp"
                 style="?android:attr/borderlessButtonStyle" />
 
             <EditText

@@ -407,11 +407,14 @@ class MainActivity : Activity() {
                         val text = parts[1]
                         val score = parts[2].toDoubleOrNull() ?: 0.0
 
-                        citationsList.add("📚 Local: $chunkId (score: %.2f)".format(score))
-                        localChunksList.add(text)
-                        contextBuilder.append(text).append("\n\n")
-                        contextLength += text.length
-                        if (contextLength >= 6000 || citationsList.size >= 4) break
+                        // STRICT SIMILARITY FILTER: Reject irrelevant chunks below 0.35 threshold
+                        if (score >= 0.35) {
+                            citationsList.add("📚 Local: $chunkId (score: %.2f)".format(score))
+                            localChunksList.add(text)
+                            contextBuilder.append(text).append("\n\n")
+                            contextLength += text.length
+                            if (contextLength >= 6000 || localChunksList.size >= 4) break
+                        }
                     }
                 }
             }
@@ -466,7 +469,7 @@ class MainActivity : Activity() {
                             buffer.append(token)
                             val now = SystemClock.elapsedRealtime()
                             if (now - lastUpdate >= 66 || sessionChannel.isEmpty) {
-                                txtChatLog.text = "User: $prompt\n\nAI: ${buffer.toString().trimStart()}"
+                                renderFormattedChat(prompt, buffer.toString().trimStart())
                                 lastUpdate = now
                             }
                         }
@@ -474,7 +477,8 @@ class MainActivity : Activity() {
                 } else {
                     // Instant out-of-the-box Grounded Cognitive Generator
                     val buffer = StringBuilder()
-                    txtChatLog.text = "User: $prompt\n\nAI: "
+                    renderFormattedChat(prompt, "Generating answer...")
+                    var lastUpdate = SystemClock.elapsedRealtime()
                     IshaCognitiveGenerator.streamSynthesizedAnswer(
                         prompt,
                         citationsList,
@@ -482,8 +486,13 @@ class MainActivity : Activity() {
                         webSources
                     ) { token ->
                         buffer.append(token)
-                        txtChatLog.text = "User: $prompt\n\nAI: ${buffer.toString()}"
+                        val now = SystemClock.elapsedRealtime()
+                        if (now - lastUpdate >= 50) {
+                            renderFormattedChat(prompt, buffer.toString())
+                            lastUpdate = now
+                        }
                     }
+                    renderFormattedChat(prompt, buffer.toString())
                 }
             }
         }
@@ -610,6 +619,27 @@ class MainActivity : Activity() {
         val indexFile = File(filesDir, "rag_index.efvi")
         val sizeKb = if (indexFile.exists()) indexFile.length() / 1024 else 0
         txtSize.text = "Index Memory footprint: $sizeKb KB"
+    }
+
+
+    private fun renderFormattedChat(prompt: String, aiContent: String) {
+        val txtChatLog = findViewById<TextView>(R.id.txtChatLog)
+        val userPart = "<b>User:</b> " + android.text.TextUtils.htmlEncode(prompt)
+        val aiPart = "<b>AI:</b> " + formatMarkdownToHtml(aiContent)
+        val combined = "$userPart<br><br>$aiPart"
+        txtChatLog.text = android.text.Html.fromHtml(combined, android.text.Html.FROM_HTML_MODE_COMPACT)
+        txtChatLog.movementMethod = android.text.method.LinkMovementMethod.getInstance()
+    }
+
+    private fun formatMarkdownToHtml(md: String): String {
+        var h = md
+        h = h.replace(Regex("(?m)^### (.*)$"), "<br><b><font color=\"#0F172A\">$1</font></b><br>")
+        h = h.replace(Regex("(?m)^#### (.*)$"), "<br><b><font color=\"#2563EB\">$1</font></b><br>")
+        h = h.replace(Regex("\\*\\*(.*?)\\*\\*"), "<b>$1</b>")
+        h = h.replace(Regex("\\*(.*?)\\*"), "<i>$1</i>")
+        h = h.replace(Regex("\\[(.*?)\\]\\((.*?)\\)"), "<a href=\"$2\"><font color=\"#0284C7\"><u>$1</u></font></a>")
+        h = h.replace("\n", "<br>")
+        return h
     }
 
     override fun onDestroy() {

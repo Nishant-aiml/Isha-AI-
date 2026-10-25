@@ -18,8 +18,8 @@
         <!-- App DP / Logo -->
         <ImageView
             android:id="@+id/imgAppLogo"
-            android:layout_width="42dp"
-            android:layout_height="42dp"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
             android:src="@drawable/app_dp"
             android:scaleType="centerCrop" />
 
@@ -28,34 +28,40 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical"
-            android:layout_marginStart="12dp">
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="6dp">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="ISHA AI"
                 android:textStyle="bold"
-                android:textSize="18sp"
-                android:textColor="#0F172A" />
+                android:textSize="17sp"
+                android:textColor="#0F172A"
+                android:singleLine="true"
+                android:ellipsize="none" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="100% On-Device Private Assistant"
-                android:textSize="11sp"
-                android:textColor="#10B981" />
+                android:text="On-Device Assistant"
+                android:textSize="10sp"
+                android:textColor="#10B981"
+                android:singleLine="true"
+                android:ellipsize="end" />
         </LinearLayout>
 
-        <!-- New Chat Session Button -->
+        <!-- New Chat Session Button (Compact Icon) -->
         <Button
             android:id="@+id/btnNewChat"
-            android:layout_width="wrap_content"
+            android:layout_width="36dp"
             android:layout_height="36dp"
-            android:text="➕ New"
-            android:textSize="10sp"
+            android:text="➕"
+            android:textSize="13sp"
+            android:padding="0dp"
             android:background="@drawable/bg_pill_button"
             android:textColor="#334155"
-            android:layout_marginEnd="6dp"
+            android:layout_marginEnd="5dp"
             style="?android:attr/borderlessButtonStyle" />
 
         <!-- Live Online RAG Toggle Button -->
@@ -63,20 +69,22 @@
             android:id="@+id/btnToggleLiveWeb"
             android:layout_width="wrap_content"
             android:layout_height="36dp"
-            android:text="🌐 Live Web: ON"
+            android:text="🌐 Web: ON"
             android:textSize="10sp"
+            android:paddingHorizontal="8dp"
             android:background="@drawable/bg_pill_button"
             android:textColor="#0284C7"
-            android:layout_marginEnd="6dp"
+            android:layout_marginEnd="5dp"
             style="?android:attr/borderlessButtonStyle" />
 
-        <!-- Diagnostics Toggle Button (Discreet for Pro/Devs) -->
+        <!-- Diagnostics Toggle Button (Compact Icon) -->
         <Button
             android:id="@+id/btnToggleDiagnostics"
-            android:layout_width="wrap_content"
+            android:layout_width="36dp"
             android:layout_height="36dp"
-            android:text="⚙️ Dev Specs"
-            android:textSize="10sp"
+            android:text="⚙️"
+            android:textSize="13sp"
+            android:padding="0dp"
             android:background="@drawable/bg_pill_button"
             android:textColor="#64748B"
             style="?android:attr/borderlessButtonStyle" />

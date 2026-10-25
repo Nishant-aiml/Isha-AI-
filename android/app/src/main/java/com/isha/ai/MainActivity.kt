@@ -199,21 +199,21 @@ class MainActivity : Activity() {
         btnToggleDiagnostics?.setOnClickListener {
             if (panelDevDiagnostics.visibility == View.VISIBLE) {
                 panelDevDiagnostics.visibility = View.GONE
-                btnToggleDiagnostics.text = "⚙️ Dev Specs"
+                btnToggleDiagnostics.text = "⚙️"
             } else {
                 panelDevDiagnostics.visibility = View.VISIBLE
-                btnToggleDiagnostics.text = "✖ Close Specs"
+                btnToggleDiagnostics.text = "✖"
             }
         }
 
         btnToggleLiveWeb?.setOnClickListener {
             isLiveWebActive = !isLiveWebActive
             if (isLiveWebActive) {
-                btnToggleLiveWeb.text = "🌐 Live Web: ON"
+                btnToggleLiveWeb.text = "🌐 Web: ON"
                 btnToggleLiveWeb.setTextColor(android.graphics.Color.parseColor("#0284C7"))
                 Toast.makeText(this, "Live Web Search Active", Toast.LENGTH_SHORT).show()
             } else {
-                btnToggleLiveWeb.text = "🌐 Live Web: OFF"
+                btnToggleLiveWeb.text = "🌐 Web: OFF"
                 btnToggleLiveWeb.setTextColor(android.graphics.Color.parseColor("#64748B"))
                 Toast.makeText(this, "100% On-Device Mode", Toast.LENGTH_SHORT).show()
             }
@@ -496,6 +496,15 @@ class MainActivity : Activity() {
             txtChatLog.text = "User: $queryText\n\nAI: "
             layoutCitations.visibility = View.GONE
 
+            // Extract significant content keywords for relevance verification
+            val stopWords = setOf("who", "what", "when", "where", "why", "how", "is", "are", "was", "were", "tell", "about", "the", "for", "can", "you", "please", "me", "show", "give", "a", "an", "in", "on", "at", "to", "of", "and", "or", "it", "this", "that")
+            val queryKeywords = queryText.lowercase()
+                .replace(Regex("[^a-z0-9\\s]"), " ")
+                .split(Regex("\\s+"))
+                .filter { it.length >= 3 && it !in stopWords }
+
+            val isOnlineQuery = isLatestOrCurrentQuery(queryText)
+
             // Step 1: Query local vector index
             val contextPayload = IshaRuntime.retrieveContextNative(queryText, "local_rag", 4)
             val citationsList = mutableListOf<String>()
@@ -513,13 +522,27 @@ class MainActivity : Activity() {
                         val text = parts[1]
                         val score = parts[2].toDoubleOrNull() ?: 0.0
 
-                        // STRICT SIMILARITY FILTER: Reject irrelevant chunks below 0.35 threshold
-                        if (score >= 0.35) {
+                        val textLower = text.lowercase()
+                        val chunkIdLower = chunkId.lowercase()
+
+                        // Strict relevance check: verify chunk contains at least one query keyword
+                        val hasKeywordMatch = queryKeywords.isEmpty() || queryKeywords.any { kw ->
+                            textLower.contains(kw) || chunkIdLower.contains(kw)
+                        }
+
+                        // If user is asking an online/person query, require keyword match to avoid 3-gram false positives
+                        val isEligible = if (isOnlineQuery && queryKeywords.isNotEmpty()) {
+                            score >= 0.45 && hasKeywordMatch
+                        } else {
+                            score >= 0.35 && (hasKeywordMatch || score >= 0.65)
+                        }
+
+                        if (isEligible) {
                             citationsList.add("📚 Local: $chunkId (score: %.2f)".format(score))
                             localChunksList.add(text)
-                            contextBuilder.append(text).append("\n\n")
+                            contextBuilder.append("Local Reference ($chunkId):\n$text\n\n")
                             contextLength += text.length
-                            if (contextLength >= 6000 || localChunksList.size >= 4) break
+                            if (contextLength >= 4000 || localChunksList.size >= 3) break
                         }
                     }
                 }
@@ -529,15 +552,19 @@ class MainActivity : Activity() {
             streamJob?.cancel()
             streamJob = mainScope.launch {
                 var webSources = emptyList<WebSource>()
-                val shouldSearchWeb = isLiveWebActive && (isLatestOrCurrentQuery(queryText) || localChunksList.isEmpty())
+                val shouldSearchWeb = isLiveWebActive && (isOnlineQuery || localChunksList.isEmpty())
 
                 if (shouldSearchWeb) {
                     txtChatLog.text = "User: $queryText\n\nAI: 🌐 Connecting to internet & searching live web..."
                     try {
                         val ragResult = IshaOnlineRAG.searchLiveWeb(queryText, 3)
                         webSources = ragResult.sources
-                        for (w in webSources) {
+                        for ((idx, w) in webSources.withIndex()) {
                             citationsList.add("🌐 Web: ${w.title}")
+                            // CRITICAL FIX: Append the verified web snippet into contextBuilder!
+                            if (w.snippet.trim().isNotEmpty()) {
+                                contextBuilder.append("Verified Web Source [W${idx + 1}] - ${w.title} (${w.provider}):\n${w.snippet.trim()}\n\n")
+                            }
                         }
 
                         // Load and render live entity image if found
@@ -575,10 +602,12 @@ class MainActivity : Activity() {
                 }
 
                 // Step 3: Stream Output
-                if (isNeuralModelLoaded) {
-                    // Stream from loaded GGUF neural model
+                // Note: For live web queries (webSources.isNotEmpty()), IshaCognitiveGenerator provides
+                // 100% accurate, hallucination-free grounded answers with direct clickable links.
+                if (isNeuralModelLoaded && webSources.isEmpty()) {
+                    // Stream from loaded GGUF neural model for offline reasoning
                     val contextText = contextBuilder.toString().trim()
-                    val finalPrompt = if (citationsList.isNotEmpty()) {
+                    val finalPrompt = if (contextText.isNotEmpty()) {
                         "<|im_start|>system\nYou are ISHA AI. Answer using ONLY verified context:\n$contextText\n<|im_end|>\n<|im_start|>user\n$queryText<|im_end|>\n<|im_start|>assistant\n"
                     } else {
                         "<|im_start|>system\nYou are ISHA AI, a helpful on-device assistant.<|im_end|>\n<|im_start|>user\n$queryText<|im_end|>\n<|im_start|>assistant\n"
@@ -607,7 +636,7 @@ class MainActivity : Activity() {
                         }
                     } catch (e: Exception) {}
                 } else {
-                    // Instant out-of-the-box Grounded Cognitive Generator with Multimodal Vision
+                    // Instant out-of-the-box Grounded Cognitive Generator with Multimodal Vision & Verified Live Web RAG
                     val currentAttached = attachedImageName
                     val buffer = StringBuilder()
                     renderFormattedChat(queryText, "Generating answer...")

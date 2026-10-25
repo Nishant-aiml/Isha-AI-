@@ -20,6 +20,18 @@ class TelemetryMonitor:
         self.kv_cache_tokens = 0
         self.total_tokens_generated = 0
 
+    def auto_detect_tier(self) -> int:
+        try:
+            total_ram_gb = psutil.virtual_memory().total / (1024 ** 3)
+            if total_ram_gb <= 5.0:
+                return 1
+            elif total_ram_gb <= 10.0:
+                return 2
+            else:
+                return 3
+        except Exception:
+            return 2
+
     def set_hardware_tier(self, tier: int) -> None:
         self.current_tier = max(1, min(3, tier))
 
@@ -36,9 +48,36 @@ class TelemetryMonitor:
         cpu_pct = psutil.cpu_percent(interval=None)
 
         tier_configs = {
-            1: {"label": "Tier 1: Budget Mobile (4GB)", "max_context": 512, "batch_size": 4, "device_class": "Entry Level"},
-            2: {"label": "Tier 2: Standard (8GB)", "max_context": 1024, "batch_size": 16, "device_class": "Mid-Range"},
-            3: {"label": "Tier 3: Flagship (16GB+)", "max_context": 2048, "batch_size": 32, "device_class": "High-Performance"}
+            1: {
+                "label": "Tier 1: Budget Mobile (₹8k–₹12k • 3-4GB)",
+                "max_context": 512,
+                "batch_size": 4,
+                "device_class": "Entry Level (Budget Phones)",
+                "strategy": "100% Free Cloud Offload + Zero-RAM Local RAG (Anti-OOM Protection)",
+                "ram_target": "3GB to 4GB RAM",
+                "recommended_models": "Google AI Studio (Gemini 2.5/1.5 Flash), Groq Cloud (Llama 3.2 3B / 3.3 70B), HF FLUX.1 [schnell]",
+                "local_component": "MiniLM-L6-v2 (~90MB) on-device vector search / knowledge pack retrieval"
+            },
+            2: {
+                "label": "Tier 2: Mid-Range (₹13k–₹20k • 6-8GB)",
+                "max_context": 1024,
+                "batch_size": 16,
+                "device_class": "Mid-Range (Balanced Hybrid)",
+                "strategy": "Hybrid Execution (On-Device SLMs Q4 + Cloud Offload for Heavy Image Gen)",
+                "ram_target": "6GB to 8GB RAM",
+                "recommended_models": "Local Qwen 2.5 (0.5B/1.5B GGUF), Llama 3.2 (1B/3B GGUF) + Cloud FLUX.1/SDXL",
+                "local_component": "BGE-Micro-v2 / MiniLM embeddings + local SLM inference"
+            },
+            3: {
+                "label": "Tier 3: Flagship (₹25k+ • 12GB–16GB+)",
+                "max_context": 2048,
+                "batch_size": 32,
+                "device_class": "High-Performance Flagship (Dedicated NPU)",
+                "strategy": "100% Full On-Device Execution (Offline Text + Local NPU Vision / Image Gen)",
+                "ram_target": "8GB to 16GB+ LPDDR5X RAM",
+                "recommended_models": "On-Device Phi-3.5-mini (3.8B), Gemma 2 (2B), MobileDiffusion (520M), TinySD",
+                "local_component": "Complete on-device execution with zero external server costs"
+            }
         }
 
         thermal_labels = {
@@ -55,6 +94,10 @@ class TelemetryMonitor:
             "tier": self.current_tier,
             "tier_label": active_tier_info["label"],
             "device_class": active_tier_info["device_class"],
+            "strategy": active_tier_info["strategy"],
+            "ram_target": active_tier_info["ram_target"],
+            "recommended_models": active_tier_info["recommended_models"],
+            "local_component": active_tier_info["local_component"],
             "max_context": active_tier_info["max_context"],
             "thermal_zone": self.simulated_thermal_zone,
             "thermal_status": active_thermal_info["status"],

@@ -243,12 +243,25 @@ class MainActivity : Activity() {
             }
         }
 
-        // Profile device memory tiering
+        // Profile device memory tiering & classify hardware profile
         val actManager = getSystemService(ACTIVITY_SERVICE) as android.app.ActivityManager
         val memInfo = android.app.ActivityManager.MemoryInfo()
         actManager.getMemoryInfo(memInfo)
         val totalRamMb = (memInfo.totalMem / (1024 * 1024)).toInt()
         val cpuCores = Runtime.getRuntime().availableProcessors()
+
+        val deviceTier = when {
+            totalRamMb <= 4500 -> 1 // Tier 1: Budget Mobile (₹8k–₹12k, 3-4GB RAM)
+            totalRamMb <= 8500 -> 2 // Tier 2: Mid-Range (₹13k–₹20k, 6-8GB RAM)
+            else -> 3              // Tier 3: Flagship (₹25k+, 12GB+ RAM)
+        }
+
+        val txtDeviceTierProfile = findViewById<TextView>(R.id.txtDeviceTierProfile)
+        txtDeviceTierProfile?.text = when (deviceTier) {
+            1 -> "📱 Hardware: Tier 1 Budget (₹8k–₹12k • ${totalRamMb}MB RAM)\n⚡ Architecture: 100% Free Cloud Offload + Zero-RAM Local RAG (Anti-OOM Safe)"
+            2 -> "📱 Hardware: Tier 2 Mid-Range (₹13k–₹20k • ${totalRamMb}MB RAM)\n⚡ Architecture: Hybrid Execution (On-Device SLM 0.5B/1.5B + Cloud Offload)"
+            else -> "📱 Hardware: Tier 3 Flagship (₹25k+ • ${totalRamMb}MB RAM)\n⚡ Architecture: 100% Full On-Device Execution (SLM + NPU Vision)"
+        }
 
         // Init Isha Runtime natively
         val filesPath = filesDir.absolutePath
@@ -319,6 +332,9 @@ class MainActivity : Activity() {
         }
 
         btnLoadT1.setOnClickListener {
+            if (deviceTier == 1) {
+                Toast.makeText(this, "Advisory: Running 1.5B weights on 3-4GB phones may trigger OS memory pressure. Battery Saver (0.5B) or Cloud Offload is recommended.", Toast.LENGTH_LONG).show()
+            }
             val file = File(filesDir, "qwen-1.5b.gguf")
             if (!file.exists()) {
                 txtChatLog.text = "[Error: Standard (1.5B) weights are not downloaded yet.]"

@@ -260,6 +260,15 @@
                             android:textSize="13sp"
                             android:layout_marginBottom="6dp"/>
                         <TextView
+                            android:id="@+id/txtDeviceTierProfile"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Detected Tier: Profiling hardware..."
+                            android:textSize="11sp"
+                            android:textColor="#D97706"
+                            android:textStyle="bold"
+                            android:layout_marginBottom="4dp"/>
+                        <TextView
                             android:id="@+id/txtColdStart"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"

@@ -62,9 +62,62 @@ class TTSRequest(BaseModel):
     text: str
 
 
+class KeysUpdateRequest(BaseModel):
+    gemini_key: Optional[str] = None
+    groq_key: Optional[str] = None
+    hf_token: Optional[str] = None
+    openai_key: Optional[str] = None
+
+
+class ImageGenRequest(BaseModel):
+    prompt: str
+
+
 @app.get("/api/health")
 async def health_check():
     return {"status": "online", "runtime": "ISHA AI Cognitive Core", "version": "1.0.0"}
+
+
+@app.get("/api/config/routing")
+async def get_routing_config():
+    tier = engine.telemetry.current_tier
+    strategy = engine.model_provider.get_routing_strategy(tier)
+    return {
+        "active_tier": tier,
+        "routing": strategy,
+        "providers": {
+            "gemini": bool(engine.model_provider.gemini_key),
+            "groq": bool(engine.model_provider.groq_key),
+            "huggingface": bool(engine.model_provider.hf_token),
+            "openai": bool(engine.model_provider.openai_key),
+            "active": engine.model_provider.active_provider
+        }
+    }
+
+
+@app.post("/api/config/keys")
+async def update_api_keys(req: KeysUpdateRequest):
+    engine.model_provider.update_keys(
+        gemini_key=req.gemini_key,
+        groq_key=req.groq_key,
+        hf_token=req.hf_token,
+        openai_key=req.openai_key
+    )
+    return {
+        "status": "success",
+        "active_provider": engine.model_provider.active_provider,
+        "configured": {
+            "gemini": bool(engine.model_provider.gemini_key),
+            "groq": bool(engine.model_provider.groq_key),
+            "huggingface": bool(engine.model_provider.hf_token),
+            "openai": bool(engine.model_provider.openai_key)
+        }
+    }
+
+
+@app.post("/api/image/generate")
+async def generate_image(req: ImageGenRequest):
+    return await engine.model_provider.generate_image_free(req.prompt)
 
 
 @app.get("/api/telemetry")

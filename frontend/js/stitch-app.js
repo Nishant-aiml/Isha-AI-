@@ -1014,6 +1014,31 @@ function initWatchdog() {
   document.getElementById("thermalBtn2").addEventListener("click", () => setThermal(2));
   document.getElementById("thermalBtn3").addEventListener("click", () => setThermal(3));
   document.getElementById("thermalBtn4").addEventListener("click", () => setThermal(4));
+
+  const btnSave = document.getElementById("btnSaveApiKeys");
+  if (btnSave) {
+    btnSave.addEventListener("click", async () => {
+      const gemini = document.getElementById("inputGeminiKey")?.value.trim() || "";
+      const groq = document.getElementById("inputGroqKey")?.value.trim() || "";
+      const hf = document.getElementById("inputHfToken")?.value.trim() || "";
+      try {
+        const res = await fetch("/api/config/keys", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ gemini_key: gemini, groq_key: groq, hf_token: hf })
+        });
+        const data = await res.json();
+        const statusEl = document.getElementById("txtKeysStatus");
+        if (statusEl) {
+          statusEl.style.display = "block";
+          statusEl.textContent = `✓ Active Cloud Engine: ${data.active_provider.toUpperCase()}`;
+          setTimeout(() => { statusEl.style.display = "none"; }, 3500);
+        }
+      } catch (err) {
+        alert("Failed saving API keys: " + err.message);
+      }
+    });
+  }
 }
 
 async function setTier(tier) {

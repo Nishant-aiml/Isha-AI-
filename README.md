@@ -136,9 +136,23 @@ Expected output:
 
 ---
 
-## 🔧 Optional LLM Providers
+## 📱 Multi-Tier Phone Architecture & Dynamic Hybrid Routing
 
-ISHA AI works **100% offline out-of-the-box** using its native grounded cognitive generator. If you wish to connect cloud models or local LLMs:
-- **Google Gemini**: Set environment variable `GEMINI_API_KEY="your_api_key"`
-- **OpenAI**: Set environment variable `OPENAI_API_KEY="your_api_key"`
-- **Ollama**: Run Ollama locally on `http://localhost:11434`
+ISHA AI dynamically detects device RAM and hardware profiles to select the optimal inference engine without out-of-memory (OOM) crashes:
+
+| Phone Tier | Hardware Profile | Architecture Strategy | Free Engines & Deployment |
+| :--- | :--- | :--- | :--- |
+| **Tier 1: Budget Mobile** (₹8,000 – ₹12,000) | 3GB–4GB RAM, MediaTek/Unisoc, No NPU | **100% Free Cloud Offload + Zero-RAM Local RAG** (Prevents OOM crashes) | **Google AI Studio** (Gemini 2.5/1.5 Flash Free Tier), **Groq Cloud** (Llama 3.2 3B / Llama 3.3 70B), **Hugging Face** (FLUX.1 [schnell] for images). Local vector search via MiniLM-L6-v2 (~90MB). |
+| **Tier 2: Mid-Range** (₹13,000 – ₹20,000) | 6GB–8GB RAM, Snapdragon 4 Gen 2 / Dimensity 6080 | **Hybrid Execution** (Local Quantized SLMs + Cloud Image Offload) | **Local Quantized SLM** (Qwen 2.5 0.5B/1.5B Q4, Llama 3.2 1B GGUF) for offline text. Cloud offload for heavy image generation. |
+| **Tier 3: Flagship** (₹25,000+) | 12GB–16GB+ LPDDR5X RAM, Snapdragon 8s/8 Gen series | **100% Full On-Device Execution** (Zero cloud costs) | **On-Device Heavy SLMs** (Phi-3.5-mini 3.8B, Gemma 2 2B) + **On-Device Mobile Vision / MobileDiffusion** (520M) via NPU. |
+
+---
+
+## 🔧 Free Cloud AI API Providers
+
+ISHA AI operates **100% offline out-of-the-box** using its zero-RAM native grounded cognitive generator. For enhanced cloud capabilities, configure any generous free tier without credit cards:
+- **Google AI Studio (Gemini 2.5/1.5 Flash)**: Set `GEMINI_API_KEY` (Free 1M token context tier)
+- **Groq Cloud (Llama 3.3 70B / Llama 3.2 3B)**: Set `GROQ_API_KEY` (Ultra-fast near-instant token streaming)
+- **Hugging Face Serverless (FLUX.1 [schnell] / SD 1.5)**: Set `HF_TOKEN` (Free serverless text-to-image generation)
+- **Ollama**: Local LLMs running on `http://localhost:11434`
+- **OpenAI**: Set `OPENAI_API_KEY` for GPT-4o-mini compatibility

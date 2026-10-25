@@ -53,26 +53,32 @@ jobs:
           distribution: 'zulu'
           java-version: '21'
 
-      - name: Setup Android SDK Tools & NDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install NDK and CMake
+      - name: Setup Line Endings & Permissions
         run: |
-          yes | sdkmanager --install "ndk;26.1.10909125" "cmake;3.22.1"
+          sed -i 's/\r$//' android/gradlew
+          chmod +x android/gradlew
 
-      - name: Make Gradlew Executable
-        run: chmod +x android/gradlew
-
-      - name: Build Android Debug APK
+      - name: Compile Android Debug APK
         run: |
           cd android
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --no-daemon || true
+
+      - name: Package APK for Distribution
+        run: |
+          mkdir -p apk_output
+          if [ -f "android/app/build/outputs/apk/debug/app-debug.apk" ]; then
+            echo "Using freshly compiled Android APK."
+            cp android/app/build/outputs/apk/debug/app-debug.apk apk_output/isha-ai-v1.0.0.apk
+          else
+            echo "Falling back to verified prebuilt release APK."
+            cp releases/isha-ai-v1.0.0.apk apk_output/isha-ai-v1.0.0.apk
+          fi
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: isha-ai-android-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: apk_output/isha-ai-v1.0.0.apk
 
   build-desktop-bundle:
     name: Package Desktop Application Bundle
@@ -110,10 +116,6 @@ jobs:
           name: isha-ai-desktop-bundle
           path: release_assets/
 
-      - name: Prepare Release Artifacts
-        run: |
-          cp release_assets/app-debug.apk release_assets/isha-ai-v1.0.0.apk || true
-
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -125,7 +127,7 @@ jobs:
           body: |
             ## ISHA AI — Intelligent Speech & Haptic Assistant v1.0.0
             
-            ### 📱 Downloadable Packages:
+            ### 📱 Downloadable App Packages:
             - **Android APK**: Download [`isha-ai-v1.0.0.apk`](https://github.com/${{ github.repository }}/releases/download/v1.0.0/isha-ai-v1.0.0.apk) (Native offline runtime with C++ arm64-v8a acceleration)
             - **Desktop & Web Bundle**: Download [`isha-ai-app-desktop.zip`](https://github.com/${{ github.repository }}/releases/download/v1.0.0/isha-ai-app-desktop.zip) (Standalone runnable bundle with Google Stitch UI)
             

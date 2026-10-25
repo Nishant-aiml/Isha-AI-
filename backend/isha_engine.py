@@ -77,7 +77,8 @@ class IshaEngine:
                 "web_matches": retrieval_data["total_web_matches"],
                 "citations": retrieval_data["citations"],
                 "local_chunks": retrieval_data["local_chunks"],
-                "web_chunks": retrieval_data["web_chunks"]
+                "web_chunks": retrieval_data["web_chunks"],
+                "image_url": retrieval_data.get("image_url")
             }
         }
 

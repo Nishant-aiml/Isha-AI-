@@ -46,6 +46,18 @@
                 android:textColor="#10B981" />
         </LinearLayout>
 
+        <!-- New Chat Session Button -->
+        <Button
+            android:id="@+id/btnNewChat"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:text="➕ New"
+            android:textSize="10sp"
+            android:background="@drawable/bg_pill_button"
+            android:textColor="#334155"
+            android:layout_marginEnd="6dp"
+            style="?android:attr/borderlessButtonStyle" />
+
         <!-- Live Online RAG Toggle Button -->
         <Button
             android:id="@+id/btnToggleLiveWeb"
@@ -386,6 +398,33 @@
                         android:layout_marginTop="4dp"/>
                 </LinearLayout>
 
+                <!-- ONLINE LIVE RAG IMAGE CARD (Visible only during online/live RAG when image found) -->
+                <LinearLayout
+                    android:id="@+id/cardWebImage"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_rounded_card"
+                    android:orientation="vertical"
+                    android:padding="8dp"
+                    android:layout_marginBottom="12dp"
+                    android:visibility="gone">
+                    <ImageView
+                        android:id="@+id/imgWebResult"
+                        android:layout_width="match_parent"
+                        android:layout_height="180dp"
+                        android:scaleType="centerCrop"
+                        android:background="#E2E8F0" />
+                    <TextView
+                        android:id="@+id/txtWebImageCaption"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🌐 Live Web Entity Image"
+                        android:textSize="11sp"
+                        android:textColor="#64748B"
+                        android:layout_marginTop="4dp"
+                        android:layout_marginStart="4dp" />
+                </LinearLayout>
+
                 <!-- CHAT MESSAGE LOG -->
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -505,6 +544,20 @@
                 </LinearLayout>
             </LinearLayout>
 
+            <!-- Knowledge Folder Search Bar -->
+            <EditText
+                android:id="@+id/editDocSearch"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:background="@drawable/bg_rounded_input"
+                android:hint="🔍 Search knowledge packs &amp; documents..."
+                android:textColorHint="#94A3B8"
+                android:textColor="#0F172A"
+                android:textSize="12sp"
+                android:paddingHorizontal="14dp"
+                android:layout_marginBottom="10dp"
+                android:singleLine="true" />
+
             <ScrollView
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
@@ -524,34 +577,105 @@
         android:layout_height="wrap_content"
         android:background="#FFFFFF"
         android:elevation="8dp"
-        android:orientation="horizontal"
-        android:padding="12dp"
-        android:gravity="center_vertical">
+        android:orientation="vertical">
 
-        <EditText
-            android:id="@+id/editPrompt"
-            android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:layout_weight="1"
-            android:background="@drawable/bg_rounded_input"
-            android:hint="Ask ISHA anything..."
-            android:textColorHint="#94A3B8"
-            android:textColor="#0F172A"
-            android:textSize="14sp"
-            android:paddingHorizontal="16dp"
-            android:singleLine="true" />
+        <!-- ATTACHED IMAGE PREVIEW (Google AI Edge Gallery Multimodal Vision Feature) -->
+        <LinearLayout
+            android:id="@+id/layoutImagePreview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#F1F5F9"
+            android:orientation="horizontal"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="6dp"
+            android:gravity="center_vertical"
+            android:visibility="gone">
 
-        <Button
-            android:id="@+id/btnSend"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:text="➤"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:backgroundTint="#F59E0B"
-            android:textColor="#FFFFFF"
-            android:layout_marginStart="8dp"
-            android:elevation="2dp" />
+            <ImageView
+                android:id="@+id/imgAttachedPreview"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:scaleType="centerCrop"
+                android:background="#E2E8F0" />
+
+            <TextView
+                android:id="@+id/txtAttachedImageName"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:text="image.jpg"
+                android:textSize="12sp"
+                android:textColor="#334155" />
+
+            <Button
+                android:id="@+id/btnRemoveImage"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:text="✖"
+                android:textSize="11sp"
+                android:textColor="#64748B"
+                android:background="@drawable/bg_pill_button"
+                style="?android:attr/borderlessButtonStyle" />
+        </LinearLayout>
+
+        <!-- INPUT ROW -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="10dp"
+            android:gravity="center_vertical">
+
+            <!-- Camera / Image Attachment Button (Multimodal Vision) -->
+            <Button
+                android:id="@+id/btnAttachImage"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:text="📷"
+                android:textSize="16sp"
+                android:background="@drawable/bg_pill_button"
+                android:textColor="#475569"
+                android:layout_marginEnd="6dp"
+                style="?android:attr/borderlessButtonStyle" />
+
+            <!-- Voice STT Speech-to-Text Button -->
+            <Button
+                android:id="@+id/btnVoiceInput"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:text="🎙️"
+                android:textSize="16sp"
+                android:background="@drawable/bg_pill_button"
+                android:textColor="#475569"
+                android:layout_marginEnd="6dp"
+                style="?android:attr/borderlessButtonStyle" />
+
+            <EditText
+                android:id="@+id/editPrompt"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_rounded_input"
+                android:hint="Ask ISHA anything..."
+                android:textColorHint="#94A3B8"
+                android:textColor="#0F172A"
+                android:textSize="14sp"
+                android:paddingHorizontal="16dp"
+                android:singleLine="true" />
+
+            <Button
+                android:id="@+id/btnSend"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:text="➤"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:backgroundTint="#F59E0B"
+                android:textColor="#FFFFFF"
+                android:layout_marginStart="8dp"
+                android:elevation="2dp" />
+        </LinearLayout>
     </LinearLayout>
 
 </LinearLayout>

@@ -479,11 +479,21 @@ function renderRetrievalTrace(data) {
   const traceBody = traceBox.querySelector(".trace-content");
   traceBox.style.display = "block";
 
+  let imageHtml = "";
+  if (data.image_url) {
+    imageHtml = `
+      <div style="margin-top: 8px; margin-bottom: 8px; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border-subtle); background: rgba(0,0,0,0.25);">
+        <img src="${escapeHtml(data.image_url)}" alt="Live Entity Image" style="width: 100%; max-height: 220px; object-fit: cover; display: block;" onerror="this.parentElement.style.display='none';" />
+        <div style="padding: 4px 8px; font-size: 0.72rem; color: var(--accent-cyan); background: rgba(255,255,255,0.02);">🌐 Live Web Verified Visual</div>
+      </div>
+    `;
+  }
+
   let citationsHtml = "";
   (data.citations || []).forEach(c => {
     const isWeb = c.type === "web";
     const badgeColor = isWeb ? "var(--accent-cyan)" : "var(--accent-saffron)";
-    const icon = isWeb ? "🌐 Live Web" : "🌿 Verified Knowledge";
+    const icon = isWeb ? "🌐 Google / Web" : "🌿 Verified Knowledge";
     citationsHtml += `
       <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 8px 12px; margin-top: 4px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
@@ -491,7 +501,7 @@ function renderRetrievalTrace(data) {
           <span style="font-size: 0.72rem; color: var(--text-muted);">${icon}</span>
         </div>
         <p style="font-size: 0.78rem; color: var(--text-secondary);">${escapeHtml(c.snippet)}</p>
-        ${c.url ? `<a href="${c.url}" target="_blank" style="color: var(--accent-cyan); font-size: 0.74rem; text-decoration: none; margin-top: 4px; display: inline-block;">Open Source ↗</a>` : ""}
+        ${c.url ? `<a href="${c.url}" target="_blank" rel="noopener noreferrer" style="color: var(--accent-cyan); font-size: 0.74rem; text-decoration: none; margin-top: 4px; display: inline-block;">Open Direct Link ↗</a>` : ""}
       </div>
     `;
   });
@@ -500,6 +510,7 @@ function renderRetrievalTrace(data) {
     <div style="font-size: 0.76rem; color: var(--text-muted); margin-bottom: 6px;">
       Grounded in <strong>${data.local_matches}</strong> offline facts • <strong>${data.web_matches}</strong> web results
     </div>
+    ${imageHtml}
     ${citationsHtml || "<p style='font-size: 0.78rem;'>Answered directly from foundational understanding.</p>"}
   `;
 

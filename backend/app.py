@@ -121,11 +121,12 @@ async def ingest_file(
 
 @app.post("/api/rag/online-search")
 async def search_live_web(req: OnlineSearchRequest):
-    results = await engine.retriever.online_rag.search_live_web(req.query, max_results=req.max_results)
+    results, image_url = await engine.retriever.online_rag.search_live_web_with_image(req.query, max_results=req.max_results)
     return {
         "query": req.query,
         "results_count": len(results),
-        "sources": results
+        "sources": results,
+        "image_url": image_url
     }
 
 

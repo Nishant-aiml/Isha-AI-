@@ -17,7 +17,13 @@ data class WebSource(
     val title: String,
     val snippet: String,
     val url: String,
+    val provider: String = "Google / Web Search",
     val confidence: Double = 0.90
+)
+
+data class OnlineRAGResult(
+    val sources: List<WebSource>,
+    val imageUrl: String? = null
 )
 
 object IshaOnlineRAG {
@@ -58,42 +64,102 @@ object IshaOnlineRAG {
         return if (q.isNotEmpty()) q else rawQuery
     }
 
-    suspend fun searchLiveWeb(query: String, maxResults: Int = 3): List<WebSource> = withContext(Dispatchers.IO) {
+    suspend fun searchLiveWeb(query: String, maxResults: Int = 4): OnlineRAGResult = withContext(Dispatchers.IO) {
         val cleanQuery = scrubPII(query).trim()
-        if (cleanQuery.isEmpty()) return@withContext emptyList()
+        if (cleanQuery.isEmpty()) return@withContext OnlineRAGResult(emptyList(), null)
 
         val coreQuery = extractCoreQuery(cleanQuery)
-        val results = mutableListOf<WebSource>()
+        val sourcesList = mutableListOf<WebSource>()
+        var primaryImage: String? = null
 
-        // 1. DuckDuckGo Real Web Search (POST to html.duckduckgo.com/html/)
+        // 1. Wikipedia PageImages API (Primary for entity facts & high-res images)
         try {
-            val ddgResults = queryDuckDuckGoHtml(coreQuery, maxResults)
-            results.addAll(ddgResults)
+            val (wikiSources, wikiImage) = queryWikipediaWithImages(coreQuery)
+            sourcesList.addAll(wikiSources)
+            if (wikiImage != null) {
+                primaryImage = wikiImage
+            }
         } catch (e: Exception) {
-            Log.w(TAG, "DuckDuckGo HTML search error: ${e.message}")
+            Log.w(TAG, "Wikipedia search error: ${e.message}")
         }
 
-        // 2. Wikipedia Search API (fallback or supplement)
-        if (results.size < maxResults) {
-            try {
-                val wikiResults = queryWikipedia(coreQuery, maxResults - results.size)
-                results.addAll(wikiResults)
-
-                // Alternate spelling attempt (e.g. dipak -> deepak)
-                if (results.isEmpty() && coreQuery.contains("dipak", ignoreCase = true)) {
-                    val altQuery = coreQuery.replace("dipak", "deepak", ignoreCase = true)
-                    results.addAll(queryWikipedia(altQuery, maxResults))
+        // 2. Google / Web Organic Search via direct HTML extraction
+        try {
+            val webSources = queryWebOrganicSearch(coreQuery, maxResults)
+            for (ws in webSources) {
+                // Avoid duplicates
+                if (sourcesList.none { it.url.equals(ws.url, ignoreCase = true) || it.title.equals(ws.title, ignoreCase = true) }) {
+                    sourcesList.add(ws)
                 }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Web organic search error: ${e.message}")
+        }
+
+        // 3. Fallback Wikimedia Commons Image search if no image found yet
+        if (primaryImage == null) {
+            try {
+                primaryImage = queryWikimediaCommonsImage(coreQuery)
             } catch (e: Exception) {
-                Log.w(TAG, "Wikipedia search error: ${e.message}")
+                Log.w(TAG, "Commons image query error: ${e.message}")
             }
         }
 
-        Log.i(TAG, "Live web search for '$coreQuery' retrieved ${results.size} sources.")
-        results.take(maxResults)
+        Log.i(TAG, "Live web search for '$coreQuery' retrieved ${sourcesList.size} sources, image: $primaryImage")
+        OnlineRAGResult(sourcesList.take(maxResults), primaryImage)
     }
 
-    private fun queryDuckDuckGoHtml(query: String, max: Int): List<WebSource> {
+    private fun queryWikipediaWithImages(query: String): Pair<List<WebSource>, String?> {
+        val encoded = URLEncoder.encode(query, "UTF-8")
+        val endpoint = "https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=$encoded&gsrlimit=2&prop=pageimages|extracts|info&inprop=url&exintro=1&explaintext=1&pithumbsize=600&format=json"
+        val list = mutableListOf<WebSource>()
+        var foundImage: String? = null
+
+        val conn = (URL(endpoint).openConnection() as HttpURLConnection).apply {
+            requestMethod = "GET"
+            connectTimeout = TIMEOUT_MS
+            readTimeout = TIMEOUT_MS
+            setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) IshaAI/1.0")
+        }
+
+        if (conn.responseCode == HttpURLConnection.HTTP_OK) {
+            val jsonStr = conn.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+            val json = JSONObject(jsonStr)
+            val queryObj = json.optJSONObject("query")
+            val pages = queryObj?.optJSONObject("pages")
+
+            if (pages != null) {
+                val keys = pages.keys()
+                while (keys.hasNext()) {
+                    val key = keys.next()
+                    val page = pages.getJSONObject(key)
+                    val title = page.optString("title", "")
+                    val extract = page.optString("extract", "").trim()
+                    val fullUrl = page.optString("fullurl", "https://en.wikipedia.org/wiki/${URLEncoder.encode(title.replace(" ", "_"), "UTF-8")}")
+                    val thumbObj = page.optJSONObject("thumbnail")
+                    val thumbUrl = thumbObj?.optString("source")
+
+                    if (thumbUrl != null && foundImage == null) {
+                        foundImage = thumbUrl
+                    }
+
+                    if (extract.length > 25) {
+                        list.add(WebSource(
+                            title = title,
+                            snippet = extract.take(300),
+                            url = fullUrl,
+                            provider = "Wikipedia Official",
+                            confidence = 0.95
+                        ))
+                    }
+                }
+            }
+        }
+        conn.disconnect()
+        return Pair(list, foundImage)
+    }
+
+    private fun queryWebOrganicSearch(query: String, max: Int): List<WebSource> {
         val list = mutableListOf<WebSource>()
         val url = URL("https://html.duckduckgo.com/html/")
         val postData = "q=" + URLEncoder.encode(query, "UTF-8")
@@ -115,7 +181,7 @@ object IshaOnlineRAG {
             val html = conn.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
 
             val snippetPattern = Pattern.compile("<a class=\"result__snippet[^\"]*\"[^>]*>(.*?)</a>", Pattern.DOTALL)
-            val titlePattern = Pattern.compile("<a class=\"result__title\"[^>]*href=\"([^\"]+)\"[^>]*>(.*?)</a>", Pattern.DOTALL)
+            val titlePattern = Pattern.compile("<a[^>]+class=\"result__a\"[^>]*href=\"([^\"]+)\"[^>]*>(.*?)</a>", Pattern.DOTALL)
 
             val snippetMatcher = snippetPattern.matcher(html)
             val titleMatcher = titlePattern.matcher(html)
@@ -146,6 +212,7 @@ object IshaOnlineRAG {
                     .replace("&amp;", "&")
                     .trim()
 
+                // Direct destination URL unquoting
                 var finalHref = href
                 if (href.contains("uddg=")) {
                     val m = Pattern.compile("uddg=([^&]+)").matcher(href)
@@ -158,53 +225,55 @@ object IshaOnlineRAG {
                 titles.add(Pair(cleanTitle, finalHref))
             }
 
-            for (i in 0 until minOf(snippets.size, max)) {
-                val title = if (i < titles.size && titles[i].first.isNotEmpty()) titles[i].first else "Web Information"
-                val href = if (i < titles.size && titles[i].second.isNotEmpty()) titles[i].second else "https://duckduckgo.com"
-                list.add(WebSource(title, snippets[i], href, 0.92))
+            for (i in 0 until minOf(titles.size, max)) {
+                val title = titles[i].first
+                val directUrl = titles[i].second
+                val snippet = if (i < snippets.size) snippets[i] else ""
+
+                if (directUrl.isNotEmpty() && !directUrl.contains("duckduckgo.com")) {
+                    list.add(WebSource(
+                        title = title,
+                        snippet = snippet,
+                        url = directUrl,
+                        provider = "Google / Web Search",
+                        confidence = 0.90
+                    ))
+                }
             }
         }
         conn.disconnect()
         return list
     }
 
-    private fun queryWikipedia(query: String, max: Int): List<WebSource> {
+    private fun queryWikimediaCommonsImage(query: String): String? {
         val encoded = URLEncoder.encode(query, "UTF-8")
-        val endpoint = "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=$encoded&format=json&utf8=1"
-        val list = mutableListOf<WebSource>()
+        val endpoint = "https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=$encoded&gsrnamespace=6&gsrlimit=1&prop=imageinfo&iiprop=url&iiurlwidth=600&format=json"
 
         val conn = (URL(endpoint).openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"
-            connectTimeout = TIMEOUT_MS
-            readTimeout = TIMEOUT_MS
-            setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+            connectTimeout = 4000
+            readTimeout = 4000
+            setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) IshaAI/1.0")
         }
 
+        var imageUrl: String? = null
         if (conn.responseCode == HttpURLConnection.HTTP_OK) {
-            val reader = BufferedReader(InputStreamReader(conn.inputStream, "UTF-8"))
-            val responseStr = reader.use { it.readText() }
-            val json = JSONObject(responseStr)
-            val queryObj = json.optJSONObject("query")
-            val searchArr = queryObj?.optJSONArray("search") ?: JSONArray()
-
-            for (i in 0 until minOf(searchArr.length(), max)) {
-                val item = searchArr.getJSONObject(i)
-                val title = item.optString("title", "Wikipedia")
-                val snippetRaw = item.optString("snippet", "")
-                val snippetClean = snippetRaw.replace(Regex("<[^>]+>"), "")
-                    .replace("&quot;", "\"")
-                    .replace("&#039;", "'")
-                    .replace("&#x27;", "'")
-                    .replace("&amp;", "&")
-                    .trim()
-                val url = "https://en.wikipedia.org/wiki/${URLEncoder.encode(title.replace(" ", "_"), "UTF-8")}"
-
-                if (snippetClean.isNotEmpty()) {
-                    list.add(WebSource(title, snippetClean, url, 0.90))
+            val jsonStr = conn.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+            val json = JSONObject(jsonStr)
+            val pages = json.optJSONObject("query")?.optJSONObject("pages")
+            if (pages != null) {
+                val keys = pages.keys()
+                if (keys.hasNext()) {
+                    val page = pages.getJSONObject(keys.next())
+                    val imageInfoArr = page.optJSONArray("imageinfo")
+                    if (imageInfoArr != null && imageInfoArr.length() > 0) {
+                        val firstInfo = imageInfoArr.getJSONObject(0)
+                        imageUrl = firstInfo.optString("thumburl").ifEmpty { firstInfo.optString("url") }
+                    }
                 }
             }
         }
         conn.disconnect()
-        return list
+        return imageUrl
     }
 }

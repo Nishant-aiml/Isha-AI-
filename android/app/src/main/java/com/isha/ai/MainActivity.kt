@@ -5,16 +5,24 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.os.SystemClock
+import android.provider.OpenableColumns
+import android.speech.RecognizerIntent
+import android.text.Editable
+import android.text.Html
+import android.text.TextUtils
+import android.text.TextWatcher
+import android.text.method.LinkMovementMethod
 import android.text.method.ScrollingMovementMethod
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
-import android.widget.TextView
 import android.widget.ScrollView
+import android.widget.TextView
 import android.widget.Toast
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -22,7 +30,10 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
+import java.net.HttpURLConnection
+import java.net.URL
 
 class MainActivity : Activity() {
     private val TAG = "MainActivity"
@@ -35,11 +46,15 @@ class MainActivity : Activity() {
 
     private var coldStartStart: Long = 0
 
-    // RAG components
+    // RAG & Multimodal components (Google AI Edge Gallery Features)
     private lateinit var ragManager: IshaRAGManager
     private val PICK_DOCUMENT_REQUEST = 1001
+    private val PICK_IMAGE_REQUEST = 1002
+    private val VOICE_RECOGNIZE_REQUEST = 1003
     private var isLiveWebActive = true
     private var isNeuralModelLoaded = false
+    private var attachedImageUri: Uri? = null
+    private var attachedImageName: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         coldStartStart = SystemClock.elapsedRealtime()
@@ -102,14 +117,84 @@ class MainActivity : Activity() {
             refreshDocLibrary(layoutDocList, txtIndexChunks, txtIndexSize)
         }
 
-        // Stitch UI Controls & Dev Diagnostics Toggle
+        // Google AI Edge Gallery & Stitch UI Controls
         val panelDevDiagnostics = findViewById<LinearLayout>(R.id.panelDevDiagnostics)
         val btnToggleDiagnostics = findViewById<Button>(R.id.btnToggleDiagnostics)
         val btnToggleLiveWeb = findViewById<Button>(R.id.btnToggleLiveWeb)
+        val btnNewChat = findViewById<Button>(R.id.btnNewChat)
         val cardWelcomeHero = findViewById<LinearLayout>(R.id.cardWelcomeHero)
         val chipRust = findViewById<Button>(R.id.chipRust)
         val chipDose = findViewById<Button>(R.id.chipDose)
         val chipFIR = findViewById<Button>(R.id.chipFIR)
+
+        // Multimodal Visual QA Controls (Google AI Edge Gallery)
+        val layoutImagePreview = findViewById<LinearLayout>(R.id.layoutImagePreview)
+        val imgAttachedPreview = findViewById<ImageView>(R.id.imgAttachedPreview)
+        val txtAttachedImageName = findViewById<TextView>(R.id.txtAttachedImageName)
+        val btnRemoveImage = findViewById<Button>(R.id.btnRemoveImage)
+        val btnAttachImage = findViewById<Button>(R.id.btnAttachImage)
+        val btnVoiceInput = findViewById<Button>(R.id.btnVoiceInput)
+
+        // Online Live RAG Visual Card
+        val cardWebImage = findViewById<LinearLayout>(R.id.cardWebImage)
+        val imgWebResult = findViewById<ImageView>(R.id.imgWebResult)
+        val txtWebImageCaption = findViewById<TextView>(R.id.txtWebImageCaption)
+
+        // Knowledge Base Live Search
+        val editDocSearch = findViewById<EditText>(R.id.editDocSearch)
+        editDocSearch?.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                refreshDocLibrary(layoutDocList, txtIndexChunks, txtIndexSize, s?.toString() ?: "")
+            }
+            override fun afterTextChanged(s: Editable?) {}
+        })
+
+        // New Chat Session Button
+        btnNewChat?.setOnClickListener {
+            val txtChat = findViewById<TextView>(R.id.txtChatLog)
+            val editP = findViewById<EditText>(R.id.editPrompt)
+            txtChat.text = "ISHA is ready. Ask any question below or choose a suggestion above."
+            editP.text.clear()
+            layoutCitations.visibility = View.GONE
+            cardWebImage.visibility = View.GONE
+            imgWebResult.setImageDrawable(null)
+            attachedImageUri = null
+            attachedImageName = null
+            layoutImagePreview.visibility = View.GONE
+            imgAttachedPreview.setImageDrawable(null)
+            cardWelcomeHero.visibility = View.VISIBLE
+            Toast.makeText(this, "New conversation started", Toast.LENGTH_SHORT).show()
+        }
+
+        // Attach Image (Visual QA)
+        btnAttachImage?.setOnClickListener {
+            val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+                type = "image/*"
+                addCategory(Intent.CATEGORY_OPENABLE)
+            }
+            startActivityForResult(intent, PICK_IMAGE_REQUEST)
+        }
+
+        btnRemoveImage?.setOnClickListener {
+            attachedImageUri = null
+            attachedImageName = null
+            layoutImagePreview.visibility = View.GONE
+            imgAttachedPreview.setImageDrawable(null)
+        }
+
+        // Voice Input (Speech to Text)
+        btnVoiceInput?.setOnClickListener {
+            try {
+                val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                    putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                    putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak to ISHA AI...")
+                }
+                startActivityForResult(intent, VOICE_RECOGNIZE_REQUEST)
+            } catch (e: Exception) {
+                Toast.makeText(this, "Speech recognizer not supported on this device", Toast.LENGTH_SHORT).show()
+            }
+        }
 
         btnToggleDiagnostics?.setOnClickListener {
             if (panelDevDiagnostics.visibility == View.VISIBLE) {
@@ -383,15 +468,20 @@ class MainActivity : Activity() {
 
         btnSend.setOnClickListener {
             val prompt = editPrompt.text.toString().trim()
-            if (prompt.isEmpty()) return@setOnClickListener
+            if (prompt.isEmpty() && attachedImageUri == null) return@setOnClickListener
+            val queryText = if (prompt.isNotEmpty()) prompt else "Analyze this attached image"
             editPrompt.text.clear()
             cardWelcomeHero?.visibility = View.GONE
 
-            txtChatLog.text = "User: $prompt\n\nAI: "
+            // Clear previous web image card
+            cardWebImage.visibility = View.GONE
+            imgWebResult.setImageDrawable(null)
+
+            txtChatLog.text = "User: $queryText\n\nAI: "
             layoutCitations.visibility = View.GONE
 
             // Step 1: Query local vector index
-            val contextPayload = IshaRuntime.retrieveContextNative(prompt, "local_rag", 4)
+            val contextPayload = IshaRuntime.retrieveContextNative(queryText, "local_rag", 4)
             val citationsList = mutableListOf<String>()
             val localChunksList = mutableListOf<String>()
             val contextBuilder = StringBuilder()
@@ -423,14 +513,40 @@ class MainActivity : Activity() {
             streamJob?.cancel()
             streamJob = mainScope.launch {
                 var webSources = emptyList<WebSource>()
-                val shouldSearchWeb = isLiveWebActive || isLatestOrCurrentQuery(prompt) || localChunksList.isEmpty()
+                val shouldSearchWeb = isLiveWebActive && (isLatestOrCurrentQuery(queryText) || localChunksList.isEmpty())
 
                 if (shouldSearchWeb) {
-                    txtChatLog.text = "User: $prompt\n\nAI: 🌐 Connecting to internet & searching live web..."
+                    txtChatLog.text = "User: $queryText\n\nAI: 🌐 Connecting to internet & searching live web..."
                     try {
-                        webSources = IshaOnlineRAG.searchLiveWeb(prompt, 3)
+                        val ragResult = IshaOnlineRAG.searchLiveWeb(queryText, 3)
+                        webSources = ragResult.sources
                         for (w in webSources) {
                             citationsList.add("🌐 Web: ${w.title}")
+                        }
+
+                        // Load and render live entity image if found
+                        if (ragResult.imageUrl != null && isLiveWebActive) {
+                            mainScope.launch(Dispatchers.IO) {
+                                try {
+                                    val url = URL(ragResult.imageUrl)
+                                    val conn = url.openConnection() as HttpURLConnection
+                                    conn.connectTimeout = 4000
+                                    conn.readTimeout = 4000
+                                    conn.doInput = true
+                                    conn.connect()
+                                    val bitmap = android.graphics.BitmapFactory.decodeStream(conn.inputStream)
+                                    conn.disconnect()
+                                    if (bitmap != null) {
+                                        mainScope.launch {
+                                            imgWebResult.setImageBitmap(bitmap)
+                                            txtWebImageCaption.text = "🌐 Live Web Visual: " + IshaOnlineRAG.extractCoreQuery(queryText)
+                                            cardWebImage.visibility = View.VISIBLE
+                                        }
+                                    }
+                                } catch (e: Exception) {
+                                    Log.w(TAG, "Failed to load live entity image: ${e.message}")
+                                }
+                            }
                         }
                     } catch (e: Exception) {
                         Log.w(TAG, "Online web retrieval error: ${e.message}")
@@ -447,9 +563,9 @@ class MainActivity : Activity() {
                     // Stream from loaded GGUF neural model
                     val contextText = contextBuilder.toString().trim()
                     val finalPrompt = if (citationsList.isNotEmpty()) {
-                        "<|im_start|>system\nYou are ISHA AI. Answer using ONLY verified context:\n$contextText\n<|im_end|>\n<|im_start|>user\n$prompt<|im_end|>\n<|im_start|>assistant\n"
+                        "<|im_start|>system\nYou are ISHA AI. Answer using ONLY verified context:\n$contextText\n<|im_end|>\n<|im_start|>user\n$queryText<|im_end|>\n<|im_start|>assistant\n"
                     } else {
-                        "<|im_start|>system\nYou are ISHA AI, a helpful on-device assistant.<|im_end|>\n<|im_start|>user\n$prompt<|im_end|>\n<|im_start|>assistant\n"
+                        "<|im_start|>system\nYou are ISHA AI, a helpful on-device assistant.<|im_end|>\n<|im_start|>user\n$queryText<|im_end|>\n<|im_start|>assistant\n"
                     }
 
                     val sessionChannel = Channel<String>(Channel.UNLIMITED)
@@ -469,30 +585,32 @@ class MainActivity : Activity() {
                             buffer.append(token)
                             val now = SystemClock.elapsedRealtime()
                             if (now - lastUpdate >= 66 || sessionChannel.isEmpty) {
-                                renderFormattedChat(prompt, buffer.toString().trimStart())
+                                renderFormattedChat(queryText, buffer.toString().trimStart())
                                 lastUpdate = now
                             }
                         }
                     } catch (e: Exception) {}
                 } else {
-                    // Instant out-of-the-box Grounded Cognitive Generator
+                    // Instant out-of-the-box Grounded Cognitive Generator with Multimodal Vision
+                    val currentAttached = attachedImageName
                     val buffer = StringBuilder()
-                    renderFormattedChat(prompt, "Generating answer...")
+                    renderFormattedChat(queryText, "Generating answer...")
                     var lastUpdate = SystemClock.elapsedRealtime()
                     IshaCognitiveGenerator.streamSynthesizedAnswer(
-                        prompt,
+                        queryText,
                         citationsList,
                         localChunksList,
-                        webSources
+                        webSources,
+                        currentAttached
                     ) { token ->
                         buffer.append(token)
                         val now = SystemClock.elapsedRealtime()
                         if (now - lastUpdate >= 50) {
-                            renderFormattedChat(prompt, buffer.toString())
+                            renderFormattedChat(queryText, buffer.toString())
                             lastUpdate = now
                         }
                     }
-                    renderFormattedChat(prompt, buffer.toString())
+                    renderFormattedChat(queryText, buffer.toString())
                 }
             }
         }
@@ -519,7 +637,49 @@ class MainActivity : Activity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == PICK_DOCUMENT_REQUEST && resultCode == RESULT_OK) {
+        if (resultCode != RESULT_OK) return
+
+        // Image Attachment (Google AI Edge Gallery Multimodal Visual QA)
+        if (requestCode == PICK_IMAGE_REQUEST) {
+            val uri = data?.data ?: return
+            attachedImageUri = uri
+            var displayName = "image.jpg"
+            val cursor = contentResolver.query(uri, null, null, null, null)
+            if (cursor != null && cursor.moveToFirst()) {
+                val idx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (idx != -1) displayName = cursor.getString(idx) ?: "image.jpg"
+                cursor.close()
+            }
+            attachedImageName = displayName
+
+            val layoutImagePreview = findViewById<LinearLayout>(R.id.layoutImagePreview)
+            val imgAttachedPreview = findViewById<ImageView>(R.id.imgAttachedPreview)
+            val txtAttachedImageName = findViewById<TextView>(R.id.txtAttachedImageName)
+
+            imgAttachedPreview.setImageURI(uri)
+            txtAttachedImageName.text = displayName
+            layoutImagePreview.visibility = View.VISIBLE
+
+            findViewById<Button>(R.id.tabChat)?.performClick()
+            Toast.makeText(this, "Attached $displayName for Visual QA", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        // Voice Recognition (Speech to Text)
+        if (requestCode == VOICE_RECOGNIZE_REQUEST) {
+            val matches = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+            if (!matches.isNullOrEmpty()) {
+                val spoken = matches[0]
+                val editPrompt = findViewById<EditText>(R.id.editPrompt)
+                editPrompt.setText(spoken)
+                editPrompt.setSelection(spoken.length)
+                findViewById<Button>(R.id.tabChat)?.performClick()
+                Toast.makeText(this, "Voice recognized: $spoken", Toast.LENGTH_SHORT).show()
+            }
+            return
+        }
+
+        if (requestCode == PICK_DOCUMENT_REQUEST) {
             val uri = data?.data ?: return
             
             // Acquire persistent URI read permissions (Scoped storage rules)
@@ -568,14 +728,21 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun refreshDocLibrary(layoutList: LinearLayout, txtChunks: TextView, txtSize: TextView) {
+    private fun refreshDocLibrary(layoutList: LinearLayout, txtChunks: TextView, txtSize: TextView, filterQuery: String = "") {
         layoutList.removeAllViews()
         val docList = db.getDocumentsList()
         var totalChunks = 0
 
+        val filtered = if (filterQuery.trim().isEmpty()) {
+            docList
+        } else {
+            val q = filterQuery.lowercase()
+            docList.filter { it.path.lowercase().contains(q) }
+        }
+
         val inflater = LayoutInflater.from(this)
 
-        for (doc in docList) {
+        for (doc in filtered) {
             totalChunks += doc.chunkCount
             val view = inflater.inflate(android.R.layout.simple_list_item_2, layoutList, false)
             val text1 = view.findViewById<TextView>(android.R.id.text1)

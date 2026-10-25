@@ -85,8 +85,9 @@ class HybridRetriever:
 
         # 2. Live Online Web RAG (if enabled)
         web_results: List[Dict[str, Any]] = []
+        image_url: Optional[str] = None
         if use_online_rag:
-            web_results = await self.online_rag.search_live_web(query, max_results=3)
+            web_results, image_url = await self.online_rag.search_live_web_with_image(query, max_results=3)
 
         # 3. Assemble combined context and citations
         retrieval_text_blocks = []
@@ -132,7 +133,8 @@ class HybridRetriever:
             "context_text": combined_context,
             "local_chunks": formatted_local,
             "web_chunks": web_results,
-            "citations": citations
+            "citations": citations,
+            "image_url": image_url
         }
 
     def ingest_custom_chunk(

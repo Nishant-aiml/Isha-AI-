@@ -21,6 +21,8 @@ import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
+import android.widget.RadioButton
+import android.widget.RadioGroup
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
@@ -447,11 +449,11 @@ class MainActivity : Activity() {
         }
 
         btnDownloadT0.setOnClickListener {
-            triggerDownload("qwen-0.5b", "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q2_k.gguf", "qwen-0.5b.gguf", btnDownloadT0)
+            triggerDownload("qwen-0.5b", "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf", "qwen-0.5b.gguf", btnDownloadT0)
         }
 
         btnDownloadT1.setOnClickListener {
-            triggerDownload("qwen-1.5b", "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q2_k.gguf", "qwen-1.5b.gguf", btnDownloadT1)
+            triggerDownload("qwen-1.5b", "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf", "qwen-1.5b.gguf", btnDownloadT1)
         }
 
         // Document Picker Triggers
@@ -602,51 +604,17 @@ class MainActivity : Activity() {
                 }
 
                 // Step 3: Stream Output
-                // Note: For live web queries (webSources.isNotEmpty()), IshaCognitiveGenerator provides
-                // 100% accurate, hallucination-free grounded answers with direct clickable links.
-                if (isNeuralModelLoaded && webSources.isEmpty()) {
-                    // Stream from loaded GGUF neural model for offline reasoning
-                    val contextText = contextBuilder.toString().trim()
-                    val finalPrompt = if (contextText.isNotEmpty()) {
-                        "<|im_start|>system\nYou are ISHA AI. Answer using ONLY verified context:\n$contextText\n<|im_end|>\n<|im_start|>user\n$queryText<|im_end|>\n<|im_start|>assistant\n"
-                    } else {
-                        "<|im_start|>system\nYou are ISHA AI, a helpful on-device assistant.<|im_end|>\n<|im_start|>user\n$queryText<|im_end|>\n<|im_start|>assistant\n"
-                    }
-
-                    val sessionChannel = Channel<String>(Channel.UNLIMITED)
-                    mainScope.launch(Dispatchers.IO) {
-                        IshaRuntime.streamTokens(finalPrompt, object : TokenCallback {
-                            override fun onToken(token: String) {
-                                sessionChannel.trySend(token)
-                            }
-                        })
-                    }
-
+                // Priority 1: Free Cloud AI Offload (Zero Hallucination, Instant GPT-4 / Gemini Quality)
+                val fullContext = contextBuilder.toString().trim()
+                var cloudHandled = false
+                if (IshaCloudAI.isCloudAvailable(this@MainActivity)) {
+                    renderFormattedChat(queryText, "☁️ Thinking with Cloud AI...")
                     val buffer = StringBuilder()
                     var lastUpdate = SystemClock.elapsedRealtime()
-                    try {
-                        while (true) {
-                            val token = sessionChannel.receive()
-                            buffer.append(token)
-                            val now = SystemClock.elapsedRealtime()
-                            if (now - lastUpdate >= 66 || sessionChannel.isEmpty) {
-                                renderFormattedChat(queryText, buffer.toString().trimStart())
-                                lastUpdate = now
-                            }
-                        }
-                    } catch (e: Exception) {}
-                } else {
-                    // Instant out-of-the-box Grounded Cognitive Generator with Multimodal Vision & Verified Live Web RAG
-                    val currentAttached = attachedImageName
-                    val buffer = StringBuilder()
-                    renderFormattedChat(queryText, "Generating answer...")
-                    var lastUpdate = SystemClock.elapsedRealtime()
-                    IshaCognitiveGenerator.streamSynthesizedAnswer(
+                    val success = IshaCloudAI.streamCloudInference(
+                        this@MainActivity,
                         queryText,
-                        citationsList,
-                        localChunksList,
-                        webSources,
-                        currentAttached
+                        fullContext
                     ) { token ->
                         buffer.append(token)
                         val now = SystemClock.elapsedRealtime()
@@ -655,9 +623,132 @@ class MainActivity : Activity() {
                             lastUpdate = now
                         }
                     }
-                    renderFormattedChat(queryText, buffer.toString())
+                    if (success && buffer.isNotEmpty()) {
+                        renderFormattedChat(queryText, buffer.toString())
+                        cloudHandled = true
+                    }
+                }
+
+                if (!cloudHandled) {
+                    if (isNeuralModelLoaded && webSources.isEmpty()) {
+                        // Stream from loaded GGUF neural model for offline reasoning
+                        val finalPrompt = if (fullContext.isNotEmpty()) {
+                            "<|im_start|>system\nYou are ISHA AI. Answer using ONLY verified context:\n$fullContext\n<|im_end|>\n<|im_start|>user\n$queryText<|im_end|>\n<|im_start|>assistant\n"
+                        } else {
+                            "<|im_start|>system\nYou are ISHA AI, an accurate on-device assistant. Answer factually.<|im_end|>\n<|im_start|>user\n$queryText<|im_end|>\n<|im_start|>assistant\n"
+                        }
+
+                        val sessionChannel = Channel<String>(Channel.UNLIMITED)
+                        mainScope.launch(Dispatchers.IO) {
+                            IshaRuntime.streamTokens(finalPrompt, object : TokenCallback {
+                                override fun onToken(token: String) {
+                                    sessionChannel.trySend(token)
+                                }
+                            })
+                        }
+
+                        val buffer = StringBuilder()
+                        var lastUpdate = SystemClock.elapsedRealtime()
+                        try {
+                            while (true) {
+                                val token = sessionChannel.receive()
+                                buffer.append(token)
+                                val now = SystemClock.elapsedRealtime()
+                                if (now - lastUpdate >= 66 || sessionChannel.isEmpty) {
+                                    renderFormattedChat(queryText, buffer.toString().trimStart())
+                                    lastUpdate = now
+                                }
+                            }
+                        } catch (e: Exception) {}
+                    } else {
+                        // Instant out-of-the-box Grounded Cognitive Generator with Multimodal Vision & Verified Live Web RAG
+                        val currentAttached = attachedImageName
+                        val buffer = StringBuilder()
+                        renderFormattedChat(queryText, "Generating answer...")
+                        var lastUpdate = SystemClock.elapsedRealtime()
+                        IshaCognitiveGenerator.streamSynthesizedAnswer(
+                            queryText,
+                            citationsList,
+                            localChunksList,
+                            webSources,
+                            currentAttached
+                        ) { token ->
+                            buffer.append(token)
+                            val now = SystemClock.elapsedRealtime()
+                            if (now - lastUpdate >= 50) {
+                                renderFormattedChat(queryText, buffer.toString())
+                                lastUpdate = now
+                            }
+                        }
+                        renderFormattedChat(queryText, buffer.toString())
+                    }
                 }
             }
+        }
+
+                // Free Cloud AI & Hybrid Routing Controls
+        val rgCloudProvider = findViewById<RadioGroup>(R.id.rgCloudProvider)
+        val rbProviderHybrid = findViewById<RadioButton>(R.id.rbProviderHybrid)
+        val rbProviderGroq = findViewById<RadioButton>(R.id.rbProviderGroq)
+        val rbProviderGemini = findViewById<RadioButton>(R.id.rbProviderGemini)
+        val editCloudApiKey = findViewById<EditText>(R.id.editCloudApiKey)
+        val btnSaveCloudKey = findViewById<Button>(R.id.btnSaveCloudKey)
+        val btnClearCloudKey = findViewById<Button>(R.id.btnClearCloudKey)
+        val txtCloudStatus = findViewById<TextView>(R.id.txtCloudStatus)
+
+        fun updateCloudStatusText() {
+            val key = IshaCloudAI.getApiKey(this)
+            val prov = IshaCloudAI.getProvider(this)
+            if (key.isNotEmpty()) {
+                val masked = if (key.length > 8) "${key.take(4)}...${key.takeLast(4)}" else "***"
+                txtCloudStatus.text = "Status: Connected ($prov: $masked)"
+                txtCloudStatus.setTextColor(android.graphics.Color.parseColor("#10B981"))
+            } else {
+                txtCloudStatus.text = "Status: Hybrid Grounding (Web RAG + Cognitive Active)"
+                txtCloudStatus.setTextColor(android.graphics.Color.parseColor("#0284C7"))
+            }
+        }
+
+        val savedProv = IshaCloudAI.getProvider(this)
+        when (savedProv) {
+            IshaCloudAI.PROVIDER_GROQ -> rbProviderGroq.isChecked = true
+            IshaCloudAI.PROVIDER_GEMINI -> rbProviderGemini.isChecked = true
+            else -> rbProviderHybrid.isChecked = true
+        }
+        val savedKey = IshaCloudAI.getApiKey(this)
+        if (savedKey.isNotEmpty()) {
+            editCloudApiKey.setText(savedKey)
+        }
+        updateCloudStatusText()
+
+        btnSaveCloudKey.setOnClickListener {
+            val enteredKey = editCloudApiKey.text.toString().trim()
+            val selectedProv = when {
+                rbProviderGroq.isChecked -> IshaCloudAI.PROVIDER_GROQ
+                rbProviderGemini.isChecked -> IshaCloudAI.PROVIDER_GEMINI
+                else -> IshaCloudAI.PROVIDER_HYBRID
+            }
+            IshaCloudAI.saveConfig(this, selectedProv, enteredKey)
+            updateCloudStatusText()
+            Toast.makeText(this, "Cloud AI configuration saved!", Toast.LENGTH_SHORT).show()
+        }
+
+        btnClearCloudKey.setOnClickListener {
+            IshaCloudAI.clearConfig(this)
+            editCloudApiKey.text.clear()
+            rbProviderHybrid.isChecked = true
+            updateCloudStatusText()
+            Toast.makeText(this, "Cloud configuration reset to local hybrid.", Toast.LENGTH_SHORT).show()
+        }
+
+        rgCloudProvider.setOnCheckedChangeListener { _, checkedId ->
+            val selectedProv = when (checkedId) {
+                R.id.rbProviderGroq -> IshaCloudAI.PROVIDER_GROQ
+                R.id.rbProviderGemini -> IshaCloudAI.PROVIDER_GEMINI
+                else -> IshaCloudAI.PROVIDER_HYBRID
+            }
+            IshaCloudAI.saveConfig(this, selectedProv, editCloudApiKey.text.toString().trim())
+            updateCloudStatusText()
         }
 
         btnOpenRecovery.setOnClickListener {

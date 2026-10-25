@@ -1,0 +1,32 @@
+{
+  "title": "Bharat Vidhi & Civic Core",
+  "description": "Indian Constitution, legal safeguards, consumer protection, police FIR procedures, and citizen helplines.",
+  "icon": "⚖️",
+  "chunks": [
+    {
+      "id": "bharat_001",
+      "title": "National Emergency Helpline Numbers",
+      "text": "National Emergency Unified Helpline: 112 (Police, Fire, Ambulance). Police: 100, Fire: 101, Ambulance: 108. Women Helpline (National): 1091 and 181. National Cyber Crime Reporting Portal: 1930. Childline Helpline: 1098. Senior Citizen Helpline (Elderline): 14567. Railway Security Helpline: 139."
+    },
+    {
+      "id": "bharat_002",
+      "title": "Filing a Police FIR (First Information Report)",
+      "text": "Section 154 CrPC / BNSS mandates that an officer in charge of a police station must register an FIR upon information of a cognizable offence. A citizen has the legal right to receive a signed copy of the FIR immediately and free of cost. If a police station refuses to register an FIR, the complainant can send the substance of information in writing via registered post to the Superintendent of Police (SP) or file a Zero FIR at any nearby station."
+    },
+    {
+      "id": "bharat_003",
+      "title": "Fundamental Rights Guaranteed by Constitution of India",
+      "text": "Part III of the Indian Constitution enshrines 6 Fundamental Rights: Right to Equality (Articles 14-18), Right to Freedom (Articles 19-22, including speech and expression), Right against Exploitation (Articles 23-24), Right to Freedom of Religion (Articles 25-28), Cultural and Educational Rights (Articles 29-30), and Right to Constitutional Remedies (Article 32 - enabling citizens to approach Supreme Court directly via habeas corpus, mandamus, prohibition, quo warranto, and certiorari)."
+    },
+    {
+      "id": "bharat_004",
+      "title": "Right to Information (RTI Act 2005) Process",
+      "text": "Any Indian citizen can request information from a Public Authority under RTI Act 2005. Standard application fee is ₹10 (exempt for Below Poverty Line applicants). The Public Information Officer (PIO) must supply the information within 30 days. If the matter involves life or liberty of a person, information must be provided within 48 hours."
+    },
+    {
+      "id": "bharat_005",
+      "title": "Consumer Protection Act 2019 Remedies",
+      "text": "Under Consumer Protection Act 2019, consumers can file e-complaints via the e-Daakhil portal without needing a lawyer. District Commissions adjudicate claims up to ₹50 Lakh, State Commissions up to ₹2 Crore, and National Commission above ₹2 Crore. Covers unfair trade practices, misleading advertisements, defective goods, and deficiency in services."
+    }
+  ]
+}

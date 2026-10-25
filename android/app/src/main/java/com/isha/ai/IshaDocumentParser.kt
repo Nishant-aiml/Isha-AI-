@@ -28,19 +28,26 @@ object IshaDocumentParser {
         fun onPageParsed(pageNum: Int, text: String)
     }
 
-    suspend fun parseUriStreamed(context: Context, uri: Uri, mimeType: String?, listener: ParserListener) {
+    suspend fun parseUriStreamed(context: Context, uri: Uri, mimeType: String?, fileName: String? = null, listener: ParserListener) {
         val contentResolver = context.contentResolver
         val inputStream = contentResolver.openInputStream(uri) ?: return
         
+        val name = (fileName ?: uri.lastPathSegment ?: "").lowercase()
+        val isText = mimeType == "text/plain" || mimeType == "text/markdown" || mimeType == "text/csv" ||
+                     name.endsWith(".txt") || name.endsWith(".md") || name.endsWith(".csv") || name.endsWith(".json") || name.endsWith(".tsv")
+        val isDocx = mimeType == "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || name.endsWith(".docx")
+        val isPdf = mimeType == "application/pdf" || name.endsWith(".pdf")
+        val isImage = mimeType?.startsWith("image/") == true || name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg")
+
         try {
             when {
-                mimeType == "text/plain" || mimeType == "text/markdown" || uri.path?.endsWith(".txt") == true || uri.path?.endsWith(".md") == true -> {
+                isText -> {
                     parseTxtStreamed(inputStream, listener)
                 }
-                mimeType == "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || uri.path?.endsWith(".docx") == true -> {
+                isDocx -> {
                     parseDocxStreamed(inputStream, listener)
                 }
-                mimeType == "application/pdf" || uri.path?.endsWith(".pdf") == true -> {
+                isPdf -> {
                     // Try parsing as normal text streams first.
                     // If stream text returns empty, fallback to OCR!
                     var textExtracted = false

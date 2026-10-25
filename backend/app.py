@@ -143,6 +143,33 @@ async def synthesize_tts(req: TTSRequest):
     return {"status": "fallback_client_speech", "message": "Using browser Web Speech Synthesis"}
 
 
+@app.post("/api/chat")
+async def chat_http_endpoint(req: ChatRequest):
+    retrieval_meta = None
+    accumulated_tokens = []
+
+    query_lower = req.query.lower()
+    is_latest = any(w in query_lower for w in ["latest", "news", "today", "current", "price", "weather", "2026", "who is", "what happened"])
+    use_online = bool(req.use_online_rag or is_latest)
+
+    async for event in engine.process_query_stream(
+        query=req.query,
+        pack_id=req.pack_id or "all",
+        use_online_rag=use_online,
+        history=req.history or []
+    ):
+        if event.get("type") == "retrieval_meta":
+            retrieval_meta = event.get("data")
+        elif event.get("type") == "token":
+            accumulated_tokens.append(event.get("token", ""))
+
+    return {
+        "status": "success",
+        "retrieval_meta": retrieval_meta,
+        "response": "".join(accumulated_tokens)
+    }
+
+
 @app.websocket("/ws/chat")
 async def websocket_chat_endpoint(websocket: WebSocket):
     await websocket.accept()
@@ -158,10 +185,14 @@ async def websocket_chat_endpoint(websocket: WebSocket):
             if not query.strip():
                 continue
 
+            query_lower = query.lower()
+            is_latest = any(w in query_lower for w in ["latest", "news", "today", "current", "price", "weather", "2026", "who is", "what happened"])
+            effective_online = bool(use_online_rag or is_latest)
+
             async for event in engine.process_query_stream(
                 query=query,
                 pack_id=pack_id,
-                use_online_rag=use_online_rag,
+                use_online_rag=effective_online,
                 history=history
             ):
                 await websocket.send_text(json.dumps(event))

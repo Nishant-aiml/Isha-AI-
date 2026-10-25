@@ -46,6 +46,18 @@
                 android:textColor="#10B981" />
         </LinearLayout>
 
+        <!-- Live Online RAG Toggle Button -->
+        <Button
+            android:id="@+id/btnToggleLiveWeb"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:text="🌐 Live Web: ON"
+            android:textSize="10sp"
+            android:background="@drawable/bg_pill_button"
+            android:textColor="#0284C7"
+            android:layout_marginEnd="6dp"
+            style="?android:attr/borderlessButtonStyle" />
+
         <!-- Diagnostics Toggle Button (Discreet for Pro/Devs) -->
         <Button
             android:id="@+id/btnToggleDiagnostics"

@@ -41,7 +41,7 @@ class IshaRAGManager(private val context: Context) {
             val pages = mutableListOf<Pair<Int, String>>()
             
             // Step 2: Stream page extraction (Issue 2 - heap protection)
-            IshaDocumentParser.parseUriStreamed(context, uri, mimeType, object : IshaDocumentParser.ParserListener {
+            IshaDocumentParser.parseUriStreamed(context, uri, mimeType, fileName, object : IshaDocumentParser.ParserListener {
                 override fun onPageParsed(pageNum: Int, text: String) {
                     pages.add(Pair(pageNum, text))
                 }
@@ -226,5 +226,51 @@ class IshaRAGManager(private val context: Context) {
         }
 
         return chunks
+    }
+
+    suspend fun preloadKnowledgePacks() = withContext(Dispatchers.IO) {
+        val db = context.db
+        try {
+            val assetManager = context.assets
+            val packFiles = assetManager.list("knowledge_packs") ?: return@withContext
+            var totalPreloaded = 0
+
+            for (file in packFiles) {
+                if (!file.endsWith(".json")) continue
+                val existingHash = db.getDocumentHash(file)
+                if (existingHash != null) continue // already loaded
+
+                val inputStream = assetManager.open("knowledge_packs/$file")
+                val jsonString = inputStream.bufferedReader().use { it.readText() }
+                val jsonObject = org.json.JSONObject(jsonString)
+                val packTitle = jsonObject.optString("title", file)
+                val chunksArray = jsonObject.optJSONArray("chunks") ?: org.json.JSONArray()
+
+                val docId = db.registerDocument(packTitle, "builtin_$file", jsonString.length.toLong())
+                val dbChunksList = mutableListOf<Pair<Int, String>>()
+                val dbChunkHashes = mutableListOf<String>()
+
+                for (i in 0 until chunksArray.length()) {
+                    val chunkObj = chunksArray.getJSONObject(i)
+                    val chunkId = chunkObj.optString("id", "${file}_$i")
+                    val chunkText = chunkObj.optString("text", "")
+                    val isLast = (i == chunksArray.length() - 1)
+
+                    IshaRuntime.ingestChunkNative(chunkId, chunkText, "local_rag", isLast)
+                    dbChunksList.add(Pair(docId.toInt(), chunkText))
+                    dbChunkHashes.add(chunkId)
+                }
+
+                db.insertChunksBatched(docId, dbChunksList, dbChunkHashes)
+                db.updateDocChunkCount(docId, dbChunksList.size)
+                totalPreloaded += dbChunksList.size
+                Log.i(TAG, "Preloaded knowledge pack $packTitle (${dbChunksList.size} chunks)")
+            }
+            if (totalPreloaded > 0) {
+                Log.i(TAG, "All domain knowledge packs preloaded successfully ($totalPreloaded total chunks).")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed preloading knowledge packs: ${e.message}")
+        }
     }
 }

@@ -1,0 +1,27 @@
+{
+  "title": "Shiksha STEM & Reasoning",
+  "description": "Scientific constants, physics laws, calculus, biological pathways, and competitive exam reasoning concepts.",
+  "icon": "🎓",
+  "chunks": [
+    {
+      "id": "shiksha_001",
+      "title": "Newton's Laws of Motion & Momentum",
+      "text": "Newton's First Law (Law of Inertia): An object remains at rest or in uniform motion along a straight line unless acted upon by an external net force. Second Law: Net force equals the rate of change of linear momentum F = dp/dt = m*a. Third Law: For every action force, there is an equal and opposite reaction force acting on different bodies simultaneously."
+    },
+    {
+      "id": "shiksha_002",
+      "title": "Thermodynamics Laws & Carnot Efficiency",
+      "text": "Zeroth Law: Defines temperature via thermal equilibrium. First Law (Conservation of Energy): ΔU = Q - W. Second Law: Total entropy of an isolated system never decreases; heat cannot spontaneously flow from cooler to hotter body without work. Carnot engine maximum efficiency: η = 1 - (T_cold / T_hot), where temperatures are in Kelvin."
+    },
+    {
+      "id": "shiksha_003",
+      "title": "Photosynthesis Light and Dark Reactions",
+      "text": "Photosynthesis equation: 6CO2 + 6H2O + light -> C6H12O6 + 6O2. Light reactions occur in thylakoid membranes, producing ATP and NADPH via photophosphorylation while releasing oxygen from photolysis of water. Dark reactions (Calvin Cycle) occur in the stroma, where RuBisCO enzyme fixes CO2 into 3-PGA, synthesizing glyceraldehyde-3-phosphate (G3P)."
+    },
+    {
+      "id": "shiksha_004",
+      "title": "Fundamental Calculus Derivatives and Integrals",
+      "text": "Standard derivative rules: d/dx(x^n) = n*x^(n-1); d/dx(sin x) = cos x; d/dx(cos x) = -sin x; d/dx(e^x) = e^x; d/dx(ln x) = 1/x. Product rule: (u*v)' = u'v + uv'. Chain rule: d/dx[f(g(x))] = f'(g(x))*g'(x). Fundamental Theorem of Calculus connects differentiation and integration: ∫ from a to b of f(x) dx = F(b) - F(a)."
+    }
+  ]
+}

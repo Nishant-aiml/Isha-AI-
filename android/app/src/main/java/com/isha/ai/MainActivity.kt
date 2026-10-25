@@ -38,6 +38,8 @@ class MainActivity : Activity() {
     // RAG components
     private lateinit var ragManager: IshaRAGManager
     private val PICK_DOCUMENT_REQUEST = 1001
+    private var isLiveWebActive = true
+    private var isNeuralModelLoaded = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         coldStartStart = SystemClock.elapsedRealtime()
@@ -103,6 +105,7 @@ class MainActivity : Activity() {
         // Stitch UI Controls & Dev Diagnostics Toggle
         val panelDevDiagnostics = findViewById<LinearLayout>(R.id.panelDevDiagnostics)
         val btnToggleDiagnostics = findViewById<Button>(R.id.btnToggleDiagnostics)
+        val btnToggleLiveWeb = findViewById<Button>(R.id.btnToggleLiveWeb)
         val cardWelcomeHero = findViewById<LinearLayout>(R.id.cardWelcomeHero)
         val chipRust = findViewById<Button>(R.id.chipRust)
         val chipDose = findViewById<Button>(R.id.chipDose)
@@ -116,6 +119,25 @@ class MainActivity : Activity() {
                 panelDevDiagnostics.visibility = View.VISIBLE
                 btnToggleDiagnostics.text = "✖ Close Specs"
             }
+        }
+
+        btnToggleLiveWeb?.setOnClickListener {
+            isLiveWebActive = !isLiveWebActive
+            if (isLiveWebActive) {
+                btnToggleLiveWeb.text = "🌐 Live Web: ON"
+                btnToggleLiveWeb.setTextColor(android.graphics.Color.parseColor("#0284C7"))
+                Toast.makeText(this, "Live Web Search Active", Toast.LENGTH_SHORT).show()
+            } else {
+                btnToggleLiveWeb.text = "🌐 Live Web: OFF"
+                btnToggleLiveWeb.setTextColor(android.graphics.Color.parseColor("#64748B"))
+                Toast.makeText(this, "100% On-Device Mode", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        // Automatically preload built-in domain knowledge packs on startup
+        mainScope.launch {
+            ragManager.preloadKnowledgePacks()
+            refreshDocLibrary(layoutDocList, txtIndexChunks, txtIndexSize)
         }
 
         // JNI Crash containment lockfile detection
@@ -205,6 +227,7 @@ class MainActivity : Activity() {
                 return@setOnClickListener
             }
             if (IshaRuntime.loadModelTier("qwen-0.5b", 84)) {
+                isNeuralModelLoaded = true
                 txtActiveModel.text = "Active Model: Battery Saver (Qwen 0.5B)"
                 txtChatLog.text = "[Success: Loaded Qwen2.5-0.5B-Instruct! Ready for local grounded chat.]"
             }
@@ -217,6 +240,7 @@ class MainActivity : Activity() {
                 return@setOnClickListener
             }
             if (IshaRuntime.loadModelTier("qwen-1.5b", 700)) {
+                isNeuralModelLoaded = true
                 txtActiveModel.text = "Active Model: Standard (Qwen 1.5B)"
                 txtChatLog.text = "[Success: Loaded Qwen2.5-1.5B-Instruct! Ready for local grounded chat.]"
             }
@@ -224,6 +248,7 @@ class MainActivity : Activity() {
 
         btnUnload.setOnClickListener {
             if (IshaRuntime.unloadModelTier()) {
+                isNeuralModelLoaded = false
                 txtActiveModel.text = "Active Model: UNLOADED"
                 txtChatLog.text = "[Success: Model weights unloaded from RAM.]"
             }
@@ -336,6 +361,8 @@ class MainActivity : Activity() {
                 putExtra(Intent.EXTRA_MIME_TYPES, arrayOf(
                     "text/plain",
                     "text/markdown",
+                    "text/csv",
+                    "application/json",
                     "application/pdf",
                     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                     "image/jpeg",
@@ -345,7 +372,15 @@ class MainActivity : Activity() {
             startActivityForResult(intent, PICK_DOCUMENT_REQUEST)
         }
 
-        // Chat Streaming & Context Retrieval
+        // Chat Streaming & Grounded Hybrid RAG Retrieval (Local + Live Internet)
+        fun isLatestOrCurrentQuery(query: String): Boolean {
+            val q = query.lowercase()
+            return q.contains("latest") || q.contains("news") || q.contains("today") ||
+                   q.contains("current") || q.contains("price") || q.contains("weather") ||
+                   q.contains("2026") || q.contains("who is") || q.contains("what happened") ||
+                   q.contains("online") || q.contains("internet")
+        }
+
         btnSend.setOnClickListener {
             val prompt = editPrompt.text.toString().trim()
             if (prompt.isEmpty()) return@setOnClickListener
@@ -355,9 +390,10 @@ class MainActivity : Activity() {
             txtChatLog.text = "User: $prompt\n\nAI: "
             layoutCitations.visibility = View.GONE
 
-            // Step 1: Query local vector index (Issue 4 - context caps)
+            // Step 1: Query local vector index
             val contextPayload = IshaRuntime.retrieveContextNative(prompt, "local_rag", 4)
             val citationsList = mutableListOf<String>()
+            val localChunksList = mutableListOf<String>()
             val contextBuilder = StringBuilder()
             var contextLength = 0
 
@@ -371,9 +407,8 @@ class MainActivity : Activity() {
                         val text = parts[1]
                         val score = parts[2].toDoubleOrNull() ?: 0.0
 
-                        // JNI retrieval already filters semantic matches at 0.35
-                        // and applies BM25-lite fallback; accept all JNI outputs here.
-                        citationsList.add("Source: $chunkId (score: %.2f)".format(score))
+                        citationsList.add("📚 Local: $chunkId (score: %.2f)".format(score))
+                        localChunksList.add(text)
                         contextBuilder.append(text).append("\n\n")
                         contextLength += text.length
                         if (contextLength >= 6000 || citationsList.size >= 4) break
@@ -381,55 +416,74 @@ class MainActivity : Activity() {
                 }
             }
 
-            // Document indexed check (Issue 10)
-            val documentCount = db.getDocumentsList().size
-            if (documentCount > 0 && citationsList.isEmpty()) {
-                // Documents exist but similarity is below threshold: reject query safely to prevent hallucinations
-                txtChatLog.text = "User: $prompt\n\nAI: I couldn't find enough reliable information in your documents."
-                return@setOnClickListener
-            }
-
-            // Construct Grounded ChatTemplate (Issue 4 / Issue 10 compliance)
-            val finalPrompt = if (citationsList.isNotEmpty()) {
-                val contextText = contextBuilder.toString().trim()
-                txtCitations.text = citationsList.joinToString("\n")
-                layoutCitations.visibility = View.VISIBLE
-
-                "<|im_start|>system\nYou are ISHA AI. Answer the user query using ONLY the verified context below. If the context does not contain the answer, say honestly that you do not know. DO NOT hallucinate.\n\n[CONTEXT]\n$contextText\n<|im_end|>\n<|im_start|>user\n$prompt<|im_end|>\n<|im_start|>assistant\n"
-            } else {
-                "<|im_start|>system\nYou are ISHA AI, a helpful, offline-first local assistant.<|im_end|>\n<|im_start|>user\n$prompt<|im_end|>\n<|im_start|>assistant\n"
-            }
-
+            // Step 2: Live Online Web Search and Generation
             streamJob?.cancel()
-            val sessionChannel = Channel<String>(Channel.UNLIMITED)
-            
-            mainScope.launch(Dispatchers.IO) {
-                IshaRuntime.streamTokens(finalPrompt, object : TokenCallback {
-                    override fun onToken(token: String) {
-                        sessionChannel.trySend(token)
-                    }
-                })
-            }
-
-            // 15Hz Refresh Gate UI loop (Phase 1 compliance)
             streamJob = mainScope.launch {
-                val buffer = StringBuilder()
-                var lastUpdate = SystemClock.elapsedRealtime()
+                var webSources = emptyList<WebSource>()
+                val shouldSearchWeb = isLiveWebActive || isLatestOrCurrentQuery(prompt) || localChunksList.isEmpty()
 
-                try {
-                    while (true) {
-                        val token = sessionChannel.receive()
-                        buffer.append(token)
-
-                        val now = SystemClock.elapsedRealtime()
-                        if (now - lastUpdate >= 66 || sessionChannel.isEmpty) {
-                            val cleanOutput = buffer.toString().trimStart()
-                            txtChatLog.text = "User: $prompt\n\nAI: ${cleanOutput}"
-                            lastUpdate = now
+                if (shouldSearchWeb) {
+                    txtChatLog.text = "User: $prompt\n\nAI: 🌐 Connecting to internet & searching live web..."
+                    try {
+                        webSources = IshaOnlineRAG.searchLiveWeb(prompt, 3)
+                        for (w in webSources) {
+                            citationsList.add("🌐 Web: ${w.title}")
                         }
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Online web retrieval error: ${e.message}")
                     }
-                } catch (e: Exception) {
-                    // Channel closed or coroutine cancelled
+                }
+
+                if (citationsList.isNotEmpty()) {
+                    txtCitations.text = citationsList.joinToString("\n")
+                    layoutCitations.visibility = View.VISIBLE
+                }
+
+                // Step 3: Stream Output
+                if (isNeuralModelLoaded) {
+                    // Stream from loaded GGUF neural model
+                    val contextText = contextBuilder.toString().trim()
+                    val finalPrompt = if (citationsList.isNotEmpty()) {
+                        "<|im_start|>system\nYou are ISHA AI. Answer using ONLY verified context:\n$contextText\n<|im_end|>\n<|im_start|>user\n$prompt<|im_end|>\n<|im_start|>assistant\n"
+                    } else {
+                        "<|im_start|>system\nYou are ISHA AI, a helpful on-device assistant.<|im_end|>\n<|im_start|>user\n$prompt<|im_end|>\n<|im_start|>assistant\n"
+                    }
+
+                    val sessionChannel = Channel<String>(Channel.UNLIMITED)
+                    mainScope.launch(Dispatchers.IO) {
+                        IshaRuntime.streamTokens(finalPrompt, object : TokenCallback {
+                            override fun onToken(token: String) {
+                                sessionChannel.trySend(token)
+                            }
+                        })
+                    }
+
+                    val buffer = StringBuilder()
+                    var lastUpdate = SystemClock.elapsedRealtime()
+                    try {
+                        while (true) {
+                            val token = sessionChannel.receive()
+                            buffer.append(token)
+                            val now = SystemClock.elapsedRealtime()
+                            if (now - lastUpdate >= 66 || sessionChannel.isEmpty) {
+                                txtChatLog.text = "User: $prompt\n\nAI: ${buffer.toString().trimStart()}"
+                                lastUpdate = now
+                            }
+                        }
+                    } catch (e: Exception) {}
+                } else {
+                    // Instant out-of-the-box Grounded Cognitive Generator
+                    val buffer = StringBuilder()
+                    txtChatLog.text = "User: $prompt\n\nAI: "
+                    IshaCognitiveGenerator.streamSynthesizedAnswer(
+                        prompt,
+                        citationsList,
+                        localChunksList,
+                        webSources
+                    ) { token ->
+                        buffer.append(token)
+                        txtChatLog.text = "User: $prompt\n\nAI: ${buffer.toString()}"
+                    }
                 }
             }
         }

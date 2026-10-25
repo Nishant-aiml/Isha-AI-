@@ -1,0 +1,42 @@
+{
+  "title": "Swasthya Rakshak (Health & First Aid)",
+  "description": "Essential medical guidance: first aid, pediatric dosage guidelines, disease prevention, and emergency response.",
+  "icon": "🩺",
+  "chunks": [
+    {
+      "id": "swasthya_001",
+      "title": "Pediatric Paracetamol Dosage Protocol",
+      "text": "Paracetamol dosage for children is strictly weight-based: 10 to 15 mg per kg body weight per dose, administered every 4 to 6 hours as needed. Maximum 4 doses (or 60 mg/kg) within 24 hours. Always use an oral dosing syringe, never a household teaspoon. Never combine with other multi-symptom cold medicines containing paracetamol."
+    },
+    {
+      "id": "swasthya_002",
+      "title": "Diarrhea & Dehydration ORS Preparation",
+      "text": "Oral Rehydration Salts (ORS) is the cornerstone treatment for acute diarrhea. Dissolve 1 full WHO-formula ORS sachet into exactly 1 litre of clean boiled and cooled drinking water. Stir until completely dissolved. Give frequent small sips. Accompany with Zinc supplement tablets (20 mg daily for children >6 months, 10 mg for <6 months) for 14 continuous days."
+    },
+    {
+      "id": "swasthya_003",
+      "title": "First Aid for Burns & Scalds",
+      "text": "Immediately immerse the burned area under cold, gentle running water for at least 20 minutes to halt thermal tissue destruction. Remove tight jewellery before swelling occurs. Cover loosely with sterile cling film or clean non-adherent cloth. DO NOT apply ice, toothpastes, turmeric, butter, or oil. Seek urgent medical attention if the burn exceeds the size of the victim's palm."
+    },
+    {
+      "id": "swasthya_004",
+      "title": "Dengue Warning Signs & Monitoring",
+      "text": "Critical phase of Dengue occurs between days 3 and 7 when fever drops. Danger signs requiring immediate hospitalization: severe persistent abdominal pain, recurrent vomiting, bleeding gums or nose, mucosal hemorrhage, extreme lethargy, sudden drop in platelet count accompanied by rise in hematocrit. Avoid Aspirin and Ibuprofen; only use Paracetamol."
+    },
+    {
+      "id": "swasthya_005",
+      "title": "Adult Hands-Only CPR Protocol",
+      "text": "If an adult collapses and is unresponsive and not breathing normally: 1. Call emergency services (112 / 108) immediately. 2. Position the heel of your hand on the centre of the patient's chest. 3. Push hard and fast at a rate of 100 to 120 compressions per minute to a depth of 5-6 cm (about 2 inches). Allow complete chest recoil between each push."
+    },
+    {
+      "id": "swasthya_006",
+      "title": "Hypertension & Diabetes Dietary Management",
+      "text": "Hypertension: Restrict dietary sodium to less than 2 grams per day (under 5 grams of table salt). Increase dietary potassium through bananas, green leafy vegetables, and lentils. Diabetes: Prioritize high-fiber complex carbohydrates (whole grains, millets), avoid refined sugars and sugary beverages, and engage in minimum 150 minutes of moderate aerobic exercise weekly."
+    },
+    {
+      "id": "swasthya_007",
+      "title": "Ayushman Bharat PM-JAY Scheme Details",
+      "text": "Ayushman Bharat Pradhan Mantri Jan Arogya Yojana (PM-JAY) provides cashless secondary and tertiary hospitalization cover of up to ₹5,00,000 per family per year across empaneled public and private hospitals across India. Covers pre-existing conditions from day one, including pre- and post-hospitalization expenses for up to 15 days."
+    }
+  ]
+}

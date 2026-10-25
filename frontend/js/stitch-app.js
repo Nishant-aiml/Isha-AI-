@@ -361,11 +361,19 @@ function dispatchQuery() {
   // Prepare Assistant message container
   prepareAssistantStreamBubble();
 
+  // Auto-detect latest/current queries to ensure Live Web RAG is engaged
+  const isLatest = /latest|news|today|current|price|weather|2026|who is|what happened|online|internet/i.test(query);
+  const effectiveOnline = isOnlineRagActive || isLatest;
+  if (isLatest && !isOnlineRagActive) {
+    isOnlineRagActive = true;
+    updateOnlineRagUI();
+  }
+
   // Send over WebSocket or fallback to HTTP
   const payload = {
     query: query,
     pack_id: activePack,
-    use_online_rag: isOnlineRagActive,
+    use_online_rag: effectiveOnline,
     history: chatHistory.slice(-4)
   };
 
@@ -376,6 +384,36 @@ function dispatchQuery() {
   } else {
     console.warn("[ISHA] Using HTTP fallback");
     fallbackHttpQuery(payload);
+  }
+}
+
+async function fallbackHttpQuery(payload) {
+  isGenerating = true;
+  updateSendBtnState(true);
+  try {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.retrieval_meta) {
+      renderRetrievalTrace(data.retrieval_meta);
+    }
+    accumulatedMarkdown = data.response || "I could not find an answer.";
+    if (currentStreamBubble) {
+      currentStreamBubble.innerHTML = marked.parse(accumulatedMarkdown);
+      appendMessageActions(currentStreamBubble.parentElement, accumulatedMarkdown);
+      scrollChatToBottom();
+    }
+    chatHistory.push({ role: "assistant", content: accumulatedMarkdown });
+  } catch (err) {
+    if (currentStreamBubble) {
+      currentStreamBubble.innerHTML = `<span style="color:#ef4444">Error: ${escapeHtml(err.message)}</span>`;
+    }
+  } finally {
+    isGenerating = false;
+    updateSendBtnState(false);
   }
 }
 

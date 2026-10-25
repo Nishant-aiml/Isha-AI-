@@ -1,0 +1,47 @@
+{
+  "title": "Kisan Saathi (Agriculture & Crop Care)",
+  "description": "Offline agricultural advisor: crop diseases, soil health, fertilizer dosing, weather precautions, and government schemes.",
+  "icon": "🌾",
+  "chunks": [
+    {
+      "id": "kisan_001",
+      "title": "Wheat Nitrogen Deficiency & Correction",
+      "text": "Nitrogen deficiency in wheat causes yellowing of lower leaves, stunted plant height, and reduced tillering. Correction: Apply 60 kg/ha urea at basal dose and top-dress remaining 60 kg/ha in two splits during crown root initiation (CRI, 21 days) and heading stage. Ensure soil has adequate moisture."
+    },
+    {
+      "id": "kisan_002",
+      "title": "Wheat Rust (Yellow and Brown) Identification & Treatment",
+      "text": "Yellow/Stripe Rust appears as bright yellow linear pustules arranged in parallel lines on leaf blades. Brown/Leaf rust appears as scattered circular orange-brown pustules. Spray Propiconazole 25% EC at 1 ml/litre or Tebuconazole 25.9% EC at 1 ml/litre immediately upon sighting. Repeat in 15 days if infection persists."
+    },
+    {
+      "id": "kisan_003",
+      "title": "Rice Blast Disease Management",
+      "text": "Rice Blast (Magnaporthe oryzae) manifests as spindle-shaped or diamond lesions with greyish centres and brown margins on leaves, collars, and neck. Spray Tricyclazole 75% WP at 0.6 g/litre water or Isoprothiolane 40% EC at 1.5 ml/litre. Avoid excessive nitrogen fertilizer during cloudy weather."
+    },
+    {
+      "id": "kisan_004",
+      "title": "Phosphorus and Potassium Deficiencies",
+      "text": "Phosphorus deficiency shows purplish or dark bronze discoloration on leaf edges and stunted roots; correct by applying Diammonium Phosphate (DAP) at 100 kg/ha at sowing. Potassium deficiency causes burning/scorching along leaf tips and margins; correct with MOP (Muriate of Potash) before flowering stage."
+    },
+    {
+      "id": "kisan_005",
+      "title": "Cotton Pink Bollworm Control",
+      "text": "Pink bollworm damages flower buds ('rosette flowers') and seeds inside developing bolls. Install pheromone traps at 5 traps/acre for monitoring. If catches exceed 8 moths/trap for 3 consecutive days, spray Profenofos 50% EC at 2 ml/litre or Chlorantraniliprole 18.5% SC at 0.3 ml/litre."
+    },
+    {
+      "id": "kisan_006",
+      "title": "Drip Irrigation Water Savings & Soil Testing",
+      "text": "Drip irrigation delivers water directly to plant root zones, saving 40-60% water over flood irrigation while boosting crop yields by 20-30%. Soil pH between 6.0 and 7.5 is optimal for nutrient uptake. Apply agricultural lime (CaCO3) for acidic soils (pH < 6.0) and gypsum for alkaline soils (pH > 8.2)."
+    },
+    {
+      "id": "kisan_007",
+      "title": "PM-Kisan & Pradhan Mantri Fasal Bima Yojana",
+      "text": "Under PM-KISAN, eligible landholding farmer families receive direct income support of ₹6,000 per year in three equal instalments of ₹2,000 via DBT. Under PMFBY, premium rates are 2% for Kharif food/oilseeds, 1.5% for Rabi crops, and 5% for annual commercial/horticultural crops, covering post-harvest and localized calamities."
+    },
+    {
+      "id": "kisan_008",
+      "title": "Organic Pest Repellents (Neemastra & Bramhastra)",
+      "text": "Neemastra formula: 5 kg crushed neem leaves + 5 litres cow urine + 2 kg cow dung fermented in 100 litres water for 48 hours; controls sucking pests and caterpillars. Bramhastra: Boil crushed neem, custard apple, papaya, and guava leaves in cow urine; spray at 30 ml per litre for borers."
+    }
+  ]
+}

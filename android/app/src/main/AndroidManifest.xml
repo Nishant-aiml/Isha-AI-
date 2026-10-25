@@ -6,6 +6,8 @@
     <application
         android:allowBackup="false"
         android:label="ISHA AI"
+        android:icon="@drawable/app_dp"
+        android:roundIcon="@drawable/app_dp"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.Light.NoActionBar">
         

@@ -82,22 +82,40 @@ class MainActivity : Activity() {
 
         // Tab Switching Logic
         tabChat.setOnClickListener {
-            tabChat.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#2563EB"))
+            tabChat.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#F59E0B"))
             tabChat.setTextColor(android.graphics.Color.WHITE)
-            tabLibrary.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#E5E7EB"))
-            tabLibrary.setTextColor(android.graphics.Color.parseColor("#374151"))
+            tabLibrary.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#F1F5F9"))
+            tabLibrary.setTextColor(android.graphics.Color.parseColor("#475569"))
             viewChatConsole.visibility = View.VISIBLE
             viewDocLibrary.visibility = View.GONE
         }
 
         tabLibrary.setOnClickListener {
-            tabLibrary.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#2563EB"))
+            tabLibrary.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#F59E0B"))
             tabLibrary.setTextColor(android.graphics.Color.WHITE)
-            tabChat.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#E5E7EB"))
-            tabChat.setTextColor(android.graphics.Color.parseColor("#374151"))
+            tabChat.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#F1F5F9"))
+            tabChat.setTextColor(android.graphics.Color.parseColor("#475569"))
             viewDocLibrary.visibility = View.VISIBLE
             viewChatConsole.visibility = View.GONE
             refreshDocLibrary(layoutDocList, txtIndexChunks, txtIndexSize)
+        }
+
+        // Stitch UI Controls & Dev Diagnostics Toggle
+        val panelDevDiagnostics = findViewById<LinearLayout>(R.id.panelDevDiagnostics)
+        val btnToggleDiagnostics = findViewById<Button>(R.id.btnToggleDiagnostics)
+        val cardWelcomeHero = findViewById<LinearLayout>(R.id.cardWelcomeHero)
+        val chipRust = findViewById<Button>(R.id.chipRust)
+        val chipDose = findViewById<Button>(R.id.chipDose)
+        val chipFIR = findViewById<Button>(R.id.chipFIR)
+
+        btnToggleDiagnostics?.setOnClickListener {
+            if (panelDevDiagnostics.visibility == View.VISIBLE) {
+                panelDevDiagnostics.visibility = View.GONE
+                btnToggleDiagnostics.text = "⚙️ Dev Specs"
+            } else {
+                panelDevDiagnostics.visibility = View.VISIBLE
+                btnToggleDiagnostics.text = "✖ Close Specs"
+            }
         }
 
         // JNI Crash containment lockfile detection
@@ -106,9 +124,11 @@ class MainActivity : Activity() {
         if (crashLockFile.exists()) {
             previousCrashDetected = true
             Log.e(TAG, "🚨 Relocation error or native crash detected in previous run. Disabling auto-loads.")
+            panelDevDiagnostics?.visibility = View.VISIBLE
             panelSafeMode.visibility = View.VISIBLE
             txtSafeModeReason.text = "Native crash detected. Skip auto-loading to prevent crash loops."
         } else {
+            panelSafeMode.visibility = View.GONE
             try {
                 crashLockFile.createNewFile()
             } catch (e: Exception) {
@@ -153,9 +173,20 @@ class MainActivity : Activity() {
         val btnOpenRecovery = findViewById<Button>(R.id.btnOpenRecovery)
 
         if (!previousCrashDetected) {
-            panelSafeMode.visibility = View.VISIBLE
-            txtSafeModeReason.text = String.format("Vivo T3 Hardware Profile: %d Core CPU, %dMB RAM. Qwen 1.5B Standard recommended.",
-                cpuCores, totalRamMb)
+            panelSafeMode.visibility = View.GONE
+        }
+
+        chipRust?.setOnClickListener {
+            editPrompt.setText("Wheat yellow rust symptoms and spray dosage")
+            btnSend.performClick()
+        }
+        chipDose?.setOnClickListener {
+            editPrompt.setText("What is paracetamol dosage for a 12 kg child?")
+            btnSend.performClick()
+        }
+        chipFIR?.setOnClickListener {
+            editPrompt.setText("Legal process if police station refuses to file FIR")
+            btnSend.performClick()
         }
 
         // Display cold start timing
@@ -319,6 +350,7 @@ class MainActivity : Activity() {
             val prompt = editPrompt.text.toString().trim()
             if (prompt.isEmpty()) return@setOnClickListener
             editPrompt.text.clear()
+            cardWelcomeHero?.visibility = View.GONE
 
             txtChatLog.text = "User: $prompt\n\nAI: "
             layoutCitations.visibility = View.GONE

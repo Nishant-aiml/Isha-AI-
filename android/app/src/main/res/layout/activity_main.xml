@@ -890,94 +890,316 @@
                         android:textColor="#64748B"
                         android:layout_marginBottom="8dp"/>
 
-                    <!-- Model 1: Qwen 0.5B -->
+                    <!-- Model 1: Qwen 0.5B Card -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        android:layout_marginBottom="8dp">
+                        android:orientation="vertical"
+                        android:background="#F8FAFC"
+                        android:padding="10dp"
+                        android:layout_marginBottom="10dp">
+
                         <LinearLayout
-                            android:layout_width="0dp"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical">
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Qwen 2.5 0.5B (Battery Saver)"
+                                    android:textStyle="bold"
+                                    android:textSize="11sp"
+                                    android:textColor="#0F172A"/>
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="~390 MB • 3-4GB RAM phones • Q4_K_M"
+                                    android:textSize="9sp"
+                                    android:textColor="#64748B"/>
+                            </LinearLayout>
                             <TextView
+                                android:id="@+id/txtHubStatus05B"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Qwen 2.5 0.5B (Battery Saver)"
-                                android:textStyle="bold"
-                                android:textSize="11sp"
-                                android:textColor="#0F172A"/>
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="~390MB • 3-4GB RAM phones"
+                                android:text="⚪ Not Downloaded (0 MB)"
                                 android:textSize="9sp"
+                                android:textStyle="bold"
                                 android:textColor="#64748B"/>
                         </LinearLayout>
-                        <Button android:id="@+id/btnHubDownload05B" android:layout_width="wrap_content" android:layout_height="32dp" android:text="Download" android:textSize="9sp"/>
-                        <Button android:id="@+id/btnHubLoad05B" android:layout_width="wrap_content" android:layout_height="32dp" android:text="Load" android:textSize="9sp" android:layout_marginStart="4dp"/>
+
+                        <!-- Progress Bar & MB Counter (Visible during download) -->
+                        <LinearLayout
+                            android:id="@+id/layoutHubProgress05B"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:visibility="gone"
+                            android:layout_marginTop="6dp"
+                            android:layout_marginBottom="4dp">
+                            <TextView
+                                android:id="@+id/txtHubProgress05B"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="Downloading: 0 MB / 392 MB (0%)"
+                                android:textSize="9sp"
+                                android:textColor="#2563EB"
+                                android:textStyle="bold"/>
+                            <ProgressBar
+                                android:id="@+id/progressHub05B"
+                                style="?android:attr/progressBarStyleHorizontal"
+                                android:layout_width="match_parent"
+                                android:layout_height="6dp"
+                                android:layout_marginTop="3dp"
+                                android:max="100"
+                                android:progress="0"/>
+                        </LinearLayout>
+
+                        <!-- Action buttons: Download, Load, Delete -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:layout_marginTop="6dp">
+                            <Button
+                                android:id="@+id/btnHubDownload05B"
+                                android:layout_width="0dp"
+                                android:layout_height="32dp"
+                                android:layout_weight="1"
+                                android:text="⬇️ Download"
+                                android:textSize="9sp"
+                                android:layout_marginEnd="4dp"/>
+                            <Button
+                                android:id="@+id/btnHubLoad05B"
+                                android:layout_width="0dp"
+                                android:layout_height="32dp"
+                                android:layout_weight="1"
+                                android:text="⚡ Load"
+                                android:textSize="9sp"
+                                android:layout_marginEnd="4dp"/>
+                            <Button
+                                android:id="@+id/btnHubDelete05B"
+                                android:layout_width="0dp"
+                                android:layout_height="32dp"
+                                android:layout_weight="1"
+                                android:text="🗑️ Delete"
+                                android:textSize="9sp"
+                                android:textColor="#DC2626"/>
+                        </LinearLayout>
                     </LinearLayout>
 
-                    <!-- Model 2: Llama 3.2 1B -->
+                    <!-- Model 2: Llama 3.2 1B Card -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        android:layout_marginBottom="8dp">
+                        android:orientation="vertical"
+                        android:background="#F8FAFC"
+                        android:padding="10dp"
+                        android:layout_marginBottom="10dp">
+
                         <LinearLayout
-                            android:layout_width="0dp"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical">
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Llama 3.2 1B (Meta Edge SLM)"
+                                    android:textStyle="bold"
+                                    android:textSize="11sp"
+                                    android:textColor="#0F172A"/>
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="~800 MB • 4-6GB RAM phones • Q4_K_M"
+                                    android:textSize="9sp"
+                                    android:textColor="#64748B"/>
+                            </LinearLayout>
                             <TextView
+                                android:id="@+id/txtHubStatus1B"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Llama 3.2 1B (Meta Edge SLM)"
-                                android:textStyle="bold"
-                                android:textSize="11sp"
-                                android:textColor="#0F172A"/>
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="~800MB • 4-6GB RAM phones"
+                                android:text="⚪ Not Downloaded (0 MB)"
                                 android:textSize="9sp"
+                                android:textStyle="bold"
                                 android:textColor="#64748B"/>
                         </LinearLayout>
-                        <Button android:id="@+id/btnHubDownload1B" android:layout_width="wrap_content" android:layout_height="32dp" android:text="Download" android:textSize="9sp"/>
-                        <Button android:id="@+id/btnHubLoad1B" android:layout_width="wrap_content" android:layout_height="32dp" android:text="Load" android:textSize="9sp" android:layout_marginStart="4dp"/>
+
+                        <!-- Progress Bar & MB Counter (Visible during download) -->
+                        <LinearLayout
+                            android:id="@+id/layoutHubProgress1B"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:visibility="gone"
+                            android:layout_marginTop="6dp"
+                            android:layout_marginBottom="4dp">
+                            <TextView
+                                android:id="@+id/txtHubProgress1B"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="Downloading: 0 MB / 800 MB (0%)"
+                                android:textSize="9sp"
+                                android:textColor="#2563EB"
+                                android:textStyle="bold"/>
+                            <ProgressBar
+                                android:id="@+id/progressHub1B"
+                                style="?android:attr/progressBarStyleHorizontal"
+                                android:layout_width="match_parent"
+                                android:layout_height="6dp"
+                                android:layout_marginTop="3dp"
+                                android:max="100"
+                                android:progress="0"/>
+                        </LinearLayout>
+
+                        <!-- Action buttons: Download, Load, Delete -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:layout_marginTop="6dp">
+                            <Button
+                                android:id="@+id/btnHubDownload1B"
+                                android:layout_width="0dp"
+                                android:layout_height="32dp"
+                                android:layout_weight="1"
+                                android:text="⬇️ Download"
+                                android:textSize="9sp"
+                                android:layout_marginEnd="4dp"/>
+                            <Button
+                                android:id="@+id/btnHubLoad1B"
+                                android:layout_width="0dp"
+                                android:layout_height="32dp"
+                                android:layout_weight="1"
+                                android:text="⚡ Load"
+                                android:textSize="9sp"
+                                android:layout_marginEnd="4dp"/>
+                            <Button
+                                android:id="@+id/btnHubDelete1B"
+                                android:layout_width="0dp"
+                                android:layout_height="32dp"
+                                android:layout_weight="1"
+                                android:text="🗑️ Delete"
+                                android:textSize="9sp"
+                                android:textColor="#DC2626"/>
+                        </LinearLayout>
                     </LinearLayout>
 
-                    <!-- Model 3: Qwen 1.5B -->
+                    <!-- Model 3: Qwen 1.5B Card -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        android:layout_marginBottom="8dp">
+                        android:orientation="vertical"
+                        android:background="#F8FAFC"
+                        android:padding="10dp"
+                        android:layout_marginBottom="10dp">
+
                         <LinearLayout
-                            android:layout_width="0dp"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical">
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Qwen 2.5 1.5B (Standard SLM)"
+                                    android:textStyle="bold"
+                                    android:textSize="11sp"
+                                    android:textColor="#0F172A"/>
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="~1.1 GB • 6-8GB RAM phones • Q4_K_M"
+                                    android:textSize="9sp"
+                                    android:textColor="#64748B"/>
+                            </LinearLayout>
                             <TextView
+                                android:id="@+id/txtHubStatus15B"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Qwen 2.5 1.5B (Standard SLM)"
-                                android:textStyle="bold"
-                                android:textSize="11sp"
-                                android:textColor="#0F172A"/>
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="~1.1GB • 6-8GB RAM phones"
+                                android:text="⚪ Not Downloaded (0 MB)"
                                 android:textSize="9sp"
+                                android:textStyle="bold"
                                 android:textColor="#64748B"/>
                         </LinearLayout>
-                        <Button android:id="@+id/btnHubDownload15B" android:layout_width="wrap_content" android:layout_height="32dp" android:text="Download" android:textSize="9sp"/>
-                        <Button android:id="@+id/btnHubLoad15B" android:layout_width="wrap_content" android:layout_height="32dp" android:text="Load" android:textSize="9sp" android:layout_marginStart="4dp"/>
+
+                        <!-- Progress Bar & MB Counter (Visible during download) -->
+                        <LinearLayout
+                            android:id="@+id/layoutHubProgress15B"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:visibility="gone"
+                            android:layout_marginTop="6dp"
+                            android:layout_marginBottom="4dp">
+                            <TextView
+                                android:id="@+id/txtHubProgress15B"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="Downloading: 0 MB / 1100 MB (0%)"
+                                android:textSize="9sp"
+                                android:textColor="#2563EB"
+                                android:textStyle="bold"/>
+                            <ProgressBar
+                                android:id="@+id/progressHub15B"
+                                style="?android:attr/progressBarStyleHorizontal"
+                                android:layout_width="match_parent"
+                                android:layout_height="6dp"
+                                android:layout_marginTop="3dp"
+                                android:max="100"
+                                android:progress="0"/>
+                        </LinearLayout>
+
+                        <!-- Action buttons: Download, Load, Delete -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:layout_marginTop="6dp">
+                            <Button
+                                android:id="@+id/btnHubDownload15B"
+                                android:layout_width="0dp"
+                                android:layout_height="32dp"
+                                android:layout_weight="1"
+                                android:text="⬇️ Download"
+                                android:textSize="9sp"
+                                android:layout_marginEnd="4dp"/>
+                            <Button
+                                android:id="@+id/btnHubLoad15B"
+                                android:layout_width="0dp"
+                                android:layout_height="32dp"
+                                android:layout_weight="1"
+                                android:text="⚡ Load"
+                                android:textSize="9sp"
+                                android:layout_marginEnd="4dp"/>
+                            <Button
+                                android:id="@+id/btnHubDelete15B"
+                                android:layout_width="0dp"
+                                android:layout_height="32dp"
+                                android:layout_weight="1"
+                                android:text="🗑️ Delete"
+                                android:textSize="9sp"
+                                android:textColor="#DC2626"/>
+                        </LinearLayout>
                     </LinearLayout>
 
                     <Button

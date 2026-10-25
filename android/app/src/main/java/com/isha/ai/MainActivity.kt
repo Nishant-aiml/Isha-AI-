@@ -138,8 +138,11 @@ class MainActivity : Activity() {
             refreshDocLibrary(layoutDocList, txtIndexChunks, txtIndexSize)
         }
 
+        var updateAllModelCards: (() -> Unit)? = null
+
         tabModels?.setOnClickListener {
             selectTab(tabModels, viewModelsHub)
+            updateAllModelCards?.invoke()
         }
 
         // Google AI Edge Gallery & Stitch UI Controls
@@ -378,147 +381,6 @@ class MainActivity : Activity() {
         // Display cold start timing
         val initEnd = SystemClock.elapsedRealtime()
         txtColdStart.text = String.format("Cold Start Latency: %d ms", initEnd - coldStartStart)
-
-        // Initial setup for buttons based on file existence on boot
-        if (File(filesDir, "qwen-0.5b.gguf").exists()) btnDownloadT0.text = "INSTALLED ✓"
-        if (File(filesDir, "qwen-1.5b.gguf").exists()) btnDownloadT1.text = "INSTALLED ✓"
-
-        // Model loaders
-        btnLoadT0.setOnClickListener {
-            val file = File(filesDir, "qwen-0.5b.gguf")
-            if (!file.exists()) {
-                txtChatLog.text = "[Error: Battery Saver (0.5B) weights are not downloaded yet.]"
-                return@setOnClickListener
-            }
-            if (IshaRuntime.loadModelTier("qwen-0.5b", 84)) {
-                isNeuralModelLoaded = true
-                txtActiveModel.text = "Active Model: Battery Saver (Qwen 0.5B)"
-                txtChatLog.text = "[Success: Loaded Qwen2.5-0.5B-Instruct! Ready for local grounded chat.]"
-            }
-        }
-
-        btnLoadT1.setOnClickListener {
-            if (deviceTier == 1) {
-                Toast.makeText(this, "Advisory: Running 1.5B weights on 3-4GB phones may trigger OS memory pressure. Battery Saver (0.5B) or Cloud Offload is recommended.", Toast.LENGTH_LONG).show()
-            }
-            val file = File(filesDir, "qwen-1.5b.gguf")
-            if (!file.exists()) {
-                txtChatLog.text = "[Error: Standard (1.5B) weights are not downloaded yet.]"
-                return@setOnClickListener
-            }
-            if (IshaRuntime.loadModelTier("qwen-1.5b", 700)) {
-                isNeuralModelLoaded = true
-                txtActiveModel.text = "Active Model: Standard (Qwen 1.5B)"
-                txtChatLog.text = "[Success: Loaded Qwen2.5-1.5B-Instruct! Ready for local grounded chat.]"
-            }
-        }
-
-        btnUnload.setOnClickListener {
-            if (IshaRuntime.unloadModelTier()) {
-                isNeuralModelLoaded = false
-                txtActiveModel.text = "Active Model: UNLOADED"
-                txtChatLog.text = "[Success: Model weights unloaded from RAM.]"
-            }
-        }
-
-        btnDeleteT0.setOnClickListener {
-            IshaRuntime.unloadModelTier()
-            txtActiveModel.text = "Active Model: UNLOADED"
-            val file = File(filesDir, "qwen-0.5b.gguf")
-            if (file.exists() && file.delete()) {
-                btnDownloadT0.text = "Download"
-                txtChatLog.text = "[Success: Battery Saver model deleted.]"
-            }
-        }
-
-        btnDeleteT1.setOnClickListener {
-            IshaRuntime.unloadModelTier()
-            txtActiveModel.text = "Active Model: UNLOADED"
-            val file = File(filesDir, "qwen-1.5b.gguf")
-            if (file.exists() && file.delete()) {
-                btnDownloadT1.text = "Download"
-                txtChatLog.text = "[Success: Standard model deleted.]"
-            }
-        }
-
-        // Downloader
-        fun triggerDownload(modelName: String, urlString: String, targetFileName: String, targetBtn: Button) {
-            btnDownloadT0.isEnabled = false
-            btnDownloadT1.isEnabled = false
-            progressDownload.visibility = View.VISIBLE
-            progressDownload.progress = 0
-            txtChatLog.text = "[System: Starting download of $modelName weights...]\n"
-            
-            mainScope.launch(Dispatchers.IO) {
-                try {
-                    val url = java.net.URL(urlString)
-                    val connection = url.openConnection() as java.net.HttpURLConnection
-                    connection.connect()
-
-                    if (connection.responseCode != java.net.HttpURLConnection.HTTP_OK) {
-                        throw java.io.IOException("HTTP error code: " + connection.responseCode)
-                    }
-
-                    val fileLength = connection.contentLength
-                    val input = connection.inputStream
-                    
-                    val partFile = File(cacheDir, "${targetFileName}.part")
-                    if (partFile.exists()) partFile.delete()
-                    
-                    val output = java.io.FileOutputStream(partFile)
-                    val data = ByteArray(8192)
-                    var total: Long = 0
-                    var count: Int
-                    var lastUpdate = 0
-                    
-                    while (input.read(data).also { count = it } != -1) {
-                        total += count
-                        output.write(data, 0, count)
-                        if (fileLength > 0) {
-                            val currentProgress = ((total * 100) / fileLength).toInt()
-                            if (currentProgress - lastUpdate >= 1) {
-                                mainScope.launch {
-                                    progressDownload.progress = currentProgress
-                                    txtChatLog.text = String.format("[Downloading %s: %d%% completed]",
-                                        modelName.uppercase(), currentProgress)
-                                }
-                                lastUpdate = currentProgress
-                            }
-                        }
-                    }
-                    output.flush()
-                    output.close()
-                    input.close()
-
-                    val targetFile = File(filesDir, targetFileName)
-                    if (targetFile.exists()) targetFile.delete()
-
-                    if (partFile.renameTo(targetFile)) {
-                        mainScope.launch {
-                            progressDownload.visibility = View.GONE
-                            btnDownloadT0.isEnabled = true
-                            btnDownloadT1.isEnabled = true
-                            targetBtn.text = "INSTALLED ✓"
-                            txtChatLog.text = "[Success: Installed $modelName weights successfully!]"
-                        }
-                    }
-                } catch (e: Exception) {
-                    mainScope.launch {
-                        btnDownloadT0.isEnabled = true
-                        btnDownloadT1.isEnabled = true
-                        txtChatLog.append("\n[System: Download failed: " + e.message + "]")
-                    }
-                }
-            }
-        }
-
-        btnDownloadT0.setOnClickListener {
-            triggerDownload("qwen-0.5b", "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf", "qwen-0.5b.gguf", btnDownloadT0)
-        }
-
-        btnDownloadT1.setOnClickListener {
-            triggerDownload("qwen-1.5b", "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf", "qwen-1.5b.gguf", btnDownloadT1)
-        }
 
         // Document Picker Triggers
         btnPickDoc.setOnClickListener {
@@ -906,60 +768,330 @@ class MainActivity : Activity() {
         // Model Hub: Tier 2 On-Device SLMs (Qwen 0.5B, Llama 1B, Qwen 1.5B)
         val btnHubDownload05B = findViewById<Button>(R.id.btnHubDownload05B)
         val btnHubLoad05B = findViewById<Button>(R.id.btnHubLoad05B)
+        val btnHubDelete05B = findViewById<Button>(R.id.btnHubDelete05B)
+        val txtHubStatus05B = findViewById<TextView>(R.id.txtHubStatus05B)
+        val layoutHubProgress05B = findViewById<LinearLayout>(R.id.layoutHubProgress05B)
+        val txtHubProgress05B = findViewById<TextView>(R.id.txtHubProgress05B)
+        val progressHub05B = findViewById<ProgressBar>(R.id.progressHub05B)
+
         val btnHubDownload1B = findViewById<Button>(R.id.btnHubDownload1B)
         val btnHubLoad1B = findViewById<Button>(R.id.btnHubLoad1B)
+        val btnHubDelete1B = findViewById<Button>(R.id.btnHubDelete1B)
+        val txtHubStatus1B = findViewById<TextView>(R.id.txtHubStatus1B)
+        val layoutHubProgress1B = findViewById<LinearLayout>(R.id.layoutHubProgress1B)
+        val txtHubProgress1B = findViewById<TextView>(R.id.txtHubProgress1B)
+        val progressHub1B = findViewById<ProgressBar>(R.id.progressHub1B)
+
         val btnHubDownload15B = findViewById<Button>(R.id.btnHubDownload15B)
         val btnHubLoad15B = findViewById<Button>(R.id.btnHubLoad15B)
+        val btnHubDelete15B = findViewById<Button>(R.id.btnHubDelete15B)
+        val txtHubStatus15B = findViewById<TextView>(R.id.txtHubStatus15B)
+        val layoutHubProgress15B = findViewById<LinearLayout>(R.id.layoutHubProgress15B)
+        val txtHubProgress15B = findViewById<TextView>(R.id.txtHubProgress15B)
+        val progressHub15B = findViewById<ProgressBar>(R.id.progressHub15B)
+
         val btnHubUnloadModel = findViewById<Button>(R.id.btnHubUnloadModel)
 
+        updateAllModelCards = {
+            // Model 1: Qwen 0.5B
+            val f05 = File(filesDir, "qwen-0.5b.gguf")
+            if (f05.exists() && f05.length() > 0) {
+                val mb = f05.length() / (1024.0 * 1024.0)
+                txtHubStatus05B?.text = String.format("🟢 Installed (%.1f MB)", mb)
+                txtHubStatus05B?.setTextColor(android.graphics.Color.parseColor("#10B981"))
+                btnHubDownload05B?.text = "Installed ✓"
+                btnHubDownload05B?.isEnabled = false
+                btnHubLoad05B?.isEnabled = true
+                btnHubDelete05B?.isEnabled = true
+                btnHubDelete05B?.visibility = View.VISIBLE
+            } else {
+                txtHubStatus05B?.text = "⚪ Not Downloaded (0 MB)"
+                txtHubStatus05B?.setTextColor(android.graphics.Color.parseColor("#64748B"))
+                btnHubDownload05B?.text = "⬇️ Download"
+                btnHubDownload05B?.isEnabled = true
+                btnHubLoad05B?.isEnabled = false
+                btnHubDelete05B?.isEnabled = false
+                btnHubDelete05B?.visibility = View.GONE
+            }
+
+            // Model 2: Llama 1B
+            val f1 = File(filesDir, "llama-1b.gguf")
+            if (f1.exists() && f1.length() > 0) {
+                val mb = f1.length() / (1024.0 * 1024.0)
+                txtHubStatus1B?.text = String.format("🟢 Installed (%.1f MB)", mb)
+                txtHubStatus1B?.setTextColor(android.graphics.Color.parseColor("#10B981"))
+                btnHubDownload1B?.text = "Installed ✓"
+                btnHubDownload1B?.isEnabled = false
+                btnHubLoad1B?.isEnabled = true
+                btnHubDelete1B?.isEnabled = true
+                btnHubDelete1B?.visibility = View.VISIBLE
+            } else {
+                txtHubStatus1B?.text = "⚪ Not Downloaded (0 MB)"
+                txtHubStatus1B?.setTextColor(android.graphics.Color.parseColor("#64748B"))
+                btnHubDownload1B?.text = "⬇️ Download"
+                btnHubDownload1B?.isEnabled = true
+                btnHubLoad1B?.isEnabled = false
+                btnHubDelete1B?.isEnabled = false
+                btnHubDelete1B?.visibility = View.GONE
+            }
+
+            // Model 3: Qwen 1.5B
+            val f15 = File(filesDir, "qwen-1.5b.gguf")
+            if (f15.exists() && f15.length() > 0) {
+                val mb = f15.length() / (1024.0 * 1024.0)
+                txtHubStatus15B?.text = String.format("🟢 Installed (%.1f MB)", mb)
+                txtHubStatus15B?.setTextColor(android.graphics.Color.parseColor("#10B981"))
+                btnHubDownload15B?.text = "Installed ✓"
+                btnHubDownload15B?.isEnabled = false
+                btnHubLoad15B?.isEnabled = true
+                btnHubDelete15B?.isEnabled = true
+                btnHubDelete15B?.visibility = View.VISIBLE
+            } else {
+                txtHubStatus15B?.text = "⚪ Not Downloaded (0 MB)"
+                txtHubStatus15B?.setTextColor(android.graphics.Color.parseColor("#64748B"))
+                btnHubDownload15B?.text = "⬇️ Download"
+                btnHubDownload15B?.isEnabled = true
+                btnHubLoad15B?.isEnabled = false
+                btnHubDelete15B?.isEnabled = false
+                btnHubDelete15B?.visibility = View.GONE
+            }
+
+            // Keep Diagnostics panel in sync
+            btnDownloadT0?.text = if (f05.exists() && f05.length() > 0) "INSTALLED ✓" else "Download"
+            btnDownloadT1?.text = if (f15.exists() && f15.length() > 0) "INSTALLED ✓" else "Download"
+        }
+
+        fun deleteModelFile(targetFileName: String, modelName: String) {
+            IshaRuntime.unloadModelTier()
+            isNeuralModelLoaded = false
+            txtHubActiveEngine?.text = "Active Engine: UNLOADED (Using Hybrid Cloud & RAG)"
+            txtActiveModel?.text = "Active Model: UNLOADED"
+
+            val targetFile = File(filesDir, targetFileName)
+            val partFile = File(cacheDir, "${targetFileName}.part")
+            val existed = targetFile.exists()
+            val freedBytes = if (existed) targetFile.length() else 0L
+
+            if (partFile.exists()) partFile.delete()
+            val deleted = targetFile.delete()
+
+            updateAllModelCards?.invoke()
+
+            if (deleted || !existed) {
+                val freedMb = freedBytes / (1024.0 * 1024.0)
+                val msg = "🗑️ Deleted $modelName! Freed %.1f MB storage.".format(freedMb)
+                Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+                txtChatLog.text = "[System: $msg]"
+            } else {
+                Toast.makeText(this, "⚠️ Failed to delete $modelName file", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        fun triggerDownloadModel(
+            modelName: String,
+            urlString: String,
+            targetFileName: String,
+            btnDownload: Button?,
+            layoutProgress: LinearLayout?,
+            txtProgress: TextView?,
+            progressBar: ProgressBar?,
+            txtStatus: TextView?,
+            btnDelete: Button?,
+            btnLoad: Button?
+        ) {
+            btnDownload?.isEnabled = false
+            btnDownload?.text = "Downloading..."
+            btnDelete?.isEnabled = false
+            btnLoad?.isEnabled = false
+            layoutProgress?.visibility = View.VISIBLE
+            progressBar?.progress = 0
+            txtProgress?.text = "Connecting to server..."
+            txtStatus?.text = "⏳ Downloading..."
+            txtStatus?.setTextColor(android.graphics.Color.parseColor("#2563EB"))
+
+            progressDownload.visibility = View.VISIBLE
+            progressDownload.progress = 0
+            txtChatLog.text = "[System: Starting download of " + modelName + " weights...]\n"
+
+            mainScope.launch(Dispatchers.IO) {
+                try {
+                    val url = java.net.URL(urlString)
+                    val connection = url.openConnection() as java.net.HttpURLConnection
+                    connection.connect()
+
+                    if (connection.responseCode != java.net.HttpURLConnection.HTTP_OK) {
+                        throw java.io.IOException("HTTP error code: ${connection.responseCode}")
+                    }
+
+                    val fileLength = connection.contentLengthLong
+                    val input = connection.inputStream
+
+                    val partFile = File(cacheDir, "${targetFileName}.part")
+                    if (partFile.exists()) partFile.delete()
+
+                    val output = java.io.FileOutputStream(partFile)
+                    val data = ByteArray(16384)
+                    var total: Long = 0
+                    var count: Int
+                    var lastUpdate = 0
+                    val startTime = System.currentTimeMillis()
+
+                    while (input.read(data).also { count = it } != -1) {
+                        total += count
+                        output.write(data, 0, count)
+                        if (fileLength > 0) {
+                            val currentProgress = ((total * 100) / fileLength).toInt()
+                            if (currentProgress - lastUpdate >= 1 || total == fileLength) {
+                                val downloadedMb = total / (1024.0 * 1024.0)
+                                val totalMb = fileLength / (1024.0 * 1024.0)
+                                val elapsedSec = (System.currentTimeMillis() - startTime) / 1000.0
+                                val speedMbS = if (elapsedSec > 0.5) downloadedMb / elapsedSec else 0.0
+
+                                mainScope.launch {
+                                    progressBar?.progress = currentProgress
+                                    progressDownload.progress = currentProgress
+                                    txtProgress?.text = String.format("Downloading: %.1f MB / %.1f MB (%d%%) • %.1f MB/s",
+                                        downloadedMb, totalMb, currentProgress, speedMbS)
+                                    txtChatLog.text = String.format("[Downloading %s: %.1f MB / %.1f MB (%d%%)]",
+                                        modelName.uppercase(), downloadedMb, totalMb, currentProgress)
+                                }
+                                lastUpdate = currentProgress
+                            }
+                        }
+                    }
+                    output.flush()
+                    output.close()
+                    input.close()
+
+                    val targetFile = File(filesDir, targetFileName)
+                    if (targetFile.exists()) targetFile.delete()
+
+                    if (partFile.renameTo(targetFile)) {
+                        mainScope.launch {
+                            layoutProgress?.visibility = View.GONE
+                            progressDownload.visibility = View.GONE
+                            updateAllModelCards?.invoke()
+                            val totalMb = targetFile.length() / (1024.0 * 1024.0)
+                            val successMsg = "✅ Installed $modelName successfully! (%.1f MB)".format(totalMb)
+                            Toast.makeText(this@MainActivity, successMsg, Toast.LENGTH_SHORT).show()
+                            txtChatLog.text = "[Success: Installed $modelName weights successfully! (%.1f MB)]".format(totalMb)
+                        }
+                    } else {
+                        throw java.io.IOException("Failed to rename temporary download to target file")
+                    }
+                } catch (e: Exception) {
+                    mainScope.launch {
+                        layoutProgress?.visibility = View.GONE
+                        progressDownload.visibility = View.GONE
+                        updateAllModelCards?.invoke()
+                        Toast.makeText(this@MainActivity, "❌ Download failed: ${e.message}", Toast.LENGTH_LONG).show()
+                        txtChatLog.append("\n[System: Download failed: " + e.message + "]")
+                    }
+                }
+            }
+        }
+
         btnHubDownload05B?.setOnClickListener {
-            triggerDownload("qwen-0.5b", "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf", "qwen-0.5b.gguf", btnHubDownload05B)
+            triggerDownloadModel(
+                "Qwen 2.5 0.5B",
+                "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf",
+                "qwen-0.5b.gguf",
+                btnHubDownload05B, layoutHubProgress05B, txtHubProgress05B, progressHub05B,
+                txtHubStatus05B, btnHubDelete05B, btnHubLoad05B
+            )
         }
         btnHubLoad05B?.setOnClickListener {
             val file = File(filesDir, "qwen-0.5b.gguf")
             if (file.exists() && IshaRuntime.loadModelTier("qwen-0.5b", 350)) {
                 isNeuralModelLoaded = true
                 txtHubActiveEngine?.text = "Active Engine: On-Device Qwen 2.5 0.5B (Active in RAM)"
+                txtActiveModel?.text = "Active Model: Battery Saver (Qwen 0.5B)"
+                txtHubStatus05B?.text = String.format("🟣 Active in RAM (%.1f MB)", file.length() / (1024.0 * 1024.0))
+                txtHubStatus05B?.setTextColor(android.graphics.Color.parseColor("#7C3AED"))
                 Toast.makeText(this, "Loaded Qwen 2.5 0.5B into RAM", Toast.LENGTH_SHORT).show()
             } else {
                 Toast.makeText(this, "Model not downloaded yet. Tap Download first.", Toast.LENGTH_SHORT).show()
             }
         }
+        btnHubDelete05B?.setOnClickListener {
+            deleteModelFile("qwen-0.5b.gguf", "Qwen 2.5 0.5B")
+        }
 
         btnHubDownload1B?.setOnClickListener {
-            triggerDownload("llama-1b", "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q4_K_M.gguf", "llama-1b.gguf", btnHubDownload1B)
+            triggerDownloadModel(
+                "Llama 3.2 1B",
+                "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q4_K_M.gguf",
+                "llama-1b.gguf",
+                btnHubDownload1B, layoutHubProgress1B, txtHubProgress1B, progressHub1B,
+                txtHubStatus1B, btnHubDelete1B, btnHubLoad1B
+            )
         }
         btnHubLoad1B?.setOnClickListener {
             val file = File(filesDir, "llama-1b.gguf")
             if (file.exists() && IshaRuntime.loadModelTier("llama-1b", 500)) {
                 isNeuralModelLoaded = true
                 txtHubActiveEngine?.text = "Active Engine: On-Device Llama 3.2 1B (Active in RAM)"
+                txtActiveModel?.text = "Active Model: Llama 3.2 1B"
+                txtHubStatus1B?.text = String.format("🟣 Active in RAM (%.1f MB)", file.length() / (1024.0 * 1024.0))
+                txtHubStatus1B?.setTextColor(android.graphics.Color.parseColor("#7C3AED"))
                 Toast.makeText(this, "Loaded Llama 3.2 1B into RAM", Toast.LENGTH_SHORT).show()
             } else {
                 Toast.makeText(this, "Model not downloaded yet. Tap Download first.", Toast.LENGTH_SHORT).show()
             }
         }
+        btnHubDelete1B?.setOnClickListener {
+            deleteModelFile("llama-1b.gguf", "Llama 3.2 1B")
+        }
 
         btnHubDownload15B?.setOnClickListener {
-            triggerDownload("qwen-1.5b", "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf", "qwen-1.5b.gguf", btnHubDownload15B)
+            triggerDownloadModel(
+                "Qwen 2.5 1.5B",
+                "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf",
+                "qwen-1.5b.gguf",
+                btnHubDownload15B, layoutHubProgress15B, txtHubProgress15B, progressHub15B,
+                txtHubStatus15B, btnHubDelete15B, btnHubLoad15B
+            )
         }
         btnHubLoad15B?.setOnClickListener {
+            if (deviceTier == 1) {
+                Toast.makeText(this, "Advisory: Running 1.5B on 3-4GB phones may trigger OS memory pressure.", Toast.LENGTH_LONG).show()
+            }
             val file = File(filesDir, "qwen-1.5b.gguf")
             if (file.exists() && IshaRuntime.loadModelTier("qwen-1.5b", 700)) {
                 isNeuralModelLoaded = true
                 txtHubActiveEngine?.text = "Active Engine: On-Device Qwen 2.5 1.5B (Active in RAM)"
+                txtActiveModel?.text = "Active Model: Standard (Qwen 1.5B)"
+                txtHubStatus15B?.text = String.format("🟣 Active in RAM (%.1f MB)", file.length() / (1024.0 * 1024.0))
+                txtHubStatus15B?.setTextColor(android.graphics.Color.parseColor("#7C3AED"))
                 Toast.makeText(this, "Loaded Qwen 2.5 1.5B into RAM", Toast.LENGTH_SHORT).show()
             } else {
                 Toast.makeText(this, "Model not downloaded yet. Tap Download first.", Toast.LENGTH_SHORT).show()
             }
+        }
+        btnHubDelete15B?.setOnClickListener {
+            deleteModelFile("qwen-1.5b.gguf", "Qwen 2.5 1.5B")
         }
 
         btnHubUnloadModel?.setOnClickListener {
             IshaRuntime.unloadModelTier()
             isNeuralModelLoaded = false
             txtHubActiveEngine?.text = "Active Engine: UNLOADED (Using Hybrid Cloud & RAG)"
+            txtActiveModel?.text = "Active Model: UNLOADED"
+            updateAllModelCards?.invoke()
             Toast.makeText(this, "Model unloaded from RAM", Toast.LENGTH_SHORT).show()
         }
+
+        // Diagnostics Panel Bridge
+        btnDownloadT0.setOnClickListener { btnHubDownload05B?.performClick() }
+        btnDownloadT1.setOnClickListener { btnHubDownload15B?.performClick() }
+        btnLoadT0.setOnClickListener { btnHubLoad05B?.performClick() }
+        btnLoadT1.setOnClickListener { btnHubLoad15B?.performClick() }
+        btnUnload.setOnClickListener { btnHubUnloadModel?.performClick() }
+        btnDeleteT0.setOnClickListener { btnHubDelete05B?.performClick() }
+        btnDeleteT1.setOnClickListener { btnHubDelete15B?.performClick() }
+
+        // Initial scan of installed models
+        updateAllModelCards?.invoke()
 
         // Model Hub: Image Generation Test
         val editHubImagePrompt = findViewById<EditText>(R.id.editHubImagePrompt)

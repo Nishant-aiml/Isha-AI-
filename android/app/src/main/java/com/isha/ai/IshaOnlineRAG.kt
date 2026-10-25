@@ -64,6 +64,39 @@ object IshaOnlineRAG {
         return if (q.isNotEmpty()) q else rawQuery
     }
 
+    private val STOP_WORDS = setOf(
+        "who", "what", "where", "when", "why", "how", "is", "are", "was", "were",
+        "the", "a", "an", "and", "or", "to", "in", "of", "for", "on", "with",
+        "about", "tell", "show", "can", "you", "me", "please", "learn", "steps"
+    )
+
+    fun extractQueryKeywords(query: String): List<String> {
+        return query.lowercase()
+            .replace(Regex("[^a-z0-9\\s]"), " ")
+            .split(Regex("\\s+"))
+            .filter { it.length >= 3 && it !in STOP_WORDS }
+    }
+
+    fun isEntityQuery(query: String): Boolean {
+        val q = query.lowercase().trim()
+        val instructionalPrefixes = listOf(
+            "how to", "how do", "how can", "why is", "why do", "why does",
+            "steps to", "ways to", "best way", "difference between", "tutorial",
+            "guide", "tips for", "how should", "write a", "create a", "learn "
+        )
+        if (instructionalPrefixes.any { q.startsWith(it) }) return false
+        if (q.contains("how to learn") || q.contains("tutorial") || q.contains("roadmap")) return false
+        return q.startsWith("who is") || q.startsWith("what is") || q.startsWith("tell me about") ||
+               q.split(" ").size <= 4
+    }
+
+    fun isTitleRelevant(title: String, query: String): Boolean {
+        val keywords = extractQueryKeywords(query)
+        if (keywords.isEmpty()) return true
+        val tLower = title.lowercase()
+        return keywords.any { kw -> tLower.contains(kw) } || query.lowercase().contains(tLower)
+    }
+
     suspend fun searchLiveWeb(query: String, maxResults: Int = 4): OnlineRAGResult = withContext(Dispatchers.IO) {
         val cleanQuery = scrubPII(query).trim()
         if (cleanQuery.isEmpty()) return@withContext OnlineRAGResult(emptyList(), null)
@@ -71,33 +104,43 @@ object IshaOnlineRAG {
         val coreQuery = extractCoreQuery(cleanQuery)
         val sourcesList = mutableListOf<WebSource>()
         var primaryImage: String? = null
+        val isEntity = isEntityQuery(cleanQuery)
 
-        // 1. Wikipedia PageImages API (Primary for entity facts & high-res images)
-        try {
-            val (wikiSources, wikiImage) = queryWikipediaWithImages(coreQuery)
-            sourcesList.addAll(wikiSources)
-            if (wikiImage != null) {
-                primaryImage = wikiImage
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "Wikipedia search error: ${e.message}")
-        }
-
-        // 2. Google / Web Organic Search via direct HTML extraction
+        // 1. Organic Web Search (Google / DuckDuckGo) is ALWAYS PRIMARY
+        // It provides authoritative results for tutorials, how-to, coding, news, and queries.
         try {
             val webSources = queryWebOrganicSearch(coreQuery, maxResults)
             for (ws in webSources) {
-                // Avoid duplicates
-                if (sourcesList.none { it.url.equals(ws.url, ignoreCase = true) || it.title.equals(ws.title, ignoreCase = true) }) {
-                    sourcesList.add(ws)
+                if (isTitleRelevant(ws.title, cleanQuery) || isTitleRelevant(ws.snippet, cleanQuery)) {
+                    if (sourcesList.none { it.url.equals(ws.url, ignoreCase = true) || it.title.equals(ws.title, ignoreCase = true) }) {
+                        sourcesList.add(ws)
+                    }
                 }
             }
         } catch (e: Exception) {
             Log.w(TAG, "Web organic search error: ${e.message}")
         }
 
-        // 3. Fallback Wikimedia Commons Image search if no image found yet
-        if (primaryImage == null) {
+        // 2. Wikipedia API ONLY for verified named entities (persons, concepts, landmarks)
+        // Strictly filters out irrelevant full-text search matches (like Dipankara for Java/Python)
+        if (isEntity || sourcesList.isEmpty()) {
+            try {
+                val (wikiSources, wikiImage) = queryWikipediaWithImages(coreQuery, cleanQuery)
+                for (ws in wikiSources) {
+                    if (sourcesList.none { it.url.equals(ws.url, ignoreCase = true) || it.title.equals(ws.title, ignoreCase = true) }) {
+                        sourcesList.add(ws)
+                    }
+                }
+                if (wikiImage != null && primaryImage == null && isEntity) {
+                    primaryImage = wikiImage
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Wikipedia search error: ${e.message}")
+            }
+        }
+
+        // 3. Fallback Wikimedia Commons Image search ONLY for verified entities
+        if (primaryImage == null && isEntity) {
             try {
                 primaryImage = queryWikimediaCommonsImage(coreQuery)
             } catch (e: Exception) {
@@ -105,12 +148,15 @@ object IshaOnlineRAG {
             }
         }
 
-        Log.i(TAG, "Live web search for '$coreQuery' retrieved ${sourcesList.size} sources, image: $primaryImage")
-        OnlineRAGResult(sourcesList.take(maxResults), primaryImage)
+        // Never show entity image card for tutorials, how-to, or coding guides
+        val finalImage = if (isEntity) primaryImage else null
+
+        Log.i(TAG, "Live web search for '$coreQuery' (entity=$isEntity) retrieved ${sourcesList.size} sources, image: $finalImage")
+        OnlineRAGResult(sourcesList.take(maxResults), finalImage)
     }
 
-    private fun queryWikipediaWithImages(query: String): Pair<List<WebSource>, String?> {
-        val encoded = URLEncoder.encode(query, "UTF-8")
+    private fun queryWikipediaWithImages(coreQuery: String, originalQuery: String): Pair<List<WebSource>, String?> {
+        val encoded = URLEncoder.encode(coreQuery, "UTF-8")
         val endpoint = "https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=$encoded&gsrlimit=2&prop=pageimages|extracts|info&inprop=url&exintro=1&explaintext=1&pithumbsize=600&format=json"
         val list = mutableListOf<WebSource>()
         var foundImage: String? = null
@@ -139,18 +185,21 @@ object IshaOnlineRAG {
                     val thumbObj = page.optJSONObject("thumbnail")
                     val thumbUrl = thumbObj?.optString("source")
 
-                    if (thumbUrl != null && foundImage == null) {
-                        foundImage = thumbUrl
-                    }
+                    // STRICT RELEVANCE: Title MUST be relevant to the query to avoid false matches (e.g. Dipankara)
+                    if (isTitleRelevant(title, originalQuery)) {
+                        if (thumbUrl != null && foundImage == null) {
+                            foundImage = thumbUrl
+                        }
 
-                    if (extract.length > 25) {
-                        list.add(WebSource(
-                            title = title,
-                            snippet = extract.take(300),
-                            url = fullUrl,
-                            provider = "Wikipedia Official",
-                            confidence = 0.95
-                        ))
+                        if (extract.length > 25) {
+                            list.add(WebSource(
+                                title = title,
+                                snippet = extract.take(300),
+                                url = fullUrl,
+                                provider = "Wikipedia Official",
+                                confidence = 0.95
+                            ))
+                        }
                     }
                 }
             }

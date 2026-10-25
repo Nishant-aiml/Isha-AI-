@@ -1,7 +1,6 @@
 package com.isha.ai
 
 import kotlinx.coroutines.delay
-import java.util.regex.Pattern
 
 object IshaCognitiveGenerator {
 
@@ -45,12 +44,25 @@ object IshaCognitiveGenerator {
                 sections.append("- **Guidance:** Image confirmed with high local confidence. Grounded facts match your on-device domain records.\n\n")
             }
         }
-        // CASE 1: Live Web Sources Available (Zero-Hallucination Verified Web Synthesis)
+        // CASE 1: Programming / Tutorial Learning Roadmap Intent
+        else if (isProgrammingTutorialIntent(qLower)) {
+            sections.append(synthesizeProgrammingGuide(qTrim))
+
+            if (validWeb.isNotEmpty()) {
+                sections.append("\n#### 🌐 Recommended Online Tutorials & Docs\n")
+                for (idx in validWeb.indices) {
+                    val src = validWeb[idx]
+                    val tag = "[W${idx + 1}]"
+                    sections.append("- [${src.title}](${src.url}) $tag: ${src.snippet.take(160)}...\n")
+                }
+            }
+        }
+        // CASE 2: Live Web Sources Available (Zero-Hallucination Verified Web Synthesis)
         else if (validWeb.isNotEmpty() && validLocal.isEmpty()) {
             val coreQuery = IshaOnlineRAG.extractCoreQuery(qTrim)
             sections.append("### Live Web Intelligence 🌐\n\n")
 
-            // Synthesize direct answer summary from the most authoritative snippet
+            // Synthesize direct answer summary from verified snippet
             val directAnswer = extractDirectAnswerFromWeb(coreQuery, validWeb)
             if (directAnswer.isNotEmpty()) {
                 sections.append(directAnswer).append("\n\n")
@@ -70,7 +82,7 @@ object IshaCognitiveGenerator {
                 sections.append("- [${src.title}](${src.url}) $tag\n")
             }
         }
-        // CASE 2: Local Knowledge Only (Agriculture, Health, Legal, Uploaded Documents)
+        // CASE 3: Local Knowledge Only (Agriculture, Health, Legal, Uploaded Documents)
         else if (validLocal.isNotEmpty() && validWeb.isEmpty()) {
             sections.append("### Verified On-Device Knowledge 📚\n\n")
             sections.append("Based on verified on-device knowledge documents for **\"$query\"**:\n\n")
@@ -85,7 +97,7 @@ object IshaCognitiveGenerator {
             sections.append("- [x] **Verify Constraints:** Review the specific dosage, parameters, or legal criteria cited above.\n")
             sections.append("- [x] **Observe Progression:** For agricultural or medical concerns, track symptoms carefully.\n")
         }
-        // CASE 3: Grounded Hybrid (Both Local and Live Web)
+        // CASE 4: Grounded Hybrid (Both Local and Live Web)
         else if (validLocal.isNotEmpty() && validWeb.isNotEmpty()) {
             sections.append("### Grounded Hybrid Assessment 🌿\n\n")
             sections.append("Synthesizing verified on-device documents and live online records for **\"$query\"**:\n\n")
@@ -104,7 +116,7 @@ object IshaCognitiveGenerator {
                 sections.append("- **[${src.title}](${src.url}) $tag**: ${src.snippet.trim()}\n\n")
             }
         }
-        // CASE 4: Neither matched (Offline / Open-Domain Cognitive Reasoning)
+        // CASE 5: Neither matched (Offline / Open-Domain Cognitive Reasoning)
         else {
             val cognitiveResponse = evaluateCognitiveReasoning(qTrim)
             sections.append(cognitiveResponse)
@@ -116,6 +128,56 @@ object IshaCognitiveGenerator {
             onToken(token)
             delay(15)
         }
+    }
+
+    private fun isProgrammingTutorialIntent(qLower: String): Boolean {
+        val hasProg = qLower.contains("java") || qLower.contains("python") || qLower.contains("puth") ||
+                qLower.contains("coding") || qLower.contains("programming") || qLower.contains("c++") ||
+                qLower.contains("javascript") || qLower.contains("kotlin") || qLower.contains("golang")
+        val isTutorial = qLower.contains("how to learn") || qLower.contains("learn") ||
+                qLower.contains("tutorial") || qLower.contains("roadmap") || qLower.contains("start learning") ||
+                qLower.contains("guide")
+        return hasProg && isTutorial
+    }
+
+    private fun synthesizeProgrammingGuide(query: String): String {
+        val qLower = query.lowercase()
+        val hasJava = qLower.contains("java")
+        val hasPython = qLower.contains("python") || qLower.contains("puth") || qLower.contains("py")
+        val sb = StringBuilder()
+
+        sb.append("### 💻 Recommended Programming Learning Roadmap\n\n")
+
+        if (hasJava && hasPython) {
+            sb.append("Learning both **Java** and **Python** provides a comprehensive foundation across object-oriented enterprise engineering and high-productivity scripting & AI.\n\n")
+            sb.append("#### 🚀 Phase 1: Begin with Python (Weeks 1–3)\n")
+            sb.append("- **Goal:** Master core computational logic without boilerplate syntax.\n")
+            sb.append("- **Key Topics:** Variables, conditionals, loops, functions, and standard data structures (`list`, `dict`, `set`, `tuple`).\n")
+            sb.append("- **Hands-on Task:** Write practical command-line scripts: a file organizer, simple calculator, or weather API scraper.\n\n")
+
+            sb.append("#### ☕ Phase 2: Master Java & Object-Oriented Design (Weeks 4–8)\n")
+            sb.append("- **Goal:** Understand static typing, JVM execution, memory management, and strict OOP.\n")
+            sb.append("- **Key Topics:** Classes, Objects, Encapsulation, Inheritance, Interfaces, Polymorphism, and Collections Framework (`ArrayList`, `HashMap`).\n")
+            sb.append("- **Hands-on Task:** Build a modular console application (e.g., Bank Management or Student Record System) using Gradle or Maven.\n\n")
+
+            sb.append("#### 🏆 Phase 3: Project-Based Specialization\n")
+            sb.append("- **For Enterprise & Backend:** Learn **Spring Boot** (Java) with relational databases (PostgreSQL/MySQL).\n")
+            sb.append("- **For Data Science & AI:** Explore **Pandas**, **NumPy**, and **PyTorch** (Python).\n")
+            sb.append("- **Daily Practice:** Solve 1–2 easy/medium problems on LeetCode or HackerRank to build algorithmic intuition.\n")
+        } else if (hasJava) {
+            sb.append("Here is the structured roadmap to master **Java** from scratch:\n\n")
+            sb.append("1. **Java Core:** Syntax, data types, control flow, methods, arrays.\n")
+            sb.append("2. **OOP Foundations:** Classes, Objects, Inheritance, Interfaces, Polymorphism, Abstraction.\n")
+            sb.append("3. **Collections & Concurrency:** List, Set, Map, Iterators, Generics, and Multi-threading.\n")
+            sb.append("4. **Frameworks:** Spring Boot, REST APIs, Maven/Gradle, and Hibernate/JPA.\n")
+        } else {
+            sb.append("Here is the structured roadmap to master **Python** from scratch:\n\n")
+            sb.append("1. **Python Basics:** Syntax, variables, loops, functions, list comprehensions, file I/O.\n")
+            sb.append("2. **Data Structures & OOP:** Lists, Dictionaries, Sets, Tuples, Classes, and Methods.\n")
+            sb.append("3. **Ecosystem & Libraries:** `requests` for APIs, `pytest` for testing, `virtualenv`.\n")
+            sb.append("4. **Specialization:** Web development with FastAPI/Django, or Data/AI with Pandas/PyTorch.\n")
+        }
+        return sb.toString()
     }
 
     /**

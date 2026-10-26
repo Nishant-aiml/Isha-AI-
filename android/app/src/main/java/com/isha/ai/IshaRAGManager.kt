@@ -239,7 +239,7 @@ class IshaRAGManager(private val context: Context) {
                 if (!file.endsWith(".json")) continue
                 val docKey = "builtin_$file"
                 val existingHash = db.getDocumentHash(docKey)
-                if (existingHash == "v1.2") continue // already loaded
+                if (existingHash == "v1.3") continue // already loaded
 
                 val inputStream = assetManager.open("knowledge_packs/$file")
                 val jsonString = inputStream.bufferedReader().use { it.readText() }
@@ -248,7 +248,7 @@ class IshaRAGManager(private val context: Context) {
                 val chunksArray = jsonObject.optJSONArray("chunks") ?: org.json.JSONArray()
 
                 db.deleteDocument(docKey)
-                val docId = db.registerDocument(docKey, "v1.2", jsonString.length.toLong())
+                val docId = db.registerDocument(docKey, "v1.3", jsonString.length.toLong())
                 val dbChunksList = mutableListOf<Pair<Int, String>>()
                 val dbChunkHashes = mutableListOf<String>()
 

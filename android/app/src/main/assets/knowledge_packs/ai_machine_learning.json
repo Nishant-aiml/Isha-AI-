@@ -1,0 +1,47 @@
+{
+  "title": "Artificial Intelligence, Edge Computing & Modern ML",
+  "description": "Deep learning, LLMs, RAG vector retrieval, quantization, edge AI deployment, and Google Edge AI Gallery.",
+  "icon": "ai_brain",
+  "chunks": [
+    {
+      "id": "ai_001",
+      "title": "Foundations of Artificial Intelligence & Machine Learning",
+      "text": "Machine Learning is categorized into: 1. Supervised Learning: Models learn from labeled input-output pairs (e.g. classification, regression; algorithms: Linear Regression, Random Forest, Neural Networks); 2. Unsupervised Learning: Discovering inherent patterns in unlabeled data (e.g. K-Means clustering, PCA dimensionality reduction); 3. Reinforcement Learning: Agents learn optimal behaviors through trial-and-error rewards (e.g. Q-learning, PPO in robotics and game playing). Deep Learning utilizes multi-layered neural networks inspired by biological neurons."
+    },
+    {
+      "id": "ai_002",
+      "title": "Large Language Models & Transformer Architecture",
+      "text": "Large Language Models (LLMs) are based on the Transformer architecture introduced in the 2017 paper 'Attention Is All You Need'. The core innovation is Multi-Head Self-Attention, which calculates contextual relationships between all words in a sentence simultaneously rather than sequentially. Text is broken down into subword tokens (~0.75 words per token). Autoregressive models (e.g. GPT, Llama, Gemini) predict the next token probability distribution given preceding context."
+    },
+    {
+      "id": "ai_003",
+      "title": "Retrieval-Augmented Generation (RAG) Architecture",
+      "text": "Retrieval-Augmented Generation (RAG) combines external document retrieval with generative LLMs to eliminate hallucinations and incorporate private domain knowledge. Steps: 1. Ingestion: Documents (PDFs, text) are chunked into 200–500 token segments; 2. Embedding: Text chunks are converted into dense vector embeddings (e.g. MiniLM, BGE) capturing semantic meaning; 3. Indexing: Vectors stored in an index (FAISS, HNSW, SQLite); 4. Query Retrieval: User question is converted to vector and top-K most similar chunks are retrieved via Cosine Similarity; 5. Generation: LLM answers using retrieved chunks as grounded ground truth."
+    },
+    {
+      "id": "ai_004",
+      "title": "On-Device Quantization (GGUF, Q4_K_M, INT4)",
+      "text": "Quantization reduces neural network weights from 16-bit floating point (FP16, 2 bytes/param) to lower bitwidths (INT8 1 byte, INT4 0.5 bytes). GGUF (GPT-Generated Unified Format) by llama.cpp enables quantized model inference on consumer CPUs, GPUs, and mobile NPUs without external servers. Q4_K_M (4-bit Medium K-quants) preserves ~98% of FP16 model accuracy while reducing model size by 70% and memory footprint down to ~1.2 GB for a 3B parameter model, enabling native execution on Android devices."
+    },
+    {
+      "id": "ai_005",
+      "title": "Google Edge AI Gallery & On-Device Vision",
+      "text": "Google Edge AI Gallery showcases lightweight, on-device AI models running privately without cloud roundtrips: 1. MediaPipe Solutions: Real-time hand tracking, face landmark detection (468 points), pose estimation, and interactive gesture control running at 60 FPS on mobile CPUs; 2. LiteRT (formerly TensorFlow Lite) & ExecuTorch: Runtime frameworks for quantized on-device neural inference; 3. Document OCR & Multimodal Vision: On-device visual inspection for prescriptions, crop leaf disease scanning, and offline text extraction."
+    },
+    {
+      "id": "ai_006",
+      "title": "Small Language Models (SLMs) for Mobile Inference",
+      "text": "Small Language Models (SLMs) with 1B to 3.8B parameters deliver high reasoning density tailored for mobile edge devices: 1. Llama 3.2 1B & 3B: Highly optimized for mobile instruction following, conversational formatting, and edge RAG; 2. Qwen 2.5 1.5B: Excels at multilingual translation, structured JSON generation, and mathematical reasoning; 3. Gemma 2 2B: Google's lightweight open model utilizing knowledge distillation; 4. Phi-3.5-mini (3.8B): Microsoft model trained on synthetic textbook-quality data with high logic benchmarks."
+    },
+    {
+      "id": "ai_007",
+      "title": "Vector Embeddings & Semantic Similarity",
+      "text": "Vector embeddings represent text as dense numerical arrays in a multi-dimensional semantic space (typically 384, 768, or 1536 dimensions). Words or sentences with similar meanings map close together. Semantic similarity is measured using: 1. Cosine Similarity: `dot_product(A, B) / (norm(A) * norm(B))`, yielding values from -1 to +1 (1 means identical semantic orientation); 2. Dot Product: for normalized unit vectors; 3. Euclidean Distance: geometric distance in vector space."
+    },
+    {
+      "id": "ai_008",
+      "title": "Zero-Hallucination Hybrid Cognitive Routing",
+      "text": "Hallucination in AI occurs when a generative model creates plausible-sounding but factually incorrect assertions. Mitigation architecture: 1. Grounded Context Enforcement: System prompts strictly instruct the model to answer using only supplied citations; 2. Hybrid Routing: When offline, use deterministic on-device RAG chunks and rule synthesis; when online, fetch live verified web citations; 3. Low Temperature Sampling (0.1–0.3): Restricts random probability sampling to favor high-confidence factual tokens."
+    }
+  ]
+}

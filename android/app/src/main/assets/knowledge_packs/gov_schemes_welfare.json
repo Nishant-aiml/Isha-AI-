@@ -1,0 +1,47 @@
+{
+  "title": "Government Schemes & Public Welfare Services",
+  "description": "Direct benefit transfers, healthcare schemes, farmer subsidies, savings accounts, and citizen digital portals.",
+  "icon": "gov_welfare",
+  "chunks": [
+    {
+      "id": "gov_001",
+      "title": "Pradhan Mantri Kisan Samman Nidhi (PM-KISAN)",
+      "text": "PM-KISAN is a central sector scheme providing income support of Rs 6,000 per year to all landholding farmer families across India. The financial benefit is transferred directly into bank accounts via DBT in three equal 4-monthly installments of Rs 2,000 each (April-July, August-November, December-March). Mandatory requirements: Land records registration, Aadhaar-seeded bank account, and eKYC completion on pmkisan.gov.in or PM-KISAN mobile app with facial authentication."
+    },
+    {
+      "id": "gov_002",
+      "title": "Ayushman Bharat PM-JAY (Health Insurance)",
+      "text": "Ayushman Bharat Pradhan Mantri Jan Arogya Yojana (AB-PMJAY) is the world's largest government-funded health assurance scheme. It provides a health cover of Rs 5 Lakh per family per year for secondary and tertiary care hospitalization across public and empanelled private hospitals. It covers pre-existing conditions from day one, surgical treatments, ICU, diagnostics, and medications. Beneficiaries receive an Ayushman Golden Card. Official portal: beneficiary.nha.gov.in, Helpline: 14555."
+    },
+    {
+      "id": "gov_003",
+      "title": "Pradhan Mantri Awas Yojana (PMAY Housing)",
+      "text": "PMAY aims to ensure housing for all eligible rural and urban households: 1. PMAY-Gramin: Provides financial assistance of Rs 1.20 lakh (plains) to Rs 1.30 lakh (hilly/northeastern states) along with 90–95 days of unskilled labor wage under MGNREGA and toilet construction subsidy under Swachh Bharat; 2. PMAY-Urban: Offers Credit Linked Subsidy Scheme (CLSS) with interest subsidies up to 6.5% on home loans for EWS, LIG, and MIG categories. Ownership requires female family member name."
+    },
+    {
+      "id": "gov_004",
+      "title": "Pradhan Mantri Jan Dhan Yojana (PMJDY Banking)",
+      "text": "PMJDY is the National Mission for Financial Inclusion: 1. Zero balance basic savings bank deposit (BSBD) account with no minimum balance maintenance charges; 2. Free RuPay debit card with inbuilt Rs 2 Lakh accidental insurance cover; 3. Overdraft (OD) facility up to Rs 10,000 per household to eligible account holders; 4. Direct Benefit Transfer (DBT) destination for subsidies like LPG Pahal, PM-Kisan, and pensions."
+    },
+    {
+      "id": "gov_005",
+      "title": "Sukanya Samriddhi Yojana (Girl Child Savings)",
+      "text": "Sukanya Samriddhi Yojana (SSY) is a government-backed savings initiative under 'Beti Bachao, Beti Padhao' for the girl child: Account can be opened by parents/legal guardians from girl child's birth until she turns 10 years old. Minimum deposit is Rs 250 and maximum Rs 1.5 Lakh per financial year. Features high compound annual interest rate (typically 8.2%+) with triple tax exemption (EEE: deposits, interest, and maturity are tax-free under 80C). Account matures after 21 years or upon marriage after age 18."
+    },
+    {
+      "id": "gov_006",
+      "title": "Atal Pension Yojana (APY Social Security)",
+      "text": "Atal Pension Yojana (APY) provides old-age income security for unorganized sector workers: Open to Indian citizens aged 18 to 40 years having a bank/post office account. Subscribers choose a guaranteed monthly pension of Rs 1,000, Rs 2,000, Rs 3,000, Rs 4,000, or Rs 5,000 starting from age 60. Monthly contribution depends on entry age and chosen pension amount (e.g., Rs 210/month at age 18 for Rs 5,000 pension). After subscriber's death, same pension is paid to spouse, and on spouse's death, accumulated corpus is returned to the nominee."
+    },
+    {
+      "id": "gov_007",
+      "title": "DigiLocker & UMANG Citizen Digital Services",
+      "text": "DigiLocker is the Government of India's flagship cloud document wallet: Issued digital documents (Driving License, Vehicle RC, Aadhaar, PAN Card, Class X/XII Marksheets, Insurance policies) are legally recognized as equivalent to original physical documents under Rule 9A of IT Rules 2016. UMANG (Unified Mobile Application for New-age Governance) integrates 1,200+ central and state services including EPFO provident fund passbook & claims, ESIC, gas booking, electricity bill payments, and passport appointment tracking."
+    },
+    {
+      "id": "gov_008",
+      "title": "Pradhan Mantri Mudra Yojana (PMMY MSME Loans)",
+      "text": "PMMY provides collateral-free institutional credit up to Rs 10 Lakh to micro and small non-corporate, non-farm businesses: Three loan categories based on development stage: 1. Shishu: Covering loans up to Rs 50,000 for startups and petty shops; 2. Kishore: Loans from Rs 50,000 to Rs 5 Lakh for business expansion, equipment purchase; 3. Tarun: Loans from Rs 5 Lakh to Rs 10 Lakh for established micro enterprises. Sanctioned through commercial banks, RRBs, Small Finance Banks, and MFIs."
+    }
+  ]
+}

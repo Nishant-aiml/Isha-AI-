@@ -1,0 +1,57 @@
+{
+  "title": "Bharat & World History, Geography & Heritage",
+  "description": "World continents, oceans, capitals, Indian history, freedom movement, heritage landmarks, and cultural traditions.",
+  "icon": "heritage",
+  "chunks": [
+    {
+      "id": "hist_001",
+      "title": "World Geography, Continents and Oceans",
+      "text": "Earth has 7 continents: Asia (largest), Africa, North America, South America, Antarctica, Europe, and Australia (smallest). There are 5 major oceans: Pacific Ocean (deepest and largest, containing Mariana Trench at ~11,034m), Atlantic Ocean, Indian Ocean, Southern Ocean, and Arctic Ocean. The highest peak on Earth is Mount Everest (8,848.86 m) located in the Himalayas on the Nepal-China border. The longest river is the Nile River (~6,650 km in Africa), followed by the Amazon River (largest by water volume in South America)."
+    },
+    {
+      "id": "hist_002",
+      "title": "Indian Freedom Struggle & Chronology of Independence",
+      "text": "Key milestones in India's struggle for independence: 1857 First War of Independence (Sepoy Mutiny); 1885 Foundation of Indian National Congress; 1905 Partition of Bengal and Swadeshi Movement; 1919 Jallianwala Bagh Massacre in Amritsar; 1920 Non-Cooperation Movement launched by Mahatma Gandhi; 1930 Dandi March and Civil Disobedience Movement against salt tax; 1942 Quit India Movement; 15 August 1947 India achieved independence from British colonial rule with Jawaharlal Nehru as the first Prime Minister."
+    },
+    {
+      "id": "hist_003",
+      "title": "Constitution of India and Democratic Structure",
+      "text": "The Constitution of India is the supreme law of the country. Drafted by the Constituent Assembly with Dr. B.R. Ambedkar as the Chairman of the Drafting Committee. It was adopted on 26 November 1949 (celebrated as Constitution Day) and came into legal effect on 26 January 1950 (Republic Day). It is the longest written national constitution in the world, guaranteeing 6 Fundamental Rights: Right to Equality, Right to Freedom, Right against Exploitation, Right to Freedom of Religion, Cultural and Educational Rights, and Right to Constitutional Remedies (Article 32)."
+    },
+    {
+      "id": "hist_004",
+      "title": "Indus Valley Civilization & Ancient Cities",
+      "text": "The Indus Valley Civilization (c. 2500–1900 BCE) was a Bronze Age civilization across northwest South Asia. Key excavated sites include Harappa (Ravi river), Mohenjo-daro (Sindh, famous for the Great Bath and Bronze Dancing Girl), Lothal (Gujarat, oldest known tidal dockyard), Kalibangan (Rajasthan, ploughed fields), and Dholavira (Kutch, unique water reservoir and storm water management). Notable for baked brick houses, grid-pattern town planning, and advanced underground drainage."
+    },
+    {
+      "id": "hist_005",
+      "title": "Major Ancient & Medieval Indian Empires",
+      "text": "Maurya Empire (322–185 BCE): Founded by Chandragupta Maurya with Chanakya (Kautilya, author of Arthashastra); reached its zenith under Emperor Ashoka who embraced Buddhism and Dharma after the Kalinga War (261 BCE). Gupta Empire (c. 320–550 CE): Golden Age of India, marked by advancements in mathematics (Aryabhata, discovery of zero and pi), astronomy (Varahamihira), and literature (Kalidasa). Chola Dynasty: Southern maritime empire renowned for bronze sculptures and Brihadisvara Temple at Thanjavur."
+    },
+    {
+      "id": "hist_006",
+      "title": "States, Capitals and Union Territories of India",
+      "text": "India consists of 28 States and 8 Union Territories (UTs). Key states and capitals: Maharashtra (Mumbai), Karnataka (Bengaluru), Tamil Nadu (Chennai), Uttar Pradesh (Lucknow), West Bengal (Kolkata), Gujarat (Gandhinagar), Rajasthan (Jaipur), Kerala (Thiruvananthapuram), Punjab & Haryana (Chandigarh), Bihar (Patna), Madhya Pradesh (Bhopal). The 8 Union Territories are: Delhi (NCT), Jammu & Kashmir, Ladakh, Andaman & Nicobar Islands, Chandigarh, Dadra & Nagar Haveli and Daman & Diu, Lakshadweep, and Puducherry."
+    },
+    {
+      "id": "hist_007",
+      "title": "Classical Dances & Musical Heritage of India",
+      "text": "The Sangeet Natak Akademi recognizes 8 official Classical Dances of India: Bharatanatyam (Tamil Nadu), Kathak (Northern India / Uttar Pradesh), Kathakali (Kerala - stylized dance drama with facial makeup), Odissi (Odisha), Kuchipudi (Andhra Pradesh), Manipuri (Manipur), Mohiniyattam (Kerala), and Sattriya (Assam). Indian Classical Music is divided into two great traditions: Hindustani classical music (Northern India, Ragas, Khayal, Dhrupad) and Carnatic classical music (Southern India, Kriti, Purandara Dasa, Thyagaraja)."
+    },
+    {
+      "id": "hist_008",
+      "title": "UNESCO World Heritage Landmarks in India",
+      "text": "India boasts over 40 UNESCO World Heritage Sites including: Taj Mahal (Agra, white marble mausoleum built by Shah Jahan), Red Fort (Delhi), Qutb Minar (Delhi), Ajanta & Ellora Caves (Maharashtra, rock-cut Buddhist, Hindu, and Jain temples), Sun Temple (Konark, Odisha), Group of Monuments at Hampi (Karnataka, Vijayanagara capital), Khajuraho Temples (Madhya Pradesh), Kaziranga National Park (Assam, one-horned rhinoceros habitat), and Western Ghats (biodiversity hotspot)."
+    },
+    {
+      "id": "hist_009",
+      "title": "ISRO Space Landmarks & Planetary Exploration",
+      "text": "Indian Space Research Organisation (ISRO), founded in 1969 by Dr. Vikram Sarabhai, headquartered in Bengaluru. Landmark missions: Aryabhata (1975, India's first satellite); Chandrayaan-1 (2008, confirmed presence of water molecules on the Moon); Mars Orbiter Mission / Mangalyaan (2013, reached Mars orbit on maiden attempt); Chandrayaan-3 (August 23, 2023, historic soft landing near Moon's South Pole with Vikram lander and Pragyan rover); Aditya-L1 (2023, India's first solar observatory placed at Lagrange Point L1)."
+    },
+    {
+      "id": "hist_010",
+      "title": "Modern Seven Wonders of the World",
+      "text": "The New 7 Wonders of the World chosen by global vote: 1. Great Wall of China (China); 2. Petra (Jordan, rock-cut ancient city); 3. Colosseum (Rome, Italy, Roman amphitheatre); 4. Chichen Itza (Mexico, Mayan pyramid); 5. Machu Picchu (Peru, Incan citadel in the Andes); 6. Taj Mahal (Agra, India); 7. Christ the Redeemer (Rio de Janeiro, Brazil, art deco statue). The Great Pyramid of Giza (Egypt) holds honorary status as the sole surviving wonder of the ancient world."
+    }
+  ]
+}

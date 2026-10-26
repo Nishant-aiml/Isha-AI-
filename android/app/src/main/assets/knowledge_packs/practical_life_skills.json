@@ -1,0 +1,42 @@
+{
+  "title": "Practical Everyday Life Skills, Home & Safety",
+  "description": "Home electrical troubleshooting, safe water purification, vehicle care, consumer rights, and domestic emergency handling.",
+  "icon": "tools_safety",
+  "chunks": [
+    {
+      "id": "skill_001",
+      "title": "Home Electrical Safety & MCB Tripping Troubleshooting",
+      "text": "Miniature Circuit Breakers (MCB) automatically shut off electricity when an electrical fault occurs. Two main causes: 1. Circuit Overload: Too many high-wattage appliances (heater, geyser, iron, AC) running on one line. Solution: Unplug heavy loads and reset switch; 2. Short Circuit: Phase wire touches neutral wire or appliance internal fault. Signs: Burning smell, sparks, or switch instantly re-tripping. Safety rules: Never touch switches with wet hands; ensure 3-pin earth wire connection; use RCCB/ELCB (Residual Current Circuit Breaker) to prevent fatal electric shocks."
+    },
+    {
+      "id": "skill_002",
+      "title": "Water Purification Methods & Safe Drinking TDS Guidelines",
+      "text": "Drinking water purification standards: Total Dissolved Solids (TDS) measures dissolved minerals in parts per million (ppm). Desirable drinking water TDS is 50 to 300 ppm. Purification techniques: 1. Boiling: Bringing water to a rolling boil for 1 to 3 minutes kills 99.9% of bacteria, viruses, and parasites; 2. RO (Reverse Osmosis): Essential when inlet TDS exceeds 500 ppm or heavy metals (lead, arsenic) are present; 3. UV (Ultraviolet) Purifier: Disinfects microorganisms without removing healthy natural minerals (ideal for municipal water with TDS < 300 ppm)."
+    },
+    {
+      "id": "skill_003",
+      "title": "LPG Gas Cylinder Leak Emergency Protocol",
+      "text": "If you smell LPG gas (rotten egg odor added via ethyl mercaptan): 1. DO NOT turn ON or OFF any electrical switches, exhaust fans, or doorbell (sparks can trigger an explosion); 2. DO NOT light matches, candles, or gas stove; 3. Immediately turn OFF the gas cylinder regulator knob by turning it clockwise; 4. Extinguish any open flames; 5. Open all doors and windows wide for ventilation (LPG is heavier than air and settles near the floor); 6. Evacuate people and call 24x7 Emergency Helpline 1906 or Fire 101."
+    },
+    {
+      "id": "skill_004",
+      "title": "Vehicle Care: Cold Tyre Pressure, Engine Oil & Battery Maintenance",
+      "text": "Routine vehicle maintenance rules: 1. Tyre Pressure: Check tyre pressure (PSI) cold once every 2 weeks. Correct PSI is specified on driver side door-pillar sticker (typically 32–35 PSI for cars). Under-inflation causes tyre blowout and reduces mileage; 2. Engine Oil Check: Park on level ground with engine off for 10 min. Pull out oil dipstick, wipe clean, reinsert and check: oil level must be between MIN and MAX marks. Change oil every 10,000 km or 1 year; 3. Car Battery: Clean white sulfation deposits from terminals with warm water and baking soda."
+    },
+    {
+      "id": "skill_005",
+      "title": "Consumer Rights & Filing Complaints in India",
+      "text": "Under the Consumer Protection Act 2019, consumers have 6 basic rights: Right to Safety, Right to Information, Right to Choose, Right to be Heard, Right to Redressal, and Right to Consumer Education. If sold defective goods, expired products, or denied valid warranty: 1. Call National Consumer Helpline toll-free: 1915 or SMS 8800001915; 2. Register complaint online at consumerhelpline.gov.in; 3. File online legal case via e-Daakhil portal (edaakhil.nic.in) without hiring an advocate. 3-tier redressal: District Commission (claims up to Rs 50 Lakh), State Commission (up to Rs 2 Crore), National Commission (above Rs 2 Crore)."
+    },
+    {
+      "id": "skill_006",
+      "title": "Fire Extinguisher PASS Method & Burn First Aid",
+      "text": "How to operate a portable fire extinguisher using the PASS technique: P - PULL the safety pin; A - AIM low at the base of the fire; S - SQUEEZE the handle slowly; S - SWEEP side to side until fire is extinguished. First Aid for Thermal Burns: 1. Immediately hold the burned area under cool running tap water for 10 to 20 minutes; 2. DO NOT apply ice, butter, ghee, or toothpaste (they trap heat and introduce infection); 3. Cover loosely with sterile non-stick bandage or clean plastic wrap; 4. Seek immediate medical attention if burn is larger than palm or has blisters."
+    },
+    {
+      "id": "skill_007",
+      "title": "Emergency Cardiac Arrest CPR Procedure",
+      "text": "Cardiopulmonary Resuscitation (CPR) for unresponsive adult who is not breathing normally: 1. Check responsiveness and call 112 / 108 immediately; 2. Place heel of one hand in the center of the chest (lower half of sternum), interlock fingers of other hand on top; 3. Keep arms straight and push hard and fast at a rate of 100 to 120 compressions per minute to a depth of 5–6 cm (2–2.4 inches), allowing full chest recoil between compressions; 4. Continue Hands-Only CPR without stopping until emergency medical paramedics arrive or an Automated External Defibrillator (AED) is ready."
+    }
+  ]
+}

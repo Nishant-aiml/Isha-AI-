@@ -377,6 +377,11 @@ class MainActivity : Activity() {
             editPrompt.setText("Legal process if police station refuses to file FIR")
             btnSend.performClick()
         }
+        val chipGenImage = findViewById<Button>(R.id.chipGenImage)
+        chipGenImage?.setOnClickListener {
+            editPrompt.setText("generate image: futuristic neon cyberpunk city")
+            btnSend.performClick()
+        }
 
         // Display cold start timing
         val initEnd = SystemClock.elapsedRealtime()
@@ -434,7 +439,7 @@ class MainActivity : Activity() {
                 txtChatLog.text = "User: $queryText\n\nAI: 🎨 Synthesizing visual for \"$corePrompt\"..."
                 mainScope.launch {
                     try {
-                        val result = IshaImageGenerator.generateVisual(corePrompt)
+                        val result = IshaImageGenerator.generateVisual(corePrompt, context = this@MainActivity)
                         imgGeneratedResult?.setImageBitmap(result.bitmap)
                         val modeTag = if (result.isOffline) "⚡ 100% Offline (On-Device Neural Canvas)" else "🌐 Cloud Edge AI"
                         txtGeneratedPrompt?.text = "Prompt: \"${result.prompt}\" • $modeTag"
@@ -791,6 +796,32 @@ class MainActivity : Activity() {
             IshaCloudAI.saveConfig(this, prov, key, mod)
             txtHubActiveEngine?.text = "Active Engine: $prov ($mod)"
             Toast.makeText(this, "Activated $mod successfully!", Toast.LENGTH_SHORT).show()
+        }
+
+        // Model Hub: Creative AI (Text-to-Image Diffusion Engine)
+        val editHubHfToken = findViewById<EditText>(R.id.editHubHfToken)
+        val btnHubSaveHfToken = findViewById<Button>(R.id.btnHubSaveHfToken)
+        val txtHubImageEngineStatus = findViewById<TextView>(R.id.txtHubImageEngineStatus)
+
+        fun updateHfTokenUi() {
+            val savedHf = IshaCloudAI.getHfToken(this)
+            if (savedHf.isNotEmpty()) {
+                editHubHfToken?.setText(savedHf)
+                txtHubImageEngineStatus?.text = "Engine: FLUX.1 [schnell] & SDXL via Hugging Face (Active)"
+                txtHubImageEngineStatus?.setTextColor(android.graphics.Color.parseColor("#8B5CF6"))
+            } else {
+                txtHubImageEngineStatus?.text = "Engine: Stable Diffusion Cluster + On-Device Canvas (Active)"
+                txtHubImageEngineStatus?.setTextColor(android.graphics.Color.parseColor("#10B981"))
+            }
+        }
+        updateHfTokenUi()
+
+        btnHubSaveHfToken?.setOnClickListener {
+            val token = editHubHfToken?.text?.toString()?.trim() ?: ""
+            IshaCloudAI.saveHfToken(this, token)
+            updateHfTokenUi()
+            val msg = if (token.isNotEmpty()) "FLUX.1 [schnell] & SDXL activated via Hugging Face!" else "Image engine set to Stable Diffusion cluster & Canvas."
+            Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
         }
 
         // Model Hub: Tier 2 On-Device SLMs (Qwen 0.5B, Llama 1B, Qwen 1.5B)

@@ -20,6 +20,7 @@ object IshaCloudAI {
     private const val KEY_API_KEY = "cloud_api_key"
     private const val KEY_SELECTED_MODEL = "cloud_selected_model"
     private const val KEY_BACKEND_URL = "cloud_backend_url"
+    private const val KEY_HF_TOKEN = "cloud_hf_token"
 
     const val PROVIDER_HYBRID = "hybrid"   // Auto: Cloud if key available, else Web RAG + Cognitive
     const val PROVIDER_GROQ = "groq"       // Free Groq Cloud (Llama 3.3 70B / 3.2 3B)
@@ -64,6 +65,16 @@ object IshaCloudAI {
             if (backendUrl.isNotEmpty()) putString(KEY_BACKEND_URL, backendUrl.trim())
             apply()
         }
+    }
+
+    fun getHfToken(context: Context): String {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getString(KEY_HF_TOKEN, "") ?: ""
+    }
+
+    fun saveHfToken(context: Context, token: String) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putString(KEY_HF_TOKEN, token.trim()).apply()
     }
 
     fun clearConfig(context: Context) {

@@ -99,21 +99,26 @@ object IshaCognitiveGenerator {
         }
         // CASE 4: Grounded Hybrid (Both Local and Live Web)
         else if (validLocal.isNotEmpty() && validWeb.isNotEmpty()) {
-            sections.append("### Grounded Hybrid Assessment 🌿\n\n")
-            sections.append("Synthesizing verified on-device documents and live online records for **\"$query\"**:\n\n")
+            val coreQuery = IshaOnlineRAG.extractCoreQuery(qTrim)
+            sections.append("### Grounded Hybrid Assessment 🌐\n\n")
 
-            sections.append("#### 📚 Verified Offline Knowledge\n")
-            for (idx in validLocal.indices) {
-                val chunk = validLocal[idx]
-                val tag = "[L${idx + 1}]"
-                sections.append("- **Point $tag**: $chunk\n\n")
+            val directAnswer = extractDirectAnswerFromWeb(coreQuery, validWeb)
+            if (directAnswer.isNotEmpty()) {
+                sections.append(directAnswer).append("\n\n")
             }
 
             sections.append("#### 🌐 Live Web Findings\n")
             for (idx in validWeb.indices) {
                 val src = validWeb[idx]
                 val tag = "[W${idx + 1}]"
-                sections.append("- **[${src.title}](${src.url}) $tag**: ${src.snippet.trim()}\n\n")
+                sections.append("- **[${src.title}](${src.url}) $tag**:\n  ${src.snippet.trim()}\n\n")
+            }
+
+            sections.append("#### 📚 Verified On-Device Context\n")
+            for (idx in validLocal.indices) {
+                val chunk = validLocal[idx]
+                val tag = "[L${idx + 1}]"
+                sections.append("- **Guideline $tag**: $chunk\n\n")
             }
         }
         // CASE 5: Neither matched (Offline / Open-Domain Cognitive Reasoning)
@@ -274,14 +279,91 @@ object IshaCognitiveGenerator {
                     "**Time Complexity:** O(N) | **Space Complexity:** O(N)"
         }
 
-        // Default Intelligent Guidance
-        return "### 💡 ISHA AI Assistance\n\n" +
+        // 5. Emergency Protocol: What To Do If Lost / Disoriented
+        if (qLower.contains("lost") || qLower.contains("rasta") || qLower.contains("bhatak") || qLower.contains("kho gaya") || qLower.contains("stranded") || qLower.contains("survival")) {
+            if (qLower.contains("life") || qLower.contains("career") || qLower.contains("direction") || qLower.contains("feeling lost")) {
+                return "### 🌱 Guidance: When Feeling Lost in Life\n\n" +
+                        "Feeling uncertain or without direction is a normal human phase during transitions, burnout, or major decisions. Here is a grounded approach to regain clarity:\n\n" +
+                        "1. **Acknowledge and Pause:** You don't have to resolve your entire multi-year plan today. Give yourself permission to step back and breathe without self-criticism.\n" +
+                        "2. **Focus on the Next 24 Hours:** Simplify your goals to micro-habits: restorative sleep, a 20-minute outdoor walk, healthy hydration, and completing just one small, tangible task.\n" +
+                        "3. **Audit Energy Drains vs. Fuel:** Note what habits, routines, or environments exhaust your mental bandwidth, and what small activities bring calm or genuine curiosity.\n" +
+                        "4. **Speak to a Trusted Contact:** Unburdening your thoughts with a close friend, family member, or mentor helps break internal rumination."
+            } else {
+                return "### 🧭 Emergency Guidance: What To Do If You Are Lost\n\n" +
+                        "If you are lost or disoriented, immediately follow the **S.T.O.P. Survival Protocol**:\n\n" +
+                        "#### 1. 🛑 S — STOP\n" +
+                        "- **Stay Calm:** Panic causes disorientation and poor decisions. Sit down, take 3 slow deep breaths, and halt further movement.\n" +
+                        "- **Avoid Aimless Wandering:** Walking blindly consumes energy, dehydrates you, and carries you further away from recognized points or searchers.\n\n" +
+                        "#### 2. 🤔 T — THINK\n" +
+                        "- Mentally trace your steps: Where was the last landmark, signpost, road, or shop you recognized?\n" +
+                        "- Check your phone: Do you have mobile network, GPS, or offline Google Maps? Switch your phone to **Battery Saver Mode** immediately.\n\n" +
+                        "#### 3. 👁️ O — OBSERVE\n" +
+                        "- **In a City or Town:** Look for prominent infrastructure (metro stations, bus terminals, hospitals, brightly lit commercial avenues, or police booths).\n" +
+                        "- **In Rural or Wilderness Areas:** Observe the sun (rises in the East, sets in the West), telephone/power lines, or streams (water flows downhill toward human settlements).\n\n" +
+                        "#### 4. 📋 P — PLAN & ACT\n" +
+                        "- **If in an Urban Area:** Walk toward open, populated public spaces (supermarkets, hotels, fuel stations). Approach a uniformed officer, security guard, or storekeeper for assistance.\n" +
+                        "- **If in Wilderness / Woods:** If you lack a clear marked path, **stay in one secure spot**. Rescue teams always search outwards from your last known location. Signal using bright clothing or 3 distinct whistle blasts.\n" +
+                        "- **Send Live Location:** Share your live location pin via WhatsApp or SMS to family or a trusted contact before your phone battery depletes.\n" +
+                        "- **Emergency Helplines:** In India, dial **112** (Unified National Emergency Helpline) or **100** (Police) for immediate assistance."
+            }
+        }
+
+        // 6. National Emergency Helplines
+        if (qLower.contains("helpline") || qLower.contains("emergency number") || qLower.contains("police number") || qLower.contains("ambulance number")) {
+            return "### 🚨 Essential Emergency Helpline Numbers (India)\n\n" +
+                    "- **National Unified Emergency:** `112` (Police, Fire, Ambulance — all-in-one)\n" +
+                    "- **Police:** `100`\n" +
+                    "- **Ambulance & Medical Emergency:** `108`\n" +
+                    "- **Fire Services:** `101`\n" +
+                    "- **Women Helpline (National):** `1091` and `181`\n" +
+                    "- **National Cyber Crime Reporting:** `1930`\n" +
+                    "- **Childline:** `1098`\n" +
+                    "- **Senior Citizen Helpline (Elderline):** `14567`\n" +
+                    "- **LPG Gas Leak Helpline:** `1906`\n" +
+                    "- **National Consumer Helpline:** `1915`"
+        }
+
+        // 7. Everyday First Aid Guidance
+        if (qLower.contains("burn") && (qLower.contains("first aid") || qLower.contains("treatment") || qLower.contains("cure") || qLower.contains("what to do"))) {
+            return "### 🩹 First Aid for Thermal Burns\n\n" +
+                    "1. **Cool Immediately:** Hold the burned area under cool running tap water for **10 to 20 minutes**.\n" +
+                    "2. **DO NOT Apply Ice, Ghee, Butter, or Toothpaste:** These trap residual heat inside the tissue and cause infection.\n" +
+                    "3. **Protect:** Cover loosely with a clean, non-stick sterile gauze or plastic wrap.\n" +
+                    "4. **Medical Care:** Seek urgent medical attention if the burn is larger than the palm, has blisters, or affects the face, hands, or joints."
+        }
+
+        if (qLower.contains("choking") && (qLower.contains("first aid") || qLower.contains("what to do") || qLower.contains("help"))) {
+            return "### ⚠️ Choking Emergency (Heimlich Maneuver)\n\n" +
+                    "If a conscious person cannot breathe, speak, or cough:\n" +
+                    "1. **Stand Behind:** Stand behind the person and wrap your arms around their waist.\n" +
+                    "2. **Make a Fist:** Place the thumb side of your fist just above the navel (below the ribcage).\n" +
+                    "3. **Inward & Upward Thrusts:** Grasp your fist with your other hand and press forcefully into the abdomen with quick inward and upward thrusts until the object dislodges.\n" +
+                    "4. **If Unconscious:** Call 112 / 108 and begin chest CPR immediately."
+        }
+
+        // 8. General Science & Engineering Explanations
+        if (qLower.contains("airplane") && (qLower.contains("fly") || qLower.contains("work"))) {
+            return "### ✈️ How Airplanes Fly\n\n" +
+                    "Airplanes fly by balancing four physical forces: **Lift**, **Weight (Gravity)**, **Thrust**, and **Drag**:\n\n" +
+                    "1. **Lift (Wings):** Airplane wings (airfoils) are curved on top and flatter on bottom. As the wing moves forward, airflow over the curved top accelerates, creating lower pressure above the wing (**Bernoulli's Principle**). Combined with air deflected downward (**Newton's Third Law**), this creates upward **Lift**.\n" +
+                    "2. **Thrust (Engines):** Jet engines or propellers push air backward, propelling the aircraft forward.\n" +
+                    "3. **Control Surfaces:** Pilots use ailerons (roll), elevators (pitch up/down), and rudders (yaw left/right) to steer."
+        }
+
+        if (qLower.contains("internet") && (qLower.contains("work") || qLower.contains("how does"))) {
+            return "### 🌐 How the Internet Works\n\n" +
+                    "The Internet is a global network of interconnected computers communicating via standardized protocols (**TCP/IP**):\n\n" +
+                    "1. **Clients and Servers:** Your phone (client) requests data (like a webpage) from a remote computer (server).\n" +
+                    "2. **DNS (Domain Name System):** Translates human-friendly names (like `google.com`) into numerical IP addresses (like `142.250.190.46`).\n" +
+                    "3. **Packets & Routing:** Data is chopped into thousands of small digital packets, transmitted through high-speed undersea fiber-optic cables and routers, and reassembled on your device in milliseconds."
+        }
+
+        // Default Grounded Guidance
+        return "### 💡 ISHA AI Intelligence\n\n" +
                 "I processed your query: **\"$query\"**.\n\n" +
-                "This topic is not present in your on-device document index.\n\n" +
-                "**To get accurate, instant answers on any topic:**\n" +
-                "1. **🌐 Turn on Live Web:** Tap **🌐 Web: ON** in the top bar to fetch verified real-time facts and source links.\n" +
-                "2. **☁️ Free Cloud AI Offload:** Open **⚙️ Settings** to enter a free Google Gemini 1.5 Flash key or Groq Llama 3.3 key for unlimited GPT-4 quality chat!\n" +
-                "3. **📚 Index Documents:** Go to **Knowledge & Docs** tab to upload PDF, text, or word documents for local search."
+                "- **🌐 Real-Time Web Facts:** Tap **🌐 WEB: ON** in the top bar to fetch live answers, news, and links directly from the internet.\n" +
+                "- **📚 Domain Knowledge:** Search your on-device knowledge packs in the **Docs** tab.\n" +
+                "- **☁️ Cloud AI Offload:** Add a free Google Gemini 1.5 Flash key or Groq key in **⚙️ Settings** for unlimited generative reasoning."
     }
 
     /**

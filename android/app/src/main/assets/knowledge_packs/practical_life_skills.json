@@ -37,6 +37,11 @@
       "id": "skill_007",
       "title": "Emergency Cardiac Arrest CPR Procedure",
       "text": "Cardiopulmonary Resuscitation (CPR) for unresponsive adult who is not breathing normally: 1. Check responsiveness and call 112 / 108 immediately; 2. Place heel of one hand in the center of the chest (lower half of sternum), interlock fingers of other hand on top; 3. Keep arms straight and push hard and fast at a rate of 100 to 120 compressions per minute to a depth of 5–6 cm (2–2.4 inches), allowing full chest recoil between compressions; 4. Continue Hands-Only CPR without stopping until emergency medical paramedics arrive or an Automated External Defibrillator (AED) is ready."
+    },
+    {
+      "id": "skill_008",
+      "title": "Emergency Survival Protocol: What to Do If You Are Lost",
+      "text": "If you are lost or disoriented in an unfamiliar place, follow the essential S.T.O.P. survival protocol: 1. S - STOP: Stay calm, sit down, take deep breaths, and avoid wandering aimlessly which burns energy and increases disorientation; 2. T - THINK: How did you get here? When was the last recognized landmark or street? Check battery level and offline GPS maps; 3. O - OBSERVE: Look for prominent terrain features, highways, power lines, buildings, or sun direction (sun rises in east, sets in west); 4. P - PLAN: If in a city or populated area, head toward a well-lit public street, open store, metro station, or police station, and dial Emergency 112 / Police 100. If in wilderness or forests, stay in one secure place so search and rescue teams can trace you. Send your live location to family or emergency contacts via SMS/WhatsApp before your phone battery depletes."
     }
   ]
 }

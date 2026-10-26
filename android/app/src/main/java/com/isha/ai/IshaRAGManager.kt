@@ -239,7 +239,7 @@ class IshaRAGManager(private val context: Context) {
                 if (!file.endsWith(".json")) continue
                 val docKey = "builtin_$file"
                 val existingHash = db.getDocumentHash(docKey)
-                if (existingHash == "v1.3") continue // already loaded
+                if (existingHash == "v1.4") continue // already loaded
 
                 val inputStream = assetManager.open("knowledge_packs/$file")
                 val jsonString = inputStream.bufferedReader().use { it.readText() }
@@ -248,18 +248,20 @@ class IshaRAGManager(private val context: Context) {
                 val chunksArray = jsonObject.optJSONArray("chunks") ?: org.json.JSONArray()
 
                 db.deleteDocument(docKey)
-                val docId = db.registerDocument(docKey, "v1.3", jsonString.length.toLong())
+                val docId = db.registerDocument(docKey, "v1.4", jsonString.length.toLong())
                 val dbChunksList = mutableListOf<Pair<Int, String>>()
                 val dbChunkHashes = mutableListOf<String>()
 
                 for (i in 0 until chunksArray.length()) {
                     val chunkObj = chunksArray.getJSONObject(i)
                     val chunkId = chunkObj.optString("id", "${file}_$i")
-                    val chunkText = chunkObj.optString("text", "")
+                    val itemTitle = chunkObj.optString("title", "").trim()
+                    val rawText = chunkObj.optString("text", "").trim()
+                    val fullChunkText = if (itemTitle.isNotEmpty()) "$itemTitle: $rawText" else rawText
                     val isLast = (i == chunksArray.length() - 1)
 
-                    IshaRuntime.ingestChunkNative(chunkId, chunkText, "local_rag", isLast)
-                    dbChunksList.add(Pair(docId.toInt(), chunkText))
+                    IshaRuntime.ingestChunkNative(chunkId, fullChunkText, "local_rag", isLast)
+                    dbChunksList.add(Pair(docId.toInt(), fullChunkText))
                     dbChunkHashes.add(chunkId)
                 }
 

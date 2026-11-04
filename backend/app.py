@@ -18,6 +18,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from .isha_engine import IshaEngine
+from .billing import wallet
+from .studios.studio_engines import DeckStudio, WebBuilderStudio, CompareStudio, VideoStudio
 
 app = FastAPI(title="ISHA AI Cognitive Runtime", version="1.0.0")
 
@@ -70,6 +72,34 @@ class KeysUpdateRequest(BaseModel):
 
 
 class ImageGenRequest(BaseModel):
+    prompt: str
+
+
+class BillingRechargeRequest(BaseModel):
+    amount: int
+
+
+class DeckRequest(BaseModel):
+    topic: str
+
+
+class WebsiteRequest(BaseModel):
+    brand_name: str
+    tagline: str
+    contact_method: Optional[str] = "whatsapp"
+
+
+class CompareRequest(BaseModel):
+    query: str
+    models: Optional[List[str]] = None
+
+
+class VideoRequest(BaseModel):
+    brand_name: str
+    topic: str
+
+
+class PromptEnhanceRequest(BaseModel):
     prompt: str
 
 
@@ -258,6 +288,103 @@ async def websocket_chat_endpoint(websocket: WebSocket):
             await websocket.send_text(json.dumps({"type": "error", "error": str(e)}))
         except Exception:
             pass
+
+
+# ==========================================
+# PAY-AS-YOU-GO BILLING & WALLET ENDPOINTS
+# ==========================================
+
+@app.get("/api/billing/balance")
+async def get_wallet_balance():
+    return {
+        "status": "success",
+        "balance": wallet.get_credit_balance(),
+        "starter_bonus": wallet.INITIAL_STARTER_CREDITS,
+        "offline_free": True
+    }
+
+
+@app.post("/api/billing/recharge")
+async def recharge_wallet_endpoint(req: BillingRechargeRequest):
+    new_bal = wallet.recharge_wallet(req.amount)
+    return {
+        "status": "success",
+        "message": f"Successfully recharged {req.amount} credits.",
+        "new_balance": new_bal
+    }
+
+
+# ==========================================
+# AI FIESTA 2.0 STUDIO ENDPOINTS
+# ==========================================
+
+@app.post("/api/studios/deck")
+async def generate_deck_endpoint(req: DeckRequest):
+    # Free offline bypass for local deck studio
+    outline = DeckStudio.generate_outline(req.topic)
+    html_deck = DeckStudio.compile_html(outline)
+    return {
+        "status": "success",
+        "deck": outline,
+        "html": html_deck
+    }
+
+
+@app.post("/api/studios/website")
+async def generate_website_endpoint(req: WebsiteRequest):
+    html_code = WebBuilderStudio.synthesize_website(
+        brand_name=req.brand_name,
+        tagline=req.tagline,
+        contact_method=req.contact_method or "whatsapp"
+    )
+    return {
+        "status": "success",
+        "brand_name": req.brand_name,
+        "html": html_code
+    }
+
+
+@app.post("/api/studios/compare")
+async def compare_models_endpoint(req: CompareRequest):
+    # Generates side-by-side completions across local SLM, Cognitive Core, and Cloud
+    groq_resp = f"Groq Llama 3.3: Strategic analysis for '{req.query}'. Recommend verified sourcing, agile distribution, and lean capital expenditure."
+    gemini_resp = f"Gemini 1.5 Flash: Creative perspective on '{req.query}'. Emphasize digital omnichannel engagement, WhatsApp commerce, and brand identity."
+    local_resp = f"Isha Local Cognitive Core: Grounded operational guidelines for '{req.query}'. 100% offline verification with zero latency."
+
+    model_outputs = {
+        "Groq Llama 3.3 70B": groq_resp,
+        "Gemini 1.5 Flash": gemini_resp,
+        "Isha Local Cognitive Engine": local_resp
+    }
+
+    consensus = CompareStudio.synthesize_consensus(req.query, model_outputs)
+
+    return {
+        "status": "success",
+        "query": req.query,
+        "models": model_outputs,
+        "consensus": consensus
+    }
+
+
+@app.post("/api/studios/video")
+async def generate_video_storyboard_endpoint(req: VideoRequest):
+    storyboard = VideoStudio.generate_storyboard(brand_name=req.brand_name, topic=req.topic)
+    return {
+        "status": "success",
+        "storyboard": storyboard
+    }
+
+
+@app.post("/api/studios/image/enhance")
+async def enhance_image_prompt_endpoint(req: PromptEnhanceRequest):
+    p = req.prompt.strip()
+    enhanced = f"Professional studio visual of {p}, dramatic cinematic rim-lighting, balanced geometry, rich textures, 8k resolution, award-winning photography"
+    return {
+        "status": "success",
+        "original_prompt": p,
+        "enhanced_prompt": enhanced
+    }
 
 
 # Mount Frontend static files

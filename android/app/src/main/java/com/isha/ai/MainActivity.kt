@@ -111,10 +111,13 @@ class MainActivity : Activity() {
 
         val tabModels = findViewById<Button>(R.id.tabModels)
         val viewModelsHub = findViewById<ScrollView>(R.id.viewModelsHub)
+        val tabStudios = findViewById<Button>(R.id.tabStudios)
+        val viewStudios = findViewById<ScrollView>(R.id.viewStudios)
+        val btnWalletBadge = findViewById<Button>(R.id.btnWalletBadge)
 
         fun selectTab(selectedTab: Button, targetView: View) {
-            val tabs = listOf(tabChat, tabLibrary, tabModels)
-            val views = listOf(viewChatConsole, viewDocLibrary, viewModelsHub)
+            val tabs = listOf(tabChat, tabLibrary, tabModels, tabStudios)
+            val views = listOf(viewChatConsole, viewDocLibrary, viewModelsHub, viewStudios)
             for (t in tabs) {
                 if (t == selectedTab) {
                     t?.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#F59E0B"))
@@ -143,6 +146,92 @@ class MainActivity : Activity() {
         tabModels?.setOnClickListener {
             selectTab(tabModels, viewModelsHub)
             updateAllModelCards?.invoke()
+        }
+
+        fun updateWalletUi() {
+            val bal = IshaBillingManager.getCreditBalance(this)
+            btnWalletBadge?.text = "💳 $bal Cr"
+            val txtStudioWalletBalance = findViewById<TextView>(R.id.txtStudioWalletBalance)
+            txtStudioWalletBalance?.text = "Current Balance: $bal Credits (⚡ 100% Free Offline Active)"
+        }
+        updateWalletUi()
+
+        btnWalletBadge?.setOnClickListener {
+            selectTab(tabStudios, viewStudios)
+        }
+
+        tabStudios?.setOnClickListener {
+            selectTab(tabStudios, viewStudios)
+            updateWalletUi()
+        }
+
+        // Studios Handlers
+        val btnRecharge50 = findViewById<Button>(R.id.btnRecharge50)
+        val btnRecharge100 = findViewById<Button>(R.id.btnRecharge100)
+        btnRecharge50?.setOnClickListener {
+            IshaBillingManager.rechargeWallet(this, 50)
+            updateWalletUi()
+            Toast.makeText(this, "Recharged 50 Cloud Credits!", Toast.LENGTH_SHORT).show()
+        }
+        btnRecharge100?.setOnClickListener {
+            IshaBillingManager.rechargeWallet(this, 100)
+            updateWalletUi()
+            Toast.makeText(this, "Recharged 100 Cloud Credits!", Toast.LENGTH_SHORT).show()
+        }
+
+        val btnDemoCompareConsensus = findViewById<Button>(R.id.btnDemoCompareConsensus)
+        btnDemoCompareConsensus?.setOnClickListener {
+            val query = "Tell me color psychology for saree boutique logo named Rangrez Chandni"
+            val consensus = IshaCompareEngine.synthesizeConsensus(query, emptyList())
+            selectTab(tabChat, viewChatConsole)
+            findViewById<TextView>(R.id.txtChatLog)?.text = "User: $query\n\nAI: $consensus"
+        }
+
+        val btnGenerateDeck = findViewById<Button>(R.id.btnGenerateDeck)
+        val editDeckTopic = findViewById<EditText>(R.id.editDeckTopic)
+        btnGenerateDeck?.setOnClickListener {
+            val topic = editDeckTopic?.text?.toString() ?: "Investment pitch deck for Saree Shop"
+            val deck = IshaDeckEngine.generateDeckOutline(topic)
+            val file = IshaDeckEngine.exportDeckToFile(this, deck)
+            selectTab(tabChat, viewChatConsole)
+            val msg = "📊 Generated Interactive Pitch Deck (${deck.slides.size} Slides)!\n📁 Saved offline: ${file.name}\n\nOutline:\n" +
+                      deck.slides.mapIndexed { idx, s -> "${idx + 1}. ${s.title}: ${s.subtitle}" }.joinToString("\n")
+            findViewById<TextView>(R.id.txtChatLog)?.text = "User: Generate presentation for $topic\n\nAI: $msg"
+            Toast.makeText(this, "Deck generated offline: ${file.name}", Toast.LENGTH_LONG).show()
+        }
+
+        val btnBuildWebsite = findViewById<Button>(R.id.btnBuildWebsite)
+        val editWebBrand = findViewById<EditText>(R.id.editWebBrand)
+        btnBuildWebsite?.setOnClickListener {
+            val brand = editWebBrand?.text?.toString() ?: "Rangrez Chandni"
+            val spec = IshaWebBuilder.WebsiteSpec(
+                brandName = brand,
+                tagline = "Rang Bhi, Shaan Bhi",
+                siteType = "full_shop",
+                contactMethod = "whatsapp"
+            )
+            val file = IshaWebBuilder.exportWebsiteToFile(this, spec)
+            selectTab(tabChat, viewChatConsole)
+            val msg = "🌐 Synthesized Responsive Website for $brand!\n📱 Mobile & Desktop Ready with WhatsApp ordering.\n📁 Saved locally: ${file.name}"
+            findViewById<TextView>(R.id.txtChatLog)?.text = "User: Build website for $brand\n\nAI: $msg"
+            Toast.makeText(this, "Website compiled offline: ${file.name}", Toast.LENGTH_LONG).show()
+        }
+
+        val btnGenerateVideoStoryboard = findViewById<Button>(R.id.btnGenerateVideoStoryboard)
+        btnGenerateVideoStoryboard?.setOnClickListener {
+            val storyboard = IshaVideoStudio.generateStoryboard("Heritage Zari Saree Collection", "Rangrez Chandni")
+            val formatted = IshaVideoStudio.formatStoryboardMarkdown(storyboard)
+            selectTab(tabChat, viewChatConsole)
+            findViewById<TextView>(R.id.txtChatLog)?.text = "User: Create 8s video ad for Rangrez Chandni\n\nAI: $formatted"
+        }
+
+        val btnEnhancePrompt = findViewById<Button>(R.id.btnEnhancePrompt)
+        btnEnhancePrompt?.setOnClickListener {
+            val raw = "minimalist saree shop logo Rangrez Chandni"
+            val enhanced = IshaImageStudio.enhancePrompt(raw)
+            selectTab(tabChat, viewChatConsole)
+            findViewById<EditText>(R.id.editPrompt)?.setText(enhanced)
+            findViewById<TextView>(R.id.txtChatLog)?.text = "User: Enhance prompt: $raw\n\nAI: ✨ Enhanced Prompt:\n\"$enhanced\"\n(Populated into chat input ready to generate!)"
         }
 
         // Google AI Edge Gallery & Stitch UI Controls
@@ -439,6 +528,22 @@ class MainActivity : Activity() {
                 txtChatLog.text = "User: $queryText\n\nAI: 🎨 Synthesizing visual for \"$corePrompt\"..."
                 mainScope.launch {
                     try {
+                        // Pay-As-You-Go Billing Check: deduct credits if using cloud diffusion
+                        val hasHf = IshaCloudAI.getHfToken(this@MainActivity).isNotEmpty()
+                        if (!hasHf) {
+                            // If using managed cloud and not offline, deduct or notify
+                            try {
+                                IshaBillingManager.deductCloudCredits(
+                                    this@MainActivity,
+                                    IshaBillingManager.COST_CLOUD_IMAGE,
+                                    "High-Res Cloud Diffusion",
+                                    hasByok = hasHf
+                                )
+                                updateWalletUi()
+                            } catch (e: IshaBillingManager.InsufficientBalanceException) {
+                                Log.w(TAG, "Cloud credit check failed, falling back to 100% Free Offline Canvas")
+                            }
+                        }
                         val result = IshaImageGenerator.generateVisual(corePrompt, context = this@MainActivity)
                         imgGeneratedResult?.setImageBitmap(result.bitmap)
                         val modeTag = if (result.isOffline) "⚡ 100% Offline (On-Device Neural Canvas)" else "🌐 Cloud Edge AI"

@@ -156,10 +156,11 @@ class ModelProvider:
             if resp.status_code == 200:
                 data = resp.json()
                 text = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-                tokens = re.findall(r'\S+|\s+', text)
-                for t in tokens:
-                    yield t
-                    await asyncio.sleep(0.01)
+                words = re.findall(r'\S+\s*', text)
+                chunk_size = 3
+                for i in range(0, len(words), chunk_size):
+                    yield "".join(words[i:i + chunk_size])
+                    await asyncio.sleep(0.003)
                 return
             else:
                 raise Exception(f"Gemini API returned status {resp.status_code}")
@@ -290,9 +291,9 @@ class ModelProvider:
             )
 
         full_text = "".join(response_sections)
-        # Token-streamer emulation (words / punctuation tokens)
-        tokens = re.findall(r'\S+|\s+', full_text)
-        for t in tokens:
-            yield t
-            # 25-40 tokens per second rate
-            await asyncio.sleep(0.012)
+        # Fast streaming token generator (2-4 words per chunk for snappy, natural UI delivery)
+        words = re.findall(r'\S+\s*', full_text)
+        chunk_size = 3
+        for i in range(0, len(words), chunk_size):
+            yield "".join(words[i:i + chunk_size])
+            await asyncio.sleep(0.003)

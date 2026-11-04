@@ -20,10 +20,13 @@ if BASE_DIR not in sys.path:
 def find_available_port(default_port: int = 8000) -> int:
     port = default_port
     while port < default_port + 20:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            if s.connect_ex(('127.0.0.1', port)) != 0:
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                s.bind(('127.0.0.1', port))
                 return port
-        port += 1
+        except OSError:
+            port += 1
     return default_port
 
 
@@ -32,7 +35,7 @@ def launch_native_desktop_window(port: int):
     Launches interface in dedicated App Mode (Chromium/Edge/Chrome)
     so it renders as a standalone desktop application window with no browser tabs or URL bars.
     """
-    time.sleep(1.2)
+    time.sleep(1.0)
     url = f"http://127.0.0.1:{port}"
 
     # Try PyWebView if installed
@@ -57,8 +60,13 @@ def launch_native_desktop_window(port: int):
         for exe in edge_paths:
             if os.path.exists(exe):
                 print(f"[Desktop] Launching Standalone Desktop Window: {exe} --app={url}")
-                subprocess.Popen([exe, f"--app={url}", "--window-size=1280,840"])
+                os.system(f'start "" "{exe}" --app={url} --window-size=1280,840')
                 return
+        try:
+            os.startfile(url)
+            return
+        except Exception:
+            pass
 
     # Fallback to standard system browser
     import webbrowser

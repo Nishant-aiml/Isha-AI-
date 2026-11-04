@@ -295,6 +295,7 @@ async def websocket_chat_endpoint(websocket: WebSocket):
 # ==========================================
 
 @app.get("/api/billing/balance")
+@app.get("/api/billing/wallet")
 async def get_wallet_balance():
     return {
         "status": "success",

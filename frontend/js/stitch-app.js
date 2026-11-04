@@ -198,25 +198,45 @@ function initWebSocket() {
   };
 }
 
+let streamRenderRaf = null;
+
+function requestStreamBubbleRender() {
+  if (streamRenderRaf) return;
+  streamRenderRaf = requestAnimationFrame(() => {
+    streamRenderRaf = null;
+    if (currentStreamBubble) {
+      currentStreamBubble.innerHTML = marked.parse(accumulatedMarkdown);
+      scrollChatToBottom();
+    }
+  });
+}
+
 function handleStreamEvent(msg) {
   if (msg.type === "retrieval_meta") {
     renderRetrievalTrace(msg.data);
   } else if (msg.type === "token") {
     accumulatedMarkdown += msg.token;
-    if (currentStreamBubble) {
-      currentStreamBubble.innerHTML = marked.parse(accumulatedMarkdown);
-      scrollChatToBottom();
-    }
+    requestStreamBubbleRender();
   } else if (msg.type === "complete") {
     isGenerating = false;
     updateSendBtnState(false);
+    if (streamRenderRaf) {
+      cancelAnimationFrame(streamRenderRaf);
+      streamRenderRaf = null;
+    }
     if (currentStreamBubble) {
+      currentStreamBubble.innerHTML = marked.parse(accumulatedMarkdown);
+      scrollChatToBottom();
       appendMessageActions(currentStreamBubble.parentElement, accumulatedMarkdown);
     }
     chatHistory.push({ role: "assistant", content: accumulatedMarkdown });
   } else if (msg.type === "error") {
     isGenerating = false;
     updateSendBtnState(false);
+    if (streamRenderRaf) {
+      cancelAnimationFrame(streamRenderRaf);
+      streamRenderRaf = null;
+    }
     if (currentStreamBubble) {
       currentStreamBubble.innerHTML += `<p style="color: var(--accent-rose); margin-top: 8px;"><strong>Notice:</strong> ${msg.error}</p>`;
     }

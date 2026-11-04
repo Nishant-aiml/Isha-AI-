@@ -1091,3 +1091,186 @@ function updateTelemetryUI(data) {
   if (watchdogKvCache) watchdogKvCache.textContent = `${data.kv_cache_tokens} / ${data.max_context}`;
   if (watchdogTotalTokens) watchdogTotalTokens.textContent = data.total_tokens;
 }
+
+
+/* ==========================================================================
+   AI FIESTA 2.0 STUDIOS & WALLET INTEGRATION
+   ========================================================================== */
+function initStudiosAndWallet() {
+  async function refreshWallet() {
+    try {
+      const res = await fetch("/api/billing/balance");
+      const d = await res.json();
+      const txt = `${d.balance} Credits`;
+      const badge = document.getElementById("walletBalanceText");
+      if (badge) badge.textContent = txt;
+      const studioBal = document.getElementById("studioWalletBal");
+      if (studioBal) studioBal.textContent = txt;
+    } catch (e) {}
+  }
+  refreshWallet();
+
+  const walletBtn = document.getElementById("walletHeaderBtn");
+  if (walletBtn) {
+    walletBtn.addEventListener("click", () => {
+      document.querySelectorAll(".rail-btn").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("active"));
+      const sBtn = document.querySelector('.rail-btn[data-tab="studiosTab"]');
+      if (sBtn) sBtn.classList.add("active");
+      const sPane = document.getElementById("studiosTab");
+      if (sPane) sPane.classList.add("active");
+      refreshWallet();
+    });
+  }
+
+  const r50 = document.getElementById("webRecharge50Btn");
+  if (r50) {
+    r50.addEventListener("click", async () => {
+      await fetch("/api/billing/recharge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: 50 })
+      });
+      refreshWallet();
+      alert("Recharged 50 Cloud Credits!");
+    });
+  }
+
+  const r100 = document.getElementById("webRecharge100Btn");
+  if (r100) {
+    r100.addEventListener("click", async () => {
+      await fetch("/api/billing/recharge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: 100 })
+      });
+      refreshWallet();
+      alert("Recharged 100 Cloud Credits!");
+    });
+  }
+
+  const compBtn = document.getElementById("runCompareDemoBtn");
+  if (compBtn) {
+    compBtn.addEventListener("click", async () => {
+      compBtn.textContent = "⏳ Comparing Models...";
+      try {
+        const res = await fetch("/api/studios/compare", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: "Color psychology for luxury ethnic boutique logo" })
+        });
+        const d = await res.json();
+        const box = document.getElementById("compareResultBox");
+        if (box) {
+          box.style.display = "block";
+          box.innerHTML = marked.parse(d.consensus);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+      compBtn.textContent = "Run Color Psychology Consensus";
+    });
+  }
+
+  const deckBtn = document.getElementById("runGenerateDeckBtn");
+  if (deckBtn) {
+    deckBtn.addEventListener("click", async () => {
+      deckBtn.textContent = "⏳ Compiling Deck...";
+      try {
+        const topic = document.getElementById("webDeckTopicInput").value;
+        const res = await fetch("/api/studios/deck", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ topic })
+        });
+        const d = await res.json();
+        const box = document.getElementById("deckResultBox");
+        if (box) {
+          box.style.display = "block";
+          box.innerHTML = `
+            <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10B981; padding: 10px; border-radius: 8px; margin-bottom: 8px; color: #6EE7B7; font-size: 0.82rem;">
+              ✓ Generated ${d.deck.slides.length} Keynote-grade slides (100% Offline)!
+            </div>
+            <button class="stitch-pill interactive" id="openDeckBtn" style="width: 100%; background: #F59E0B; color: #000; font-weight: 700;">Open Presentation Window ▶</button>
+          `;
+          document.getElementById("openDeckBtn").addEventListener("click", () => {
+            const w = window.open("", "_blank");
+            w.document.write(d.html);
+            w.document.close();
+          });
+        }
+      } catch (err) {
+        console.error(err);
+      }
+      deckBtn.textContent = "⚡ Generate Interactive Slide Deck (Free Offline)";
+    });
+  }
+
+  const webBtn = document.getElementById("runBuildWebBtn");
+  if (webBtn) {
+    webBtn.addEventListener("click", async () => {
+      webBtn.textContent = "⏳ Synthesizing Website...";
+      try {
+        const brand = document.getElementById("webBrandInput").value;
+        const tagline = document.getElementById("webTaglineInput").value;
+        const res = await fetch("/api/studios/website", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ brand_name: brand, tagline: tagline, contact_method: "whatsapp" })
+        });
+        const d = await res.json();
+        const box = document.getElementById("webResultBox");
+        if (box) {
+          box.style.display = "block";
+          box.innerHTML = `
+            <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10B981; padding: 10px; border-radius: 8px; margin-bottom: 8px; color: #6EE7B7; font-size: 0.82rem;">
+              ✓ Synthesized responsive website for ${brand} with WhatsApp ordering!
+            </div>
+            <button class="stitch-pill interactive" id="openWebBtn" style="width: 100%; background: #10B981; color: #000; font-weight: 700;">Open Live Website Preview 🌐</button>
+          `;
+          document.getElementById("openWebBtn").addEventListener("click", () => {
+            const w = window.open("", "_blank");
+            w.document.write(d.html);
+            w.document.close();
+          });
+        }
+      } catch (err) {
+        console.error(err);
+      }
+      webBtn.textContent = "⚡ Synthesize Responsive Website";
+    });
+  }
+
+  const vidBtn = document.getElementById("runVideoStoryboardBtn");
+  if (vidBtn) {
+    vidBtn.addEventListener("click", async () => {
+      vidBtn.textContent = "⏳ Generating Storyboard...";
+      try {
+        const res = await fetch("/api/studios/video", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ brand_name: "Rangrez Chandni", topic: "Bridal Zari Collection" })
+        });
+        const d = await res.json();
+        const box = document.getElementById("videoResultBox");
+        if (box) {
+          box.style.display = "block";
+          let html = `<strong>🎬 ${d.storyboard.title}</strong> (${d.storyboard.duration}s Duration)<br><br>`;
+          d.storyboard.shots.forEach(s => {
+            html += `<strong>Shot ${s.shot} (${s.time})</strong>: ${s.camera}<br>• Visual: ${s.visual}<br>• Voiceover: 🎙️ "${s.voiceover}"<br><br>`;
+          });
+          box.innerHTML = html;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+      vidBtn.textContent = "🎬 Generate 8s Video Storyboard";
+    });
+  }
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initStudiosAndWallet);
+} else {
+  initStudiosAndWallet();
+}

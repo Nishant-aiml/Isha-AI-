@@ -45,6 +45,12 @@
 
       <!-- USER ACTIONS & TOGGLES (RIGHT) -->
       <div class="header-actions-right">
+        <!-- Pay-As-You-Go Wallet Badge -->
+        <button class="mode-toggle-btn" id="walletHeaderBtn" title="Pay-As-You-Go Cloud Wallet" style="border-color: rgba(139, 92, 246, 0.4); color: #C4B5FD;">
+          <span>💳</span>
+          <span id="walletBalanceText">25 Credits</span>
+        </button>
+
         <!-- Live Internet Mode Toggle Button -->
         <button class="mode-toggle-btn" id="onlineRagHeaderToggle" title="Toggle real-time live internet search">
           <span class="pill-dot" id="headerRagDot"></span>
@@ -88,6 +94,10 @@
         <button class="rail-btn" data-tab="visionTab" title="Photo & Disease Doctor">
           📸
           <span class="label">Vision</span>
+        </button>
+        <button class="rail-btn" data-tab="studiosTab" title="AI Fiesta 2.0 Studios">
+          🎨
+          <span class="label">Studios</span>
         </button>
       </nav>
 
@@ -353,6 +363,94 @@
                     Upload a crop photo or prescription to see instant identification, severity assessment, and recommended treatment.
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 5: AI FIESTA 2.0 STUDIOS -->
+        <section id="studiosTab" class="tab-pane">
+          <div class="studio-layout">
+            <div class="card-title-row">
+              <div>
+                <h2>🎨 AI Fiesta 2.0 Studio Suite</h2>
+                <p style="color: var(--text-muted); font-size: 0.88rem;">All-in-one generative creation suite with 100% Free Offline Engine and Pay-As-You-Go Cloud Gateway.</p>
+              </div>
+            </div>
+
+            <!-- WALLET & PAY-AS-YOU-GO CARD -->
+            <div class="stitch-card" style="margin-bottom: 16px; border-color: rgba(139, 92, 246, 0.3); background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(15, 23, 42, 0.6));">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div>
+                  <h3 style="color: #DDD6FE; font-size: 1.1rem; margin-bottom: 4px;">💳 Pay-As-You-Go Cloud Wallet</h3>
+                  <p style="font-size: 0.85rem; color: var(--text-muted);">
+                    Current Balance: <strong id="studioWalletBal" style="color: #10B981;">25 Credits</strong> • ⚡ 100% Free Offline Mode Active
+                  </p>
+                  <p style="font-size: 0.78rem; color: #94A3B8; margin-top: 4px;">
+                    Offline local SLMs, Slide Decks, and Websites are 100% Free forever (0 credits deducted). Cloud APIs (Claude 3.5, GPT-4o, FLUX.1) deduct micro-credits or use your personal API key (BYOK).
+                  </p>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                  <button class="stitch-pill interactive" id="webRecharge50Btn" style="background: #8B5CF6; color: #FFF; border: none; font-weight: 600;">+50 Credits Top-Up</button>
+                  <button class="stitch-pill interactive" id="webRecharge100Btn" style="background: #6D28D9; color: #FFF; border: none; font-weight: 600;">+100 Credits</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="studio-grid-2">
+              <!-- STUDIO 1: COMPARE & CONSENSUS -->
+              <div class="stitch-card">
+                <div class="card-heading">
+                  <span>🎯</span> Studio 1: Multi-Model Compare &amp; Consensus
+                </div>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+                  Compare completions across Groq Llama 3.3 70B, Gemini 1.5 Flash, Claude 3.5, and Local SLM, and synthesize a single agreed consensus.
+                </p>
+                <div style="display: flex; gap: 8px;">
+                  <button class="stitch-pill interactive" id="runCompareDemoBtn" style="flex: 1; background: #0284C7; color: #FFF; border: none; font-weight: 600;">Run Color Psychology Consensus</button>
+                </div>
+                <div id="compareResultBox" style="margin-top: 12px; font-size: 0.85rem; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; display: none; line-height: 1.5;"></div>
+              </div>
+
+              <!-- STUDIO 2: PRESENTATION & PITCH DECK -->
+              <div class="stitch-card">
+                <div class="card-heading">
+                  <span>📊</span> Studio 2: Slide &amp; Pitch Deck Studio
+                </div>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+                  Generates structured pitch deck outlines and compiles standalone Keynote-grade HTML slide presentations with keyboard controls.
+                </p>
+                <input type="text" id="webDeckTopicInput" value="Investment pitch deck for Saree Shop asking 10 lakh funding" style="width: 100%; padding: 8px 12px; background: rgba(0,0,0,0.4); border: 1px solid var(--border-subtle); border-radius: 8px; color: #FFF; margin-bottom: 10px; font-size: 0.85rem;">
+                <button class="stitch-pill interactive" id="runGenerateDeckBtn" style="width: 100%; background: #F59E0B; color: #000; border: none; font-weight: 700;">⚡ Generate Interactive Slide Deck (Free Offline)</button>
+                <div id="deckResultBox" style="margin-top: 12px; display: none;"></div>
+              </div>
+
+              <!-- STUDIO 3: CONVERSATIONAL WEBSITE BUILDER -->
+              <div class="stitch-card">
+                <div class="card-heading">
+                  <span>🌐</span> Studio 3: Conversational Website Builder
+                </div>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+                  Conversational questionnaire builds full responsive single-page store websites with WhatsApp ordering.
+                </p>
+                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                  <input type="text" id="webBrandInput" value="Rangrez Chandni" placeholder="Brand Name" style="flex: 1; padding: 8px 12px; background: rgba(0,0,0,0.4); border: 1px solid var(--border-subtle); border-radius: 8px; color: #FFF; font-size: 0.85rem;">
+                  <input type="text" id="webTaglineInput" value="Rang Bhi, Shaan Bhi" placeholder="Tagline" style="flex: 1; padding: 8px 12px; background: rgba(0,0,0,0.4); border: 1px solid var(--border-subtle); border-radius: 8px; color: #FFF; font-size: 0.85rem;">
+                </div>
+                <button class="stitch-pill interactive" id="runBuildWebBtn" style="width: 100%; background: #10B981; color: #000; border: none; font-weight: 700;">⚡ Synthesize Responsive Website</button>
+                <div id="webResultBox" style="margin-top: 12px; display: none;"></div>
+              </div>
+
+              <!-- STUDIO 4: VIDEO STORYBOARD STUDIO -->
+              <div class="stitch-card">
+                <div class="card-heading">
+                  <span>🎬</span> Studio 4: Video Storyboard Studio
+                </div>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+                  Generates structured 8-second multi-scene promotional video commercials with camera directions, voiceover scripts, and audio cues.
+                </p>
+                <button class="stitch-pill interactive" id="runVideoStoryboardBtn" style="width: 100%; background: #EC4899; color: #FFF; border: none; font-weight: 700;">🎬 Generate 8s Video Storyboard</button>
+                <div id="videoResultBox" style="margin-top: 12px; font-size: 0.85rem; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; display: none; line-height: 1.5;"></div>
               </div>
             </div>
           </div>
